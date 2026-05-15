@@ -2,7 +2,7 @@
 
 Setup:
 - Clone this repository
-- `npm init`
+- `npm install`
 - Run by `npm run dev`
 
 Techstack:
