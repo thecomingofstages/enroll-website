@@ -24,8 +24,10 @@ class UserHelper {
 
   /** GET /users/me/qr */
   static async getQrToken(userId) {
-    // TODO: QRUtil.sign(userId), return { qr_token, expires_at, expires_in }
-    throw new Error('Not implemented');
+    const qr_token  = QRUtil.sign(userId);
+    const expires_in = AppKeys.QR_TTL_SECONDS;                          // 300s
+    const expires_at = new Date((Math.floor(Date.now() / 1000) + expires_in) * 1000).toISOString();
+    return { qr_token, expires_at, expires_in };
   }
 }
 
