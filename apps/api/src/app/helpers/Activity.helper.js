@@ -2,6 +2,7 @@ const { v7: uuidv7 }    = require('uuid');
 const ActivityModel     = require('../models/Activity.model');
 const SpeakerModel      = require('../models/Speaker.model');
 const RegistrationModel = require('../models/Registration.model');
+const AttendanceModel   = require('../models/Attendance.model');
 
 // Fields an admin is NOT allowed to set directly via create/update
 const BLOCKED_ON_CREATE = ['enrolled_count', 'deleted_at'];
@@ -30,23 +31,25 @@ class ActivityHelper {
 
   // ── GET /activities/:id ─────────────────────────────────────────
   static async getById(activityId) {
-    // TODO: findById, join speakers, return full doc including schedule + extra_questions
+    // TODO: findById, join speakers, join attendance, return full doc
     throw new Error('Not implemented');
   }
 
   // ── POST /admin/activities ──────────────────────────────────────
   /**
-   * Create a new activity.
-   * - Strips any client-supplied blocked fields (enrolled_count etc.)
+   * Create a new activity and its paired Attendance document.
+   * - Strips any client-supplied blocked fields (enrolled_count, deleted_at)
    * - Auto-generates question_id for each extra_question that omits one
-   * - Returns the saved document
+   * - Atomically creates Activity + Attendance in sequence
+   *   (Attendance doc is born empty — date keys are added by POST /events/scan)
+   * - Returns the saved activity document
    */
   static async create(payload) {
-    // 1. Strip fields the client must not control
+    // 1. Strip blocked fields
     const clean = { ...payload };
     BLOCKED_ON_CREATE.forEach(f => delete clean[f]);
 
-    // 2. Auto-generate question_id for any extra_question that doesn't have one
+    // 2. Auto-generate question_id for any extra_question missing one
     if (Array.isArray(clean.extra_questions)) {
       clean.extra_questions = clean.extra_questions.map(q => ({
         ...q,
@@ -54,11 +57,15 @@ class ActivityHelper {
       }));
     }
 
-    // 3. enrolled_count always starts at 0 — enforce regardless of payload
+    // 3. enrolled_count always starts at 0
     clean.enrolled_count = 0;
 
-    // 4. Insert — Mongoose will assign UUIDv7 _id via the schema default
+    // 4. Insert activity — Mongoose assigns UUIDv7 _id via schema default
     const activity = await ActivityModel.create(clean);
+
+    // 5. Create paired Attendance doc (empty — scan will add date keys)
+    await AttendanceModel.create({ activity_id: activity._id });
+
     return activity.toObject();
   }
 
@@ -70,7 +77,7 @@ class ActivityHelper {
    * - Returns the updated document (or throws 404 if not found)
    */
   static async update(activityId, payload) {
-    // 1. Build a safe $set object from whitelisted fields only
+    // 1. Build a safe $set from whitelisted fields only
     const $set = {};
     UPDATABLE_FIELDS.forEach(field => {
       if (payload[field] !== undefined) $set[field] = payload[field];
@@ -83,7 +90,7 @@ class ActivityHelper {
       throw err;
     }
 
-    // 2. findOneAndUpdate — returns null if not found
+    // 2. findByIdAndUpdate — returns null if not found
     const updated = await ActivityModel.findByIdAndUpdate(
       activityId,
       { $set },
@@ -123,7 +130,7 @@ class ActivityHelper {
       throw err;
     }
 
-    // 2. Block deletion if active (paid/joined) registrations exist
+    // 2. Block deletion if PAID/JOINED registrations exist
     const activeCount = await RegistrationModel.countDocuments({
       activity_id: activityId,
       status: { $in: ['PAID', 'JOINED'] },

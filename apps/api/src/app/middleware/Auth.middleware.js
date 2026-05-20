@@ -21,6 +21,32 @@ class AuthMiddleware {
     }
   }
 
+  /**
+   * Optional auth — if a Bearer token is present it is verified and req.user is set.
+   * If no token is present, req.user stays null and the request continues.
+   * Used for POST /registrations where existing users send a token but new users don't.
+   */
+  static async optionalAuth(req, res, next) {
+    try {
+      const header = req.headers.authorization || '';
+      const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
+
+      if (!token) {
+        req.user = null;
+        return next();
+      }
+
+      const decoded = JWTUtil.verifyAccess(token);
+      const user    = await UserModel.findById(decoded.sub).lean();
+      req.user = user || null;
+      next();
+    } catch {
+      // Invalid token on an optional route — treat as unauthenticated, not an error
+      req.user = null;
+      next();
+    }
+  }
+
   /** Admin role required — 403 if not admin */
   static async requireAdmin(req, res, next) {
     await AuthMiddleware.requireAuth(req, res, async () => {
