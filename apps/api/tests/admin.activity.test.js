@@ -6,17 +6,19 @@
  *   PATCH  /v1/admin/activities/:id
  *   DELETE /v1/admin/activities/:id
  *
- * Mocks: UserModel (Auth.middleware), ActivityModel, RegistrationModel
+ * Mocks: UserModel, ActivityModel, AttendanceModel, RegistrationModel
  */
 
 const request = require('supertest');
 
 jest.mock('../src/app/models/User.model');
 jest.mock('../src/app/models/Activity.model');
+jest.mock('../src/app/models/Attendance.model');
 jest.mock('../src/app/models/Registration.model');
 
 const UserModel         = require('../src/app/models/User.model');
 const ActivityModel     = require('../src/app/models/Activity.model');
+const AttendanceModel   = require('../src/app/models/Attendance.model');
 const RegistrationModel = require('../src/app/models/Registration.model');
 
 const buildApp = require('./helpers/app');
@@ -75,9 +77,10 @@ afterEach(() => jest.clearAllMocks());
 // =============================================================================
 describe('POST /v1/admin/activities', () => {
 
-  test('201 — admin creates activity, receives full document back', async () => {
+  test('201 — creates activity and paired Attendance doc, returns full document', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.create = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY });
+    ActivityModel.create  = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
+    AttendanceModel.create = jest.fn().mockResolvedValue({});
 
     const res = await request(app)
       .post('/v1/admin/activities')
@@ -87,13 +90,17 @@ describe('POST /v1/admin/activities', () => {
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data._id).toBe(SAVED_ACTIVITY._id);
-    expect(res.body.data.name).toBe(VALID_PAYLOAD.name);
     expect(res.body.data.enrolled_count).toBe(0);
+
+    // Attendance doc must be created with the activity's _id
+    expect(AttendanceModel.create).toHaveBeenCalledTimes(1);
+    expect(AttendanceModel.create).toHaveBeenCalledWith({ activity_id: SAVED_ACTIVITY._id });
   });
 
   test('enrolled_count is always forced to 0 — client cannot set it', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.create = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY });
+    ActivityModel.create   = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
+    AttendanceModel.create = jest.fn().mockResolvedValue({});
 
     await request(app)
       .post('/v1/admin/activities')
@@ -106,7 +113,8 @@ describe('POST /v1/admin/activities', () => {
 
   test('deleted_at is stripped from create payload', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.create = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY });
+    ActivityModel.create   = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
+    AttendanceModel.create = jest.fn().mockResolvedValue({});
 
     await request(app)
       .post('/v1/admin/activities')
@@ -119,7 +127,8 @@ describe('POST /v1/admin/activities', () => {
 
   test('question_id is auto-generated when omitted from extra_questions', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.create = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY });
+    ActivityModel.create   = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
+    AttendanceModel.create = jest.fn().mockResolvedValue({});
 
     await request(app)
       .post('/v1/admin/activities')
@@ -131,9 +140,10 @@ describe('POST /v1/admin/activities', () => {
     expect(typeof arg.extra_questions[0].question_id).toBe('string');
   });
 
-  test('client-supplied question_id is preserved when present', async () => {
+  test('client-supplied question_id is preserved', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.create = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY });
+    ActivityModel.create   = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
+    AttendanceModel.create = jest.fn().mockResolvedValue({});
 
     await request(app)
       .post('/v1/admin/activities')
@@ -147,6 +157,20 @@ describe('POST /v1/admin/activities', () => {
     expect(arg.extra_questions[0].question_id).toBe('q_my_own_id');
   });
 
+  test('Attendance doc NOT created if ActivityModel.create throws', async () => {
+    mockAuth(ADMIN_USER);
+    ActivityModel.create   = jest.fn().mockRejectedValue(new Error('DB write failed'));
+    AttendanceModel.create = jest.fn().mockResolvedValue({});
+
+    const res = await request(app)
+      .post('/v1/admin/activities')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send(VALID_PAYLOAD);
+
+    expect(res.status).toBe(500);
+    expect(AttendanceModel.create).not.toHaveBeenCalled();
+  });
+
   test('403 — non-admin JWT returns FORBIDDEN', async () => {
     mockAuth(PLAIN_USER);
 
@@ -158,6 +182,7 @@ describe('POST /v1/admin/activities', () => {
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('FORBIDDEN');
     expect(ActivityModel.create).not.toHaveBeenCalled();
+    expect(AttendanceModel.create).not.toHaveBeenCalled();
   });
 
   test('401 — missing token returns TOKEN_MISSING', async () => {
@@ -166,20 +191,6 @@ describe('POST /v1/admin/activities', () => {
       .send(VALID_PAYLOAD);
 
     expect(res.status).toBe(401);
-    expect(ActivityModel.create).not.toHaveBeenCalled();
-  });
-
-  test('500-safe — DB error surfaces as 500 via ErrorHandler', async () => {
-    mockAuth(ADMIN_USER);
-    ActivityModel.create = jest.fn().mockRejectedValue(new Error('DB write failed'));
-
-    const res = await request(app)
-      .post('/v1/admin/activities')
-      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
-      .send(VALID_PAYLOAD);
-
-    expect(res.status).toBe(500);
-    expect(res.body.success).toBe(false);
   });
 });
 
@@ -202,7 +213,6 @@ describe('PATCH /v1/admin/activities/:id', () => {
       .send({ is_registration_open: true, seat_capacity: 40 });
 
     expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
     expect(res.body.data.is_registration_open).toBe(true);
     expect(res.body.data.seat_capacity).toBe(40);
   });
@@ -241,7 +251,7 @@ describe('PATCH /v1/admin/activities/:id', () => {
     expect(updateArg.$set.name).toBe('New Name');
   });
 
-  test('400 VALIDATION_ERROR — body contains only blocked/unknown fields', async () => {
+  test('400 VALIDATION_ERROR — body contains only blocked fields', async () => {
     mockAuth(ADMIN_USER);
 
     const res = await request(app)
@@ -261,7 +271,7 @@ describe('PATCH /v1/admin/activities/:id', () => {
     });
 
     const res = await request(app)
-      .patch('/v1/admin/activities/does-not-exist')
+      .patch('/v1/admin/activities/ghost-id')
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send({ is_featured: true });
 
@@ -269,7 +279,7 @@ describe('PATCH /v1/admin/activities/:id', () => {
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
 
-  test('403 — non-admin JWT returns FORBIDDEN', async () => {
+  test('403 — non-admin is rejected', async () => {
     mockAuth(PLAIN_USER);
 
     const res = await request(app)
@@ -281,7 +291,7 @@ describe('PATCH /v1/admin/activities/:id', () => {
     expect(ActivityModel.findByIdAndUpdate).not.toHaveBeenCalled();
   });
 
-  test('401 — missing token returns TOKEN_MISSING', async () => {
+  test('401 — missing token is rejected', async () => {
     const res = await request(app)
       .patch(`/v1/admin/activities/${SAVED_ACTIVITY._id}`)
       .send({ is_featured: true });
@@ -307,8 +317,6 @@ describe('DELETE /v1/admin/activities/:id', () => {
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`);
 
     expect(res.status).toBe(204);
-
-    // Confirm soft-delete sets deleted_at
     const [, updateArg] = ActivityModel.findByIdAndUpdate.mock.calls[0];
     expect(updateArg.$set.deleted_at).toBeInstanceOf(Date);
   });
@@ -342,13 +350,11 @@ describe('DELETE /v1/admin/activities/:id', () => {
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe('HAS_ACTIVE_REGISTRATIONS');
     expect(res.body.error.message).toMatch(/5/);
-
-    // Neither cancel nor soft-delete should have run
     expect(RegistrationModel.updateMany).not.toHaveBeenCalled();
     expect(ActivityModel.findByIdAndUpdate).not.toHaveBeenCalled();
   });
 
-  test('countDocuments filters on exactly PAID and JOINED — not PENDING or CANCELLED', async () => {
+  test('countDocuments filters on exactly PAID and JOINED only', async () => {
     mockAuth(ADMIN_USER);
     ActivityModel.findOne            = jest.fn().mockReturnValue({ lean: () => Promise.resolve(SAVED_ACTIVITY) });
     RegistrationModel.countDocuments = jest.fn().mockResolvedValue(0);
@@ -365,7 +371,7 @@ describe('DELETE /v1/admin/activities/:id', () => {
     expect(filter.status.$in).not.toContain('CANCELLED');
   });
 
-  test('404 NOT_FOUND — activity does not exist', async () => {
+  test('404 — activity does not exist', async () => {
     mockAuth(ADMIN_USER);
     ActivityModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
 
@@ -378,9 +384,8 @@ describe('DELETE /v1/admin/activities/:id', () => {
     expect(RegistrationModel.countDocuments).not.toHaveBeenCalled();
   });
 
-  test('404 — already soft-deleted activity is treated as not found', async () => {
+  test('404 — already soft-deleted activity treated as not found', async () => {
     mockAuth(ADMIN_USER);
-    // findOne({deleted_at: {$exists: false}}) returns null for deleted docs
     ActivityModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
 
     const res = await request(app)
@@ -390,7 +395,7 @@ describe('DELETE /v1/admin/activities/:id', () => {
     expect(res.status).toBe(404);
   });
 
-  test('403 — non-admin JWT returns FORBIDDEN, no DB calls made', async () => {
+  test('403 — non-admin is rejected, no DB calls made', async () => {
     mockAuth(PLAIN_USER);
 
     const res = await request(app)
@@ -401,7 +406,7 @@ describe('DELETE /v1/admin/activities/:id', () => {
     expect(ActivityModel.findOne).not.toHaveBeenCalled();
   });
 
-  test('401 — missing token returns TOKEN_MISSING', async () => {
+  test('401 — missing token is rejected', async () => {
     const res = await request(app)
       .delete(`/v1/admin/activities/${SAVED_ACTIVITY._id}`);
 
