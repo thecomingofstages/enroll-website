@@ -18,7 +18,7 @@ const sample: ActivityDetail = {
     address_lines: ["24 Exhibition Way", "SE1 7PB, London"],
     map_image_url:
       "https://images.unsplash.com/photo-1524661135-423995f22d0f?w=1200&q=80",
-    directions_url: "https://maps.app.goo.gl/P1JNUKMa8pvfohaKA",
+    directions_url: "https://maps.app.goo.gl/HP1KwHAY1WdPBjAU9",
   },
   highlights: [
     "การผสมผสาน AI ในการออกแบบแสง",
@@ -61,7 +61,7 @@ const sample: ActivityDetail = {
       question_text: "สนใจเข้าร่วม Open Mic หรือไม่?",
       placeholder: "กรอกคำตอบ...",
       type: "text",
-      is_required: false
+      is_required: false,
     },
   ],
 };

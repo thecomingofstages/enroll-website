@@ -9,14 +9,16 @@
 ---
 
 ## 1. การปรับปรุงโครงสร้างข้อมูล (Types/Interfaces)
+
 **ไฟล์ที่แก้ไข:** `packages/types/index.ts`
 
 - **ปรับเป็น Snake Case:** เปลี่ยนชื่อตัวแปรทั้งหมดจาก `camelCase` เป็น `snake_case` เพื่อให้ตรงกับโครงสร้าง Database และ API ของ Backend
-  - *ตัวอย่าง:* `priceThb` ➡️ `price`, `heroImageUrl` ➡️ `hero_image_url`, `extraQuestions` ➡️ `extra_questions`
+  - _ตัวอย่าง:_ `priceThb` ➡️ `price`, `heroImageUrl` ➡️ `hero_image_url`, `extraQuestions` ➡️ `extra_questions`
 - **เพิ่มตัวแปรควบคุมสถานะ:** เพิ่ม `is_registration_open`, `seat_capacity`, และ `enrolled_count` ใน `Activity` interface สำหรับจัดการ UI ฝั่งหน้าเว็บ
 - **รองรับ Standard API Envelope:** เพิ่ม Interface `ApiResponse<T>` เพื่อรองรับ Response ที่ห่อหุ้มด้วยรูปแบบ `{ success: boolean, data: T, error?: any }` เสมอ
 
 ## 2. การปรับปรุง Flow การลงทะเบียน (API Caller)
+
 **ไฟล์ที่แก้ไข:** `apps/web/lib/activity-api.ts`
 
 เดิมที Frontend ใช้การยิง API แบบรวบยอดครั้งเดียว (1-Step) แต่เพื่อให้สอดคล้องกับ PDF ได้ปรับรื้อใหม่เป็นการยิงแบบ **2-Steps** โดยซ่อน Logic ไว้ใต้ฟังก์ชัน `postActivityRegistration` ดังนี้:
@@ -29,6 +31,7 @@
   - ถ้าระบบตอบรับ Step 1 สำเร็จ จะดึง `registration_id` ไปเรียก API ตรวจสลิปด้วยรูปแบบ `multipart/form-data` ทันที
 
 ## 3. การปรับปรุง UI และเงื่อนไขการสมัคร (React Components & Utilities)
+
 **ไฟล์ที่แก้ไข:** `RegisterModal.tsx`, `ActivityHero.tsx`, `ActivityAbout.tsx`, `ActivityTimeline.tsx`, `ActivityLocation.tsx`, `apps/web/lib/directions-url.ts`, `apps/web/lib/mock-activity.ts`
 
 - **อัปเดต Data Binding:** เปลี่ยนแปลงโค้ดแสดงผลในทุก Component ให้เรียกใช้ตัวแปร `snake_case` ใหม่
@@ -41,7 +44,8 @@
 ---
 
 ## 📢 Note ถึงทีม Backend
-- **Endpoint ที่ Frontend เรียกใช้:** 
+
+- **Endpoint ที่ Frontend เรียกใช้:**
   1. `GET /activities/:id` (คาดหวังรูปแบบ `success: true, data: {...}`)
   2. `POST /registrations` (คาดหวังคืนค่า `registration_id`)
   3. `POST /registrations/:registration_id/payment`
