@@ -176,14 +176,14 @@ class PaymentHelper {
 
     // ── 7. Set registration → PAID ─────────────────────────────────────────
     // "PAID" here means "slip received" — finance confirms the actual transfer
-    await RegistrationModel.findByIdAndUpdate(registrationId, {
-      $set: { status: 'PAID' },
-    });
+    // await RegistrationModel.findByIdAndUpdate(registrationId, {
+    //   $set: { status: 'PAID' },
+    // });
 
-    // ── 8. Increment enrolled_count (atomic) ───────────────────────────────
-    await ActivityModel.findByIdAndUpdate(registration.activity_id, {
-      $inc: { enrolled_count: 1 },
-    });
+    // // ── 8. Increment enrolled_count (atomic) ───────────────────────────────
+    // await ActivityModel.findByIdAndUpdate(registration.activity_id, {
+    //   $inc: { enrolled_count: 1 },
+    // });
 
     // ── 9. Return confirmation ─────────────────────────────────────────────
     return {
