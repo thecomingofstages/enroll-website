@@ -193,6 +193,7 @@ class PaymentHelper {
       slip_submitted_at: submittedAt.toISOString(),
       detected_amount:   detectedAmount,   // shown to user as reference, not authoritative
       activity_price:    activity.price,   // what they should have paid
+      promptpay_qr_data: qrString,       // echoed back for reference (not recommended to show in real app)
       note:              detectedAmount === null
         ? 'QR amount could not be read. Finance team will verify the payment.'
         : null,
