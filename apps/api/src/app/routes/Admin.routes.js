@@ -10,23 +10,15 @@ const EventController        = require('../controllers/Event.controller');
 router.use(AuthMiddleware.requireAdmin);
 
 // ── Activity CRUD ──────────────────────────────────────────────────────────────
-// POST /admin/activities  
-router.post('/activities',     UploadMiddleware.handleActivityImage, ActivityController.create);
-
-// PATCH /admin/activities/:id 
+router.post('/activities',      UploadMiddleware.handleActivityImage, ActivityController.create);
 router.patch('/activities/:id', UploadMiddleware.handleActivityImage, ActivityController.update);
-
-// DELETE /admin/activities/:id
 router.delete('/activities/:id', ActivityController.remove);
 
-// POST /admin/activities/:id/export 
-router.post('/activities/:id/export', EventController.exportToSheets);
+// POST /admin/activities/:id/export — returns .xlsx download
+router.post('/activities/:id/export', EventController.exportActivity);
 
 // ── Registration management ────────────────────────────────────────────────────
-// GET  /admin/registrations
-router.get('/registrations', RegistrationController.adminList);
-
-// PATCH /admin/registrations/:id/status
-router.patch('/registrations/:id/status', RegistrationController.adminUpdateStatus);
+router.get('/registrations',               RegistrationController.adminList);
+router.patch('/registrations/:id/status',  RegistrationController.adminUpdateStatus);
 
 module.exports = router;

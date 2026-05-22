@@ -14,13 +14,17 @@ class EventController {
     }
   }
 
-  /** POST /admin/activities/:id/export */
-  static async exportToSheets(req, res, next) {
+  /** POST /admin/activities/:id/export — streams .xlsx file as download */
+  static async exportActivity(req, res, next) {
     try {
-      const data = await EventHelper.exportToSheets(req.params.id);
-      return res.status(200).json({ success: true, data });
+      const { buffer, filename } = await EventHelper.exportActivity(req.params.id);
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', buffer.length);
+      return res.status(200).end(buffer);
     } catch (err) {
-      Logger.error(`[EventController.exportToSheets] ${err.message}`);
+      Logger.error(`[EventController.exportActivity] ${err.message}`);
       next(err);
     }
   }
