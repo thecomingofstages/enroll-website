@@ -9,6 +9,7 @@ const PaymentSchema = new mongoose.Schema(
     amount:            { type: Number, required: true },
     promptpay_qr_data: { type: String, required: true },
     status:            { type: String, enum: ['WAITING', 'VERIFIED', 'FAILED'], default: 'WAITING' }, 
+    slip_submitted_at: { type: Date, required: true },
     verified_at:       { type: Date, default: null },
   },
   {
