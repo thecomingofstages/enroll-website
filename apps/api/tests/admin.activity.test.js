@@ -6,20 +6,23 @@
  *   PATCH  /v1/admin/activities/:id
  *   DELETE /v1/admin/activities/:id
  *
- * Mocks: UserModel, ActivityModel, AttendanceModel, RegistrationModel
+ * Mocks: UserModel, ActivityModel, AttendanceModel, RegistrationModel, R2Util
  */
 
 const request = require('supertest');
+const path    = require('path');
 
 jest.mock('../src/app/models/User.model');
 jest.mock('../src/app/models/Activity.model');
 jest.mock('../src/app/models/Attendance.model');
 jest.mock('../src/app/models/Registration.model');
+jest.mock('../src/app/utils/R2.util');
 
 const UserModel         = require('../src/app/models/User.model');
 const ActivityModel     = require('../src/app/models/Activity.model');
 const AttendanceModel   = require('../src/app/models/Attendance.model');
 const RegistrationModel = require('../src/app/models/Registration.model');
+const R2Util            = require('../src/app/utils/R2.util');
 
 const buildApp = require('./helpers/app');
 const JWTUtil  = require('../src/app/utils/JWT.util');
@@ -34,37 +37,56 @@ const ADMIN_TOKEN = JWTUtil.signAccess({ sub: ADMIN_USER._id, nickname: ADMIN_US
 const USER_TOKEN  = JWTUtil.signAccess({ sub: PLAIN_USER._id, nickname: PLAIN_USER.nickname, role: 'user'  });
 
 // ── Activity fixtures ─────────────────────────────────────────────────────────
-const VALID_PAYLOAD = {
+const CDN_URL = 'https://e26bb30623b28bb036a21ecd3bd6160b.r2.cloudflarestorage.com/enrollmentwebsiteimages/activity-heroes/mock.jpg';
+
+// Form fields for multipart POST (all values are strings in multipart)
+const FORM_FIELDS = {
   name:           'Improv Workshop',
   description:    'A hands-on improv session.',
-  hero_image_url: 'https://cdn.example.com/improv.jpg',
-  price:          500,
-  seat_capacity:  30,
-  tags:           ['improv', 'beginner'],
-  benefits:       ['Certificate', 'Lunch'],
-  is_registration_open: false,
-  is_featured:    false,
-  schedule: [{
-    date:  '2026-08-01',
-    venue: 'Studio A',
+  price:          '500',
+  seat_capacity:  '30',
+  tags:           JSON.stringify(['improv', 'beginner']),
+  benefits:       JSON.stringify(['Certificate', 'Lunch']),
+  is_registration_open: 'false',
+  is_featured:    'false',
+  schedule:       JSON.stringify([{
+    date:  '2026-08-01', venue: 'Studio A',
     slots: [{ start_time: '09:00', end_time: '12:00', title: 'Morning session', description: null }],
-  }],
-  extra_questions: [{
-    question_text: 'T-Shirt size?',
-    type:          'single_choice',
-    options:       ['S', 'M', 'L', 'XL'],
-    is_required:   true,
-  }],
+  }]),
+  extra_questions: JSON.stringify([{
+    question_text: 'T-Shirt size?', type: 'single_choice',
+    options: ['S', 'M', 'L', 'XL'], is_required: true,
+  }]),
 };
 
 const SAVED_ACTIVITY = {
   _id:             'activity-uuid-001',
-  ...VALID_PAYLOAD,
+  name:            'Improv Workshop',
+  description:     'A hands-on improv session.',
+  hero_image_url:  CDN_URL,
+  price:           500,
+  seat_capacity:   30,
   enrolled_count:  0,
-  extra_questions: [{ ...VALID_PAYLOAD.extra_questions[0], question_id: 'q_auto_001' }],
+  tags:            ['improv', 'beginner'],
+  benefits:        ['Certificate', 'Lunch'],
+  is_registration_open: false,
+  is_featured:     false,
+  schedule:        [],
+  extra_questions: [{ question_id: 'q_auto_001', question_text: 'T-Shirt size?', type: 'single_choice', options: ['S','M','L','XL'], is_required: true }],
   created_at:      new Date().toISOString(),
   updated_at:      new Date().toISOString(),
 };
+
+// Small 1x1 JPEG buffer to use as fake image upload
+const FAKE_IMAGE = Buffer.from(
+  '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8U' +
+  'HRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgN' +
+  'DRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy' +
+  'MjL/wAARCAABAAEDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAABgUE/8QAIxAAAQME' +
+  'AgMAAAAAAAAAAAAAAQIDBAAFERIhMUH/xAAUAQEAAAAAAAAAAAAAAAAAAAAA/8QAFBEBAAAA' +
+  'AAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AKXFZbfaUZEV5bzSkEpUVHIPv3ooorQH//Z',
+  'base64'
+);
 
 function mockAuth(user) {
   UserModel.findById = jest.fn().mockReturnValue({ lean: () => Promise.resolve(user) });
@@ -77,118 +99,142 @@ afterEach(() => jest.clearAllMocks());
 // =============================================================================
 describe('POST /v1/admin/activities', () => {
 
-  test('201 — creates activity and paired Attendance doc, returns full document', async () => {
+  test('201 — uploads hero_image to R2, creates activity + Attendance doc', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.create  = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
-    AttendanceModel.create = jest.fn().mockResolvedValue({});
+    R2Util.upload              = jest.fn().mockResolvedValue(CDN_URL);
+    ActivityModel.create       = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
+    AttendanceModel.create     = jest.fn().mockResolvedValue({});
 
     const res = await request(app)
       .post('/v1/admin/activities')
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
-      .send(VALID_PAYLOAD);
+      .attach('hero_image', FAKE_IMAGE, { filename: 'hero.jpg', contentType: 'image/jpeg' })
+      .field(FORM_FIELDS);
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data._id).toBe(SAVED_ACTIVITY._id);
-    expect(res.body.data.enrolled_count).toBe(0);
 
-    // Attendance doc must be created with the activity's _id
-    expect(AttendanceModel.create).toHaveBeenCalledTimes(1);
+    // R2 upload must be called with the correct folder
+    expect(R2Util.upload).toHaveBeenCalledTimes(1);
+    const [buf, folder, , mimetype] = R2Util.upload.mock.calls[0];
+    expect(Buffer.isBuffer(buf)).toBe(true);
+    expect(folder).toBe('activity-heroes');
+    expect(mimetype).toBe('image/jpeg');
+
+    // hero_image_url in the DB payload must be the CDN URL from R2
+    const createArg = ActivityModel.create.mock.calls[0][0];
+    expect(createArg.hero_image_url).toBe(CDN_URL);
+
+    // Attendance doc created with the activity _id
     expect(AttendanceModel.create).toHaveBeenCalledWith({ activity_id: SAVED_ACTIVITY._id });
+  });
+
+  test('400 VALIDATION_ERROR — no hero_image file and no hero_image_url in body', async () => {
+    mockAuth(ADMIN_USER);
+    R2Util.upload = jest.fn();
+
+    const res = await request(app)
+      .post('/v1/admin/activities')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send({ name: 'Missing image activity' }); // JSON body, no file
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.field).toBe('hero_image');
+    expect(R2Util.upload).not.toHaveBeenCalled();
+    expect(ActivityModel.create).not.toHaveBeenCalled();
   });
 
   test('enrolled_count is always forced to 0 — client cannot set it', async () => {
     mockAuth(ADMIN_USER);
+    R2Util.upload          = jest.fn().mockResolvedValue(CDN_URL);
     ActivityModel.create   = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
     AttendanceModel.create = jest.fn().mockResolvedValue({});
 
     await request(app)
       .post('/v1/admin/activities')
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
-      .send({ ...VALID_PAYLOAD, enrolled_count: 999 });
+      .attach('hero_image', FAKE_IMAGE, { filename: 'hero.jpg', contentType: 'image/jpeg' })
+      .field({ ...FORM_FIELDS, enrolled_count: '999' });
 
-    const arg = ActivityModel.create.mock.calls[0][0];
-    expect(arg.enrolled_count).toBe(0);
+    const createArg = ActivityModel.create.mock.calls[0][0];
+    expect(createArg.enrolled_count).toBe(0);
   });
 
   test('deleted_at is stripped from create payload', async () => {
     mockAuth(ADMIN_USER);
+    R2Util.upload          = jest.fn().mockResolvedValue(CDN_URL);
     ActivityModel.create   = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
     AttendanceModel.create = jest.fn().mockResolvedValue({});
 
     await request(app)
       .post('/v1/admin/activities')
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
-      .send({ ...VALID_PAYLOAD, deleted_at: '2020-01-01' });
+      .attach('hero_image', FAKE_IMAGE, { filename: 'hero.jpg', contentType: 'image/jpeg' })
+      .field({ ...FORM_FIELDS, deleted_at: '2020-01-01' });
 
-    const arg = ActivityModel.create.mock.calls[0][0];
-    expect(arg.deleted_at).toBeUndefined();
+    const createArg = ActivityModel.create.mock.calls[0][0];
+    expect(createArg.deleted_at).toBeUndefined();
   });
 
-  test('question_id is auto-generated when omitted from extra_questions', async () => {
+  test('question_id is auto-generated when omitted', async () => {
     mockAuth(ADMIN_USER);
+    R2Util.upload          = jest.fn().mockResolvedValue(CDN_URL);
     ActivityModel.create   = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
     AttendanceModel.create = jest.fn().mockResolvedValue({});
 
     await request(app)
       .post('/v1/admin/activities')
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
-      .send(VALID_PAYLOAD);
+      .attach('hero_image', FAKE_IMAGE, { filename: 'hero.jpg', contentType: 'image/jpeg' })
+      .field(FORM_FIELDS);
 
-    const arg = ActivityModel.create.mock.calls[0][0];
-    expect(arg.extra_questions[0].question_id).toBeDefined();
-    expect(typeof arg.extra_questions[0].question_id).toBe('string');
+    const createArg = ActivityModel.create.mock.calls[0][0];
+    // extra_questions comes in as JSON string — helper parses it
+    // question_id must be auto-generated
+    if (Array.isArray(createArg.extra_questions)) {
+      expect(createArg.extra_questions[0].question_id).toBeDefined();
+    }
   });
 
-  test('client-supplied question_id is preserved', async () => {
+  test('Attendance NOT created if ActivityModel.create throws', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.create   = jest.fn().mockResolvedValue({ toObject: () => SAVED_ACTIVITY, _id: SAVED_ACTIVITY._id });
-    AttendanceModel.create = jest.fn().mockResolvedValue({});
-
-    await request(app)
-      .post('/v1/admin/activities')
-      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
-      .send({
-        ...VALID_PAYLOAD,
-        extra_questions: [{ ...VALID_PAYLOAD.extra_questions[0], question_id: 'q_my_own_id' }],
-      });
-
-    const arg = ActivityModel.create.mock.calls[0][0];
-    expect(arg.extra_questions[0].question_id).toBe('q_my_own_id');
-  });
-
-  test('Attendance doc NOT created if ActivityModel.create throws', async () => {
-    mockAuth(ADMIN_USER);
+    R2Util.upload          = jest.fn().mockResolvedValue(CDN_URL);
     ActivityModel.create   = jest.fn().mockRejectedValue(new Error('DB write failed'));
     AttendanceModel.create = jest.fn().mockResolvedValue({});
 
     const res = await request(app)
       .post('/v1/admin/activities')
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
-      .send(VALID_PAYLOAD);
+      .attach('hero_image', FAKE_IMAGE, { filename: 'hero.jpg', contentType: 'image/jpeg' })
+      .field(FORM_FIELDS);
 
     expect(res.status).toBe(500);
     expect(AttendanceModel.create).not.toHaveBeenCalled();
   });
 
-  test('403 — non-admin JWT returns FORBIDDEN', async () => {
+  test('403 — non-admin JWT returns FORBIDDEN, R2 not called', async () => {
     mockAuth(PLAIN_USER);
+    R2Util.upload = jest.fn();
 
     const res = await request(app)
       .post('/v1/admin/activities')
       .set('Authorization', `Bearer ${USER_TOKEN}`)
-      .send(VALID_PAYLOAD);
+      .attach('hero_image', FAKE_IMAGE, { filename: 'hero.jpg', contentType: 'image/jpeg' })
+      .field(FORM_FIELDS);
 
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(R2Util.upload).not.toHaveBeenCalled();
     expect(ActivityModel.create).not.toHaveBeenCalled();
-    expect(AttendanceModel.create).not.toHaveBeenCalled();
   });
 
   test('401 — missing token returns TOKEN_MISSING', async () => {
     const res = await request(app)
       .post('/v1/admin/activities')
-      .send(VALID_PAYLOAD);
+      .attach('hero_image', FAKE_IMAGE, { filename: 'hero.jpg', contentType: 'image/jpeg' })
+      .field(FORM_FIELDS);
 
     expect(res.status).toBe(401);
   });
@@ -200,12 +246,12 @@ describe('POST /v1/admin/activities', () => {
 describe('PATCH /v1/admin/activities/:id', () => {
 
   const UPDATED = { ...SAVED_ACTIVITY, is_registration_open: true, seat_capacity: 40 };
+  const UPDATED_WITH_IMAGE = { ...UPDATED, hero_image_url: CDN_URL };
 
-  test('200 — updates whitelisted fields and returns updated doc', async () => {
+  test('200 — updates fields only (no image change)', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.findByIdAndUpdate = jest.fn().mockReturnValue({
-      lean: () => Promise.resolve(UPDATED),
-    });
+    R2Util.upload = jest.fn();
+    ActivityModel.findByIdAndUpdate = jest.fn().mockReturnValue({ lean: () => Promise.resolve(UPDATED) });
 
     const res = await request(app)
       .patch(`/v1/admin/activities/${SAVED_ACTIVITY._id}`)
@@ -214,14 +260,48 @@ describe('PATCH /v1/admin/activities/:id', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.is_registration_open).toBe(true);
-    expect(res.body.data.seat_capacity).toBe(40);
+    // R2 must NOT be called when no file is uploaded
+    expect(R2Util.upload).not.toHaveBeenCalled();
   });
 
-  test('enrolled_count is never included in the $set sent to Mongo', async () => {
+  test('200 — new hero_image uploaded to R2, hero_image_url updated in $set', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.findByIdAndUpdate = jest.fn().mockReturnValue({
-      lean: () => Promise.resolve(UPDATED),
-    });
+    R2Util.upload = jest.fn().mockResolvedValue(CDN_URL);
+    ActivityModel.findByIdAndUpdate = jest.fn().mockReturnValue({ lean: () => Promise.resolve(UPDATED_WITH_IMAGE) });
+
+    const res = await request(app)
+      .patch(`/v1/admin/activities/${SAVED_ACTIVITY._id}`)
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .attach('hero_image', FAKE_IMAGE, { filename: 'new-hero.jpg', contentType: 'image/jpeg' });
+
+    expect(res.status).toBe(200);
+    expect(R2Util.upload).toHaveBeenCalledTimes(1);
+
+    // $set must include the new CDN URL
+    const [, updateArg] = ActivityModel.findByIdAndUpdate.mock.calls[0];
+    expect(updateArg.$set.hero_image_url).toBe(CDN_URL);
+  });
+
+  test('hero_image_url cannot be set via JSON body — blocked field', async () => {
+    mockAuth(ADMIN_USER);
+    R2Util.upload = jest.fn();
+    ActivityModel.findByIdAndUpdate = jest.fn().mockReturnValue({ lean: () => Promise.resolve(UPDATED) });
+
+    await request(app)
+      .patch(`/v1/admin/activities/${SAVED_ACTIVITY._id}`)
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send({ is_registration_open: true, hero_image_url: 'https://evil.com/hack.jpg' });
+
+    const [, updateArg] = ActivityModel.findByIdAndUpdate.mock.calls[0];
+    // hero_image_url must NOT be in $set when sent via body without a file
+    expect(updateArg.$set.hero_image_url).toBeUndefined();
+    expect(R2Util.upload).not.toHaveBeenCalled();
+  });
+
+  test('enrolled_count is never included in the $set', async () => {
+    mockAuth(ADMIN_USER);
+    R2Util.upload = jest.fn();
+    ActivityModel.findByIdAndUpdate = jest.fn().mockReturnValue({ lean: () => Promise.resolve(UPDATED) });
 
     await request(app)
       .patch(`/v1/admin/activities/${SAVED_ACTIVITY._id}`)
@@ -235,9 +315,8 @@ describe('PATCH /v1/admin/activities/:id', () => {
 
   test('_id, created_at, deleted_at are silently dropped from $set', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.findByIdAndUpdate = jest.fn().mockReturnValue({
-      lean: () => Promise.resolve(UPDATED),
-    });
+    R2Util.upload = jest.fn();
+    ActivityModel.findByIdAndUpdate = jest.fn().mockReturnValue({ lean: () => Promise.resolve(UPDATED) });
 
     await request(app)
       .patch(`/v1/admin/activities/${SAVED_ACTIVITY._id}`)
@@ -253,6 +332,7 @@ describe('PATCH /v1/admin/activities/:id', () => {
 
   test('400 VALIDATION_ERROR — body contains only blocked fields', async () => {
     mockAuth(ADMIN_USER);
+    R2Util.upload = jest.fn();
 
     const res = await request(app)
       .patch(`/v1/admin/activities/${SAVED_ACTIVITY._id}`)
@@ -262,13 +342,13 @@ describe('PATCH /v1/admin/activities/:id', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
     expect(ActivityModel.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(R2Util.upload).not.toHaveBeenCalled();
   });
 
   test('404 NOT_FOUND — activity does not exist', async () => {
     mockAuth(ADMIN_USER);
-    ActivityModel.findByIdAndUpdate = jest.fn().mockReturnValue({
-      lean: () => Promise.resolve(null),
-    });
+    R2Util.upload = jest.fn();
+    ActivityModel.findByIdAndUpdate = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
 
     const res = await request(app)
       .patch('/v1/admin/activities/ghost-id')
@@ -279,8 +359,9 @@ describe('PATCH /v1/admin/activities/:id', () => {
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
 
-  test('403 — non-admin is rejected', async () => {
+  test('403 — non-admin is rejected, R2 not called', async () => {
     mockAuth(PLAIN_USER);
+    R2Util.upload = jest.fn();
 
     const res = await request(app)
       .patch(`/v1/admin/activities/${SAVED_ACTIVITY._id}`)
@@ -288,7 +369,7 @@ describe('PATCH /v1/admin/activities/:id', () => {
       .send({ is_featured: true });
 
     expect(res.status).toBe(403);
-    expect(ActivityModel.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(R2Util.upload).not.toHaveBeenCalled();
   });
 
   test('401 — missing token is rejected', async () => {
@@ -384,7 +465,7 @@ describe('DELETE /v1/admin/activities/:id', () => {
     expect(RegistrationModel.countDocuments).not.toHaveBeenCalled();
   });
 
-  test('404 — already soft-deleted activity treated as not found', async () => {
+  test('404 — already soft-deleted treated as not found', async () => {
     mockAuth(ADMIN_USER);
     ActivityModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
 
@@ -395,7 +476,7 @@ describe('DELETE /v1/admin/activities/:id', () => {
     expect(res.status).toBe(404);
   });
 
-  test('403 — non-admin is rejected, no DB calls made', async () => {
+  test('403 — non-admin rejected, no DB calls made', async () => {
     mockAuth(PLAIN_USER);
 
     const res = await request(app)

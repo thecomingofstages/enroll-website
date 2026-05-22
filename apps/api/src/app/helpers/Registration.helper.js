@@ -1,10 +1,7 @@
-const { v7: uuidv7 }    = require('uuid');
-const bcrypt            = require('bcrypt');
 const RegistrationModel = require('../models/Registration.model');
 const ActivityModel     = require('../models/Activity.model');
-const UserModel         = require('../models/User.model');
+const AuthHelper        = require('./Auth.helper');
 const JWTUtil           = require('../utils/JWT.util');
-const AppKeys           = require('../config/app.keys');
 
 // Valid status transitions for adminUpdateStatus
 const VALID_TRANSITIONS = {
@@ -40,37 +37,9 @@ class RegistrationHelper {
         throw err;
       }
 
-      // Validate required new-user fields
-      const required = ['first_name', 'last_name', 'nickname', 'email', 'phone', 'password', 'gender'];
-      const missing  = required.filter(f => !newUserPayload[f]);
-      if (missing.length) {
-        const err = new Error(`Missing required fields for new account: ${missing.join(', ')}.`);
-        err.statusCode = 400;
-        err.code = 'VALIDATION_ERROR';
-        throw err;
-      }
-
-      // Check email uniqueness
-      const existing = await UserModel.findOne({ email: newUserPayload.email.toLowerCase().trim() }).lean();
-      if (existing) {
-        const err = new Error('An account with this email already exists. Please log in instead.');
-        err.statusCode = 409;
-        err.code = 'DUPLICATE_EMAIL';
-        throw err;
-      }
-
-      // Hash password and create user
-      const password_hash = await bcrypt.hash(newUserPayload.password, AppKeys.BCRYPT_ROUNDS);
-      const newUser = await UserModel.create({
-        first_name:    newUserPayload.first_name,
-        last_name:     newUserPayload.last_name,
-        nickname:      newUserPayload.nickname,
-        email:         newUserPayload.email.toLowerCase().trim(),
-        phone:         newUserPayload.phone,
-        gender:        newUserPayload.gender,
-        interests:     newUserPayload.interests || [],
-        password_hash,
-      });
+      // Delegate entirely to AuthHelper.register — it handles validation,
+      // uniqueness check, bcrypt hash, and UserModel.create
+      const newUser = await AuthHelper.register(newUserPayload);
 
       userId = newUser._id;
 

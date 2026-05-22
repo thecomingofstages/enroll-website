@@ -1,3 +1,6 @@
+// return for now because the time take too long to run the test, need to optimize the test later
+// return;
+
 /**
  * tests/payment.verify.test.js
  *
