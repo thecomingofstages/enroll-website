@@ -48,9 +48,17 @@ const sample: ActivityDetail = {
       description: "เวิร์กช็อปสั้นๆ เกี่ยวกับการออกแบบซาวด์สเคปแบบ immersive",
     },
     {
-      date: "2026-06-21",
+      date: "2026-06-22",
       start_time: "14:00",
       end_time: "16:00",
+      venue: "สตูดิโอย่อย (Sub-studio B)",
+      venue_detail: {
+        name: "สตูดิโอย่อย (Sub-studio B)",
+        address_lines: ["ชั้น 3, อาคาร B", "ศูนย์ศิลปวัฒนธรรม"],
+        map_image_url:
+          "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&q=80",
+        directions_url: "https://maps.app.goo.gl/bWNjRri7igKzP7qH9",
+      },
       title: "แผนที่นำทางสู่อนาคต",
       description: "เสวนากับผู้เชี่ยวชาญด้านการผลิตงานแสดงและนวัตกรรมเวที",
     },

@@ -45,6 +45,7 @@ export interface ActivityScheduleItem {
   start_time: string
   end_time: string
   venue?: string
+  venue_detail?: ActivityVenue
   title?: string
   description?: string
   /** First / current item can be highlighted in UI */
@@ -78,6 +79,9 @@ export interface ActivityRegistrationPayload {
     phone: string
     password?: string
     gender?: string
+    education_level?: string
+    institution?: string
+    address?: string
   }
 }
 

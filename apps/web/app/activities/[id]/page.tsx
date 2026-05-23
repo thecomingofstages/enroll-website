@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { fetchActivityDetail } from "@/lib/activity-api";
 import { ActivityHero } from "@/components/activity/ActivityHero";
 import { ActivityAbout } from "@/components/activity/ActivityAbout";
-import { ActivityTimeline } from "@/components/activity/ActivityTimeline";
-import { ActivityLocation } from "@/components/activity/ActivityLocation";
+import { ActivityScheduleAndVenue } from "@/components/activity/ActivityScheduleAndVenue";
 import { ActivityRegisterSection } from "@/components/activity/RegisterModal";
 
 type PageProps = {
@@ -65,8 +64,7 @@ export default async function ActivityPage({ params }: PageProps) {
       <ActivityRegisterSection activity={activity} />
       <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-10">
         <ActivityAbout activity={activity} />
-        <ActivityTimeline activity={activity} />
-        <ActivityLocation activity={activity} />
+        <ActivityScheduleAndVenue activity={activity} />
       </div>
     </main>
   );

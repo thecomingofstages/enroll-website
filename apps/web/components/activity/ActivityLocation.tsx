@@ -1,9 +1,8 @@
 import Image from "next/image";
-import type { ActivityDetail } from "@enroll-website/types";
+import type { ActivityVenue } from "@enroll-website/types";
 import { directionsHref } from "@/lib/directions-url";
 
-export function ActivityLocation({ activity }: { activity: ActivityDetail }) {
-  const { venue } = activity;
+export function ActivityLocation({ venue }: { venue?: ActivityVenue }) {
   if (!venue) return null;
 
   const href = directionsHref(venue);

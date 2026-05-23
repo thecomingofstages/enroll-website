@@ -24,6 +24,14 @@ function validateLastName(name: string): string | null {
   return null;
 }
 
+function validateEmail(email: string): string | null {
+  const trimmed = email.trim();
+  if (!trimmed) return "กรุณากรอกอีเมล";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed))
+    return "รูปแบบอีเมลไม่ถูกต้อง";
+  return null;
+}
+
 function validatePhone(phone: string): string | null {
   const trimmed = phone.trim();
   if (!trimmed) return "กรุณากรอกเบอร์โทร";
@@ -46,7 +54,13 @@ export function RegisterModal({
   const [step, setStep] = useState<Step>(1);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState("");
+  const [educationLevel, setEducationLevel] = useState("");
+  const [institution, setInstitution] = useState("");
+  const [address, setAddress] = useState("");
   const [slip, setSlip] = useState<File | null>(null);
   const [extraAnswers, setExtraAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -78,7 +92,10 @@ export function RegisterModal({
   const canNextFrom1 =
     !validateFirstName(firstName) &&
     !validateLastName(lastName) &&
-    !validatePhone(phone);
+    !validatePhone(phone) &&
+    nickname.trim().length > 0 &&
+    !validateEmail(email) &&
+    gender !== "";
   const canNextFrom2 = slip !== null;
 
   const setAnswer = (id: string, value: string) => {
@@ -88,7 +105,10 @@ export function RegisterModal({
   const handleSubmit = async () => {
     setSubmitting(true);
     setFeedback(null);
-    const custom_answers = Object.entries(extraAnswers).map(([k, v]) => ({ question_id: k, answer: v }));
+    const custom_answers = Object.entries(extraAnswers).map(([k, v]) => ({
+      question_id: k,
+      answer: v,
+    }));
     const res = await postActivityRegistration(
       activity._id,
       {
@@ -97,14 +117,17 @@ export function RegisterModal({
         new_user: {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
+          nickname: nickname.trim(),
           phone: phone.trim(),
-          email: `${phone.trim()}@temp.com`,
-          nickname: firstName.trim(),
+          email: email.trim(),
           password: `Temp@${phone.trim()}`,
-          gender: "Unspecified"
-        }
+          gender: gender || "Unspecified",
+          education_level: educationLevel.trim() || undefined,
+          institution: institution.trim() || undefined,
+          address: address.trim() || undefined,
+        },
       },
-      slip
+      slip,
     );
     setSubmitting(false);
     if (res.ok) {
@@ -177,11 +200,14 @@ export function RegisterModal({
           {step === 1 ? (
             <>
               <p className="rounded-lg bg-sky-100 px-3 py-2 text-sm text-sky-900">
-                กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือชำระเงินผ่าน PromptPay และอัปโหลดสลิป
+                กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือชำระเงินผ่าน PromptPay
+                และอัปโหลดสลิป
               </p>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <label className="block sm:col-span-1">
-                  <span className="text-sm font-medium text-stone-700">ชื่อ</span>
+                  <span className="text-sm font-medium text-stone-700">
+                    ชื่อ
+                  </span>
                   <input
                     className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
                       firstNameError
@@ -193,11 +219,15 @@ export function RegisterModal({
                     autoComplete="given-name"
                   />
                   {firstNameError && (
-                    <p className="mt-1 text-xs text-red-600">{firstNameError}</p>
+                    <p className="mt-1 text-xs text-red-600">
+                      {firstNameError}
+                    </p>
                   )}
                 </label>
                 <label className="block sm:col-span-1">
-                  <span className="text-sm font-medium text-stone-700">นามสกุล</span>
+                  <span className="text-sm font-medium text-stone-700">
+                    นามสกุล
+                  </span>
                   <input
                     className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
                       lastNameError
@@ -212,8 +242,20 @@ export function RegisterModal({
                     <p className="mt-1 text-xs text-red-600">{lastNameError}</p>
                   )}
                 </label>
-                <label className="block sm:col-span-2">
-                  <span className="text-sm font-medium text-stone-700">เบอร์โทร</span>
+                <label className="block sm:col-span-1">
+                  <span className="text-sm font-medium text-stone-700">
+                    ชื่อเล่น
+                  </span>
+                  <input
+                    className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
+                  />
+                </label>
+                <label className="block sm:col-span-1">
+                  <span className="text-sm font-medium text-stone-700">
+                    เบอร์โทร
+                  </span>
                   <input
                     className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
                       phoneError
@@ -228,6 +270,68 @@ export function RegisterModal({
                   {phoneError && (
                     <p className="mt-1 text-xs text-red-600">{phoneError}</p>
                   )}
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-medium text-stone-700">
+                    อีเมล
+                  </span>
+                  <input
+                    className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    type="email"
+                  />
+                </label>
+                <label className="block sm:col-span-1">
+                  <span className="text-sm font-medium text-stone-700">
+                    เพศ
+                  </span>
+                  <select
+                    className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                  >
+                    <option value="" disabled>
+                      เลือกเพศ
+                    </option>
+                    <option value="Male">ชาย (Male)</option>
+                    <option value="Female">หญิง (Female)</option>
+                    <option value="LGBTQ+">เพศทางเลือก (LGBTQ+)</option>
+                    <option value="Unspecified">ไม่ระบุ</option>
+                  </select>
+                </label>
+                <label className="block sm:col-span-1">
+                  <span className="text-sm font-medium text-stone-700">
+                    ระดับชั้น
+                  </span>
+                  <input
+                    className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                    value={educationLevel}
+                    onChange={(e) => setEducationLevel(e.target.value)}
+                    placeholder="เช่น ม.4, ปี 1"
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-medium text-stone-700">
+                    สถาบันการศึกษา
+                  </span>
+                  <input
+                    className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                    value={institution}
+                    onChange={(e) => setInstitution(e.target.value)}
+                    placeholder="เช่น ชื่อโรงเรียน หรือ มหาวิทยาลัย"
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-medium text-stone-700">
+                    ที่อยู่
+                  </span>
+                  <textarea
+                    className="mt-1 min-h-[80px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="รายละเอียดที่อยู่"
+                  />
                 </label>
               </div>
             </>
@@ -246,7 +350,9 @@ export function RegisterModal({
                 PromptPay: 062-345-6789 (TCOS) — ตัวอย่างสำหรับ UI
               </p>
               <div>
-                <span className="text-sm font-medium text-stone-700">อัปโหลดสลิปการโอน</span>
+                <span className="text-sm font-medium text-stone-700">
+                  อัปโหลดสลิปการโอน
+                </span>
                 <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-stone-300 bg-white px-4 py-8 text-center text-sm text-stone-500 transition hover:border-red-400 hover:bg-red-50/30">
                   <input
                     type="file"
@@ -268,9 +374,7 @@ export function RegisterModal({
                       const mime = f.type.toLowerCase();
                       const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
                       const extOk = ["png", "jpg", "jpeg", "pdf"].includes(ext);
-                      const typeOk = mime
-                        ? slipAllowedMime.has(mime)
-                        : extOk;
+                      const typeOk = mime ? slipAllowedMime.has(mime) : extOk;
                       if (!typeOk) {
                         setSlip(null);
                         e.target.value = "";
@@ -282,11 +386,15 @@ export function RegisterModal({
                     }}
                   />
                   {slip ? (
-                    <span className="font-medium text-stone-800">{slip.name}</span>
+                    <span className="font-medium text-stone-800">
+                      {slip.name}
+                    </span>
                   ) : (
                     <>
                       <span>คลิกหรือลากไฟล์สลิปมาวาง</span>
-                      <span className="mt-1 text-xs">PNG, JPG, PDF — ไม่เกิน 5MB</span>
+                      <span className="mt-1 text-xs">
+                        PNG, JPG, PDF — ไม่เกิน 5MB
+                      </span>
                     </>
                   )}
                 </label>
@@ -300,11 +408,15 @@ export function RegisterModal({
           {step === 3 ? (
             <div className="space-y-4">
               {activity.extra_questions.length === 0 ? (
-                <p className="text-sm text-stone-600">ไม่มีคำถามเพิ่มเติมสำหรับกิจกรรมนี้</p>
+                <p className="text-sm text-stone-600">
+                  ไม่มีคำถามเพิ่มเติมสำหรับกิจกรรมนี้
+                </p>
               ) : (
                 activity.extra_questions.map((q) => (
                   <label key={q.question_id} className="block">
-                    <span className="text-sm font-medium text-stone-800">{q.question_text}</span>
+                    <span className="text-sm font-medium text-stone-800">
+                      {q.question_text}
+                    </span>
                     <textarea
                       className="mt-2 min-h-[100px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-red-800/30 focus:ring-2"
                       placeholder={q.placeholder ?? "กรอกคำตอบ..."}
@@ -348,7 +460,12 @@ export function RegisterModal({
               type="button"
               className="ml-auto min-w-[120px] rounded-xl bg-red-800 px-4 py-3 text-sm font-semibold text-white hover:bg-red-900 disabled:opacity-40"
               disabled={
-                submitting || (step === 1 ? !canNextFrom1 : step === 2 ? !canNextFrom2 : false)
+                submitting ||
+                (step === 1
+                  ? !canNextFrom1
+                  : step === 2
+                    ? !canNextFrom2
+                    : false)
               }
               onClick={() => setStep((s) => (s < 3 ? ((s + 1) as Step) : s))}
             >
@@ -372,10 +489,16 @@ export function RegisterModal({
   );
 }
 
-export function ActivityRegisterSection({ activity }: { activity: ActivityDetail }) {
+export function ActivityRegisterSection({
+  activity,
+}: {
+  activity: ActivityDetail;
+}) {
   const [open, setOpen] = useState(false);
 
-  const isFull = activity.seat_capacity > 0 && activity.enrolled_count >= activity.seat_capacity;
+  const isFull =
+    activity.seat_capacity > 0 &&
+    activity.enrolled_count >= activity.seat_capacity;
   const isClosed = !activity.is_registration_open;
   const isDisabled = isClosed || isFull;
 
@@ -403,11 +526,6 @@ export function ActivityRegisterSection({ activity }: { activity: ActivityDetail
         >
           {buttonText}
         </button>
-        {!isDisabled && (
-          <p className="text-center text-xs text-zinc-500">
-            กดเพื่อเปิดแบบฟอร์ม — รองรับหลายขั้นตอนตามสเปกทีม
-          </p>
-        )}
       </div>
       {open && !isDisabled ? (
         <RegisterModal
