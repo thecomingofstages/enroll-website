@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -13,7 +14,13 @@ export default function Home() {
           priority
         />
         <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-        <h1>Enrollment Website</h1>  
+        <h1>Enrollment Website</h1>
+        <Link
+          href="/activities/demo-theater-tech"
+          className="text-violet-700 underline underline-offset-4 hover:text-violet-900 dark:text-violet-300"
+        >
+          ทดสอบหน้ากิจกรรม (ตัวอย่าง)
+        </Link>
         <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
             To get started, edit the page.tsx file.
           </h1>

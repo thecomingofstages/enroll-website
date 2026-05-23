@@ -1,0 +1,28 @@
+{
+	"nodes":[
+		{"id":"node-frontend","type":"group","label":"Frontend (apps/web)","x":-450,"y":-200,"width":380,"height":450,"color":"1"},
+		{"id":"node-nextjs","type":"text","text":"### Next.js App\n- Activity Detail Page\n- Register Modal (3 Steps)\n- Validation Logic","x":-425,"y":-140,"width":330,"height":120},
+		{"id":"node-api-lib","type":"text","text":"### activity-api.ts\nHandles API calls & Mock Fallback","x":-425,"y":50,"width":330,"height":80},
+		{"id":"node-ui-mapping","type":"text","text":"### UI Modal Steps\n1. **User Info:** Name, Phone\n2. **Payment:** Slip Upload\n3. **Extra:** Answers","x":-425,"y":150,"width":330,"height":80},
+		{"id":"node-backend","type":"group","label":"Backend (apps/api)","x":400,"y":-200,"width":350,"height":400,"color":"4"},
+		{"id":"node-express","type":"text","text":"### Express.js\n- GET /activities/:id\n- POST /registrations\n- POST /registrations/:id/payment","x":425,"y":-140,"width":300,"height":120},
+		{"id":"node-shared","type":"group","label":"Shared (packages/types)","x":50,"y":300,"width":300,"height":150,"color":"6"},
+		{"id":"node-types","type":"text","text":"### TypeScript Types\n- ActivityDetail\n- RegistrationPayload\n- ApiResponse<T>","x":75,"y":340,"width":250,"height":100},
+		{"id":"node-flow","type":"group","label":"Detailed API Flow","x":-50,"y":-450,"width":500,"height":200,"color":"2"},
+		{"id":"node-step1","type":"text","text":"**API Step 1:** POST /registrations\n(Sends UI Step 1 + Step 3 data)","x":-25,"y":-380,"width":200,"height":100},
+		{"id":"node-step2","type":"text","text":"**API Step 2:** POST /payment\n(Sends UI Step 2 Slip)","x":225,"y":-380,"width":200,"height":100},
+		{"id":"node-config","type":"group","label":"Environment Config","x":-450,"y":300,"width":380,"height":150,"color":"5"},
+		{"id":"node-env-vars","type":"text","text":"### .env.local\n- NEXT_PUBLIC_API_URL\n- PORT=3000\n- BACKEND_PORT=3001","x":-425,"y":340,"width":330,"height":100},
+		{"id":"node-validation","type":"group","label":"Validation Rules","x":400,"y":300,"width":350,"height":150,"color":"3"},
+		{"id":"node-val-text","type":"text","text":"### Validation\n- Phone: 10 digits (06/08/09)\n- Name: min 2 chars\n- Slip: PNG/JPG/PDF (< 5MB)","x":425,"y":340,"width":300,"height":100},
+		{"id":"node-folders","type":"group","label":"📁 Folder Structure Map","x":-50,"y":500,"width":500,"height":300,"color":"2"},
+		{"id":"node-folder-list","type":"text","text":"### Monorepo Layout\n- **apps/web:** Next.js Frontend\n- **apps/api:** Express Backend\n- **packages/types:** Shared Contract\n- **docs:** Design & Docs\n\n*See docs/PROJECT-STRUCTURE.md for details*","x":-25,"y":550,"width":450,"height":200}
+	],
+	"edges":[
+		{"id":"edge-1","fromNode":"node-api-lib","fromSide":"right","toNode":"node-express","toSide":"left","label":"Fetch/Post API"},
+		{"id":"edge-2","fromNode":"node-types","fromSide":"left","toNode":"node-frontend","toSide":"bottom","label":"Import"},
+		{"id":"edge-3","fromNode":"node-types","fromSide":"right","toNode":"node-backend","toSide":"bottom","label":"Import"},
+		{"id":"edge-step-link","fromNode":"node-step1","fromSide":"right","toNode":"node-step2","toSide":"left","toEnd":"arrow"},
+		{"id":"edge-env-link","fromNode":"node-env-vars","fromSide":"right","toNode":"node-types","toSide":"left","label":"Connects Ports"}
+	]
+}

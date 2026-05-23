@@ -1,0 +1,213 @@
+{
+  "main": {
+    "id": "4588ec2e50c24714",
+    "type": "split",
+    "children": [
+      {
+        "id": "27d5b38242433644",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3d74d66ec147f41d",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "มุมมองกราฟ"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "5690edbb0275be15",
+    "type": "split",
+    "children": [
+      {
+        "id": "3314e7360f426093",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "67f9ac9564027d51",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "File explorer"
+            }
+          },
+          {
+            "id": "cb3e10e036920423",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "BACKEND-REQUIREMENTS.md",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "ค้นหา"
+            }
+          },
+          {
+            "id": "aba80679215a828c",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "บุ๊กมาร์ก"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "8050b39468d865df",
+    "type": "split",
+    "children": [
+      {
+        "id": "471cd91a9616f143",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "961cf67dc3aca2b1",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "docs/FRONTEND_API_ALIGNMENT.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "แบ็คลิงค์ของ FRONTEND_API_ALIGNMENT"
+            }
+          },
+          {
+            "id": "49201e0ee3e3f5a1",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "docs/FRONTEND_API_ALIGNMENT.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "ลิงค์ขาออกของ FRONTEND_API_ALIGNMENT"
+            }
+          },
+          {
+            "id": "523e064aeb6ee34c",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "แท็ก"
+            }
+          },
+          {
+            "id": "00440f3a47b881b5",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "คุณสมบัติทั้งหมด"
+            }
+          },
+          {
+            "id": "abd85fd5092b98b8",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "docs/FRONTEND_API_ALIGNMENT.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "โครงเรื่องของ FRONTEND_API_ALIGNMENT"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:เปิด quick switcher": false,
+      "graph:เปิดมุมมองกราฟ": false,
+      "canvas:สร้างผืนผ้าใบใหม่": false,
+      "daily-notes:เปิดโน้ตของวันนี้": false,
+      "templates:แทรกเทมเพลต": false,
+      "command-palette:เปิดกระดานคำสั่ง": false,
+      "bases:สร้างฐานใหม่": false
+    }
+  },
+  "active": "3d74d66ec147f41d",
+  "lastOpenFiles": [
+    "README-COMPLETE-th.md",
+    "README-COMPLETE.md",
+    "docs/FRONTEND-GUIDE.md",
+    "docs/FRONTEND_API_ALIGNMENT.md",
+    "docs/activity-page-and-backend-contract.md",
+    "docs/app.md",
+    "docs/project-architecture.canvas",
+    "docs/PROJECT-STRUCTURE.md",
+    "API_Spec_17526.pdf",
+    "docs/app/getting-started/server-and-client-components.md",
+    "docs/app/getting-started",
+    "docs/app",
+    "docs/BACKEND-REQUIREMENTS.md",
+    "node_modules/next/dist/docs/01-app/03-api-reference/04-functions/draft-mode.md",
+    "node_modules/eslint-plugin-react/README.md",
+    "node_modules/create-require/CHANGELOG.md",
+    "raw/Navigating to the future of theater design.md",
+    "Clippings/Navigating to the future of theater design.md",
+    "raw",
+    "Clippings",
+    "ยังไม่ได้ตั้งชื่อ.canvas",
+    "README.md",
+    "เอาไว้ทำงานกับobsidian.md",
+    "apps/web/AGENTS.md",
+    "apps/web/CLAUDE.md",
+    "ยังไม่ได้ตั้งชื่อ",
+    "2026-05-18.md",
+    "ยังไม่ได้ตั้งชื่อ.base"
+  ]
+}
