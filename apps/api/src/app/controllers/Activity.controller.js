@@ -37,10 +37,15 @@ class ActivityController {
     }
   }
 
-  /** POST /admin/activities */
+  /**
+   * POST /admin/activities
+   * Content-Type: multipart/form-data
+   * Fields: hero_image (file, required) + all activity JSON fields as form fields
+   * If the client sends JSON body instead (no file), hero_image_url must be in req.body.
+   */
   static async create(req, res, next) {
     try {
-      const data = await ActivityHelper.create(req.body);
+      const data = await ActivityHelper.create(req.body, req.file || null);
       return res.status(201).json({ success: true, data });
     } catch (err) {
       Logger.error(`[ActivityController.create] ${err.message}`);
@@ -48,10 +53,14 @@ class ActivityController {
     }
   }
 
-  /** PATCH /admin/activities/:id */
+  /**
+   * PATCH /admin/activities/:id
+   * Content-Type: multipart/form-data
+   * hero_image is optional — only include when changing the image.
+   */
   static async update(req, res, next) {
     try {
-      const data = await ActivityHelper.update(req.params.id, req.body);
+      const data = await ActivityHelper.update(req.params.id, req.body, req.file || null);
       return res.status(200).json({ success: true, data });
     } catch (err) {
       Logger.error(`[ActivityController.update] ${err.message}`);
