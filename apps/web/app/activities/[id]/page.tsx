@@ -59,7 +59,7 @@ export default async function ActivityPage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-100 pb-16">
+    <main className="min-h-screen bg-transparent pb-16">
       <ActivityHero activity={activity} />
       <ActivityRegisterSection activity={activity} />
       <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-10">
