@@ -5,7 +5,7 @@ const sample: ActivityDetail = {
   name: "Navigating to the future of theater design",
   description:
     "เวิร์กช็อปเชิงลึกเกี่ยวกับเทคนิคการแสดงบนเวทีและการผสานดิจิทัล เพื่อให้ผู้เข้าร่วมได้สัมผัสแนวคิดการออกแบบแสง เสียง และฉากในโลกยุคใหม่",
-  price: 150,
+  price: 100,
   seat_capacity: 80,
   enrolled_count: 12,
   tags: ["theater", "tech"],
@@ -66,7 +66,7 @@ const sample: ActivityDetail = {
   extra_questions: [
     {
       question_id: "open-mic",
-      question_text: "สนใจเข้าร่วม Open Mic หรือไม่?",
+      question_text: "คำถามเพิ่มเติมเกี่ยวกับกิจกรรม",
       placeholder: "กรอกคำตอบ...",
       type: "text",
       is_required: false,

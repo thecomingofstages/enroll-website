@@ -4,7 +4,12 @@ import { useEffect, useId, useState } from "react";
 import type { ActivityDetail } from "@enroll-website/types";
 import { postActivityRegistration } from "@/lib/activity-api";
 
-type Step = 1 | 2 | 3;
+type StepId = "info" | "payment" | "questions";
+
+interface StepConfig {
+  id: StepId;
+  label: string;
+}
 
 const slipAccept = "image/png,image/jpeg,application/pdf";
 
@@ -51,7 +56,19 @@ export function RegisterModal({
   onClose: () => void;
 }) {
   const titleId = useId();
-  const [step, setStep] = useState<Step>(1);
+  
+  const steps: StepConfig[] = [{ id: "info", label: "ข้อมูล" }];
+  if (activity.price > 0) {
+    steps.push({ id: "payment", label: "ชำระเงิน" });
+  }
+  if (activity.extra_questions && activity.extra_questions.length > 0) {
+    steps.push({ id: "questions", label: "คำถาม" });
+  }
+
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const currentStep = steps[currentStepIndex];
+  const isFirstStep = currentStepIndex === 0;
+  const isLastStep = currentStepIndex === steps.length - 1;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [nickname, setNickname] = useState("");
@@ -175,33 +192,36 @@ export function RegisterModal({
           </button>
         </div>
 
-        <div className="flex shrink-0 gap-2 border-b border-stone-200/60 px-4 py-3 sm:px-5">
-          {([1, 2, 3] as const).map((n) => (
-            <div key={n} className="flex flex-1 items-center gap-2">
+        <div className="flex shrink-0 gap-1 border-b border-stone-200/60 px-2 py-3 sm:gap-2 sm:px-5">
+          {steps.map((s, idx) => (
+            <div key={s.id} className="flex flex-1 flex-col items-center justify-center gap-1 sm:flex-row sm:justify-start sm:gap-2">
               <span
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
-                  step === n
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+                  currentStepIndex === idx
                     ? "bg-red-800 text-white"
-                    : step > n
+                    : currentStepIndex > idx
                       ? "bg-red-200 text-red-900"
                       : "bg-stone-200 text-stone-600"
                 }`}
               >
-                {n}
+                {idx + 1}
               </span>
-              <span className="hidden text-xs font-medium text-stone-600 sm:inline">
-                {n === 1 ? "ข้อมูล" : n === 2 ? "ชำระเงิน" : "คำถาม"}
+              <span className="text-center text-[10px] font-medium text-stone-600 sm:text-left sm:text-xs">
+                {s.label}
               </span>
             </div>
           ))}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-          {step === 1 ? (
+          {currentStep.id === "info" ? (
             <>
               <p className="rounded-lg bg-sky-100 px-3 py-2 text-sm text-sky-900">
-                กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือชำระเงินผ่าน PromptPay
-                และอัปโหลดสลิป
+                {activity.price > 0 
+                  ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือชำระเงินผ่าน PromptPay และอัปโหลดสลิป"
+                  : activity.extra_questions && activity.extra_questions.length > 0 
+                    ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือตอบคำถามเพิ่มเติม"
+                    : "กรอกข้อมูลผู้เข้าร่วมให้ครบถ้วน จากนั้นกดยืนยันการลงทะเบียนได้เลย"}
               </p>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <label className="block sm:col-span-1">
@@ -337,7 +357,7 @@ export function RegisterModal({
             </>
           ) : null}
 
-          {step === 2 ? (
+          {currentStep.id === "payment" ? (
             <div className="space-y-4">
               <p className="text-sm font-medium text-stone-800">
                 ชำระเงินผ่าน PromptPay (฿{activity.price})
@@ -405,7 +425,7 @@ export function RegisterModal({
             </div>
           ) : null}
 
-          {step === 3 ? (
+          {currentStep.id === "questions" ? (
             <div className="space-y-4">
               {activity.extra_questions.length === 0 ? (
                 <p className="text-sm text-stone-600">
@@ -443,11 +463,11 @@ export function RegisterModal({
         </div>
 
         <div className="flex shrink-0 gap-2 border-t border-stone-200/80 bg-[#f4f0ea] p-4 sm:p-5">
-          {step > 1 ? (
+          {!isFirstStep ? (
             <button
               type="button"
               className="rounded-xl border border-stone-300 px-4 py-3 text-sm font-medium text-stone-800 hover:bg-stone-100"
-              onClick={() => setStep((s) => (s === 1 ? 1 : ((s - 1) as Step)))}
+              onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
               disabled={submitting}
             >
               ย้อนกลับ
@@ -455,19 +475,16 @@ export function RegisterModal({
           ) : (
             <span />
           )}
-          {step < 3 ? (
+          {!isLastStep ? (
             <button
               type="button"
               className="ml-auto min-w-[120px] rounded-xl bg-red-800 px-4 py-3 text-sm font-semibold text-white hover:bg-red-900 disabled:opacity-40"
               disabled={
                 submitting ||
-                (step === 1
-                  ? !canNextFrom1
-                  : step === 2
-                    ? !canNextFrom2
-                    : false)
+                (currentStep.id === "info" && !canNextFrom1) ||
+                (currentStep.id === "payment" && !canNextFrom2)
               }
-              onClick={() => setStep((s) => (s < 3 ? ((s + 1) as Step) : s))}
+              onClick={() => setCurrentStepIndex((prev) => Math.min(steps.length - 1, prev + 1))}
             >
               ถัดไป
             </button>
@@ -480,7 +497,9 @@ export function RegisterModal({
             >
               {submitting
                 ? "กำลังส่ง..."
-                : `ยืนยันการลงทะเบียน (฿${activity.price})`}
+                : activity.price > 0
+                  ? `ยืนยันการลงทะเบียน (฿${activity.price})`
+                  : "ยืนยันการลงทะเบียน (ฟรี)"}
             </button>
           )}
         </div>
@@ -502,7 +521,7 @@ export function ActivityRegisterSection({
   const isClosed = !activity.is_registration_open;
   const isDisabled = isClosed || isFull;
 
-  let buttonText = `ลงทะเบียนเข้าร่วม (฿${activity.price})`;
+  let buttonText = activity.price > 0 ? `ลงทะเบียนเข้าร่วม (฿${activity.price})` : "ลงทะเบียนเข้าร่วม (ฟรี)";
   if (isClosed) {
     buttonText = "ปิดรับสมัครแล้ว";
   } else if (isFull) {
