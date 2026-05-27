@@ -20,6 +20,7 @@ export default function AuthModal() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState("");
+  const [selectedPrefs, setSelectedPrefs] = useState<string[]>([]);
   const [errors, setErrors] = useState<{name?: string; email?: string; password?: string; phone?: string}>({});
   const [otpCode, setOtpCode] = useState("");
   const [simulatedOTP, setSimulatedOTP] = useState("");

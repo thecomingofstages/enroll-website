@@ -124,32 +124,38 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<TCOSAccount | null>(null);
   const [activities, setActivities] = useState<Activity[]>(INITIAL_ACTIVITIES);
   const [registrations, setRegistrations] = useState<UserRegistration[]>([]);
-  const [activeModal, setActiveModal] = useState<"login" | "register" | "checkin" | "account" | null>(null);
+  const [activeModal, setActiveModal] = useState<"login" | "signup" | "register" | "checkin" | "account" | null>(null);
   const [registerTargetActivity, setRegisterTargetActivity] = useState<Activity | null>(null);
   
   const [otpRequired, setOtpRequired] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [usedSlips, setUsedSlips] = useState<string[]>(["TRX998822110099"]);
 
-  // Load session or defaults on mount
+  // Load session or defaults on mount (client-side only)
   useEffect(() => {
     const savedUser = localStorage.getItem("tcos_user");
     const savedRegs = localStorage.getItem("tcos_registrations");
     
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    if (savedUser && savedUser !== "null") {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch {
+        setUser(MOCK_PIM_ACCOUNT);
+      }
     } else {
       // First load: Set preloaded mockup session matching Pim
       setUser(MOCK_PIM_ACCOUNT);
-      localStorage.setItem("tcos_user", JSON.stringify(MOCK_PIM_ACCOUNT));
     }
 
-    if (savedRegs) {
-      setRegistrations(JSON.parse(savedRegs));
+    if (savedRegs && savedRegs !== "[]") {
+      try {
+        setRegistrations(JSON.parse(savedRegs));
+      } catch {
+        setRegistrations(MOCK_PIM_REGISTRATIONS);
+      }
     } else {
       // Set preloaded registrations matching Pim
       setRegistrations(MOCK_PIM_REGISTRATIONS);
-      localStorage.setItem("tcos_registrations", JSON.stringify(MOCK_PIM_REGISTRATIONS));
     }
   }, []);
 
