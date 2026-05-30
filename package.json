@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "npm run dev -w apps/web",
-    "dev:all": "concurrently \"npm run dev -w apps/web\" \"npm run dev -w apps/api\""
+    "dev": "concurrently \"npm run dev -w apps/web\" \"npm run dev -w apps/api\"",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:api": "npm run dev -w apps/api"
   },
   "keywords": [],
   "author": "",
