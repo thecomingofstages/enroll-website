@@ -99,18 +99,17 @@ describe('POST /v1/events/scan', () => {
     const res = await request(app)
       .post('/v1/events/scan')
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
-      .send({ qr_token: 'valid.token', event_id: ACTIVITY._id, group_name: 'B-03' });
+      .send({ qr_token: 'valid.token', event_id: ACTIVITY._id });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.status).toBe('JOINED');
-    expect(res.body.data.group_name).toBe('B-03');
     expect(res.body.data.user.nickname).toBe(PLAIN_USER.nickname);
 
     // Registration must be updated to JOINED with group_name
     expect(RegistrationModel.findByIdAndUpdate).toHaveBeenCalledWith(
       PAID_REG._id,
-      { $set: { status: 'JOINED', group_name: 'B-03' } }
+      { $set: { status: 'JOINED' } }
     );
 
     // Attendance must be updated with $push on today's date key
@@ -121,7 +120,7 @@ describe('POST /v1/events/scan', () => {
     expect(attUpdate.$push[pushKey]).toBe(PLAIN_USER._id);
   });
 
-  test('200 — no group_name in body: group_name not included in $set', async () => {
+  test('200 — only qr_token + event_id required', async () => {
     mockAdmin();
     QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
     RegistrationModel.findOne           = jest.fn().mockReturnValue({ lean: () => Promise.resolve(PAID_REG) });
@@ -138,8 +137,7 @@ describe('POST /v1/events/scan', () => {
       .send({ qr_token: 'valid.token', event_id: ACTIVITY._id });
 
     const [, updateArg] = RegistrationModel.findByIdAndUpdate.mock.calls[0];
-    expect(updateArg.$set.group_name).toBeUndefined();
-    expect(updateArg.$set.status).toBe('JOINED');
+    expect(updateArg.$set).toEqual({ status: 'JOINED' });
   });
 
   test('422 QR_EXPIRED — QRUtil.verify throws QR_EXPIRED', async () => {

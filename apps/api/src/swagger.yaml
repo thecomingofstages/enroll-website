@@ -2,7 +2,8 @@ openapi: 3.0.3
 info:
   title: TCOS Registration System API
   description: |
-    Backend API for the TCOS theatrical event registration platform.
+    Backend API for the TCOS (The Coming of Stages) event registration platform.
+    Base URL: `/v1`
   version: 1.0.0
   contact:
     name: TCOS Backend Engineering Team
@@ -13,12 +14,23 @@ servers:
 
 tags:
   - name: Auth
+    description: Registration, login, logout, OTP
   - name: Users
+    description: User profile and QR token
   - name: Activities
+    description: Public activity listing and detail
   - name: Registrations
+    description: Registration creation and lookup
   - name: Payments
-  - name: Admin
+    description: Slip submission
   - name: Events
+    description: QR check-in at venue
+  - name: Admin — Activities
+    description: Admin CRUD for activities and export
+  - name: Admin — Registrations
+    description: Admin registration management
+  - name: Admin — Payments
+    description: Finance payment verification
 
 components:
   securitySchemes:
@@ -28,6 +40,7 @@ components:
       bearerFormat: JWT
 
   schemas:
+    # ── Envelopes ──────────────────────────────────────────────────────────────
     SuccessEnvelope:
       type: object
       properties:
@@ -41,9 +54,9 @@ components:
         error:
           type: object
           properties:
-            code:    { type: string, example: NOT_FOUND }
+            code:    { type: string }
             message: { type: string }
-            field:   { type: string }
+            field:   { type: string, description: "Set on validation errors to indicate which field failed" }
 
     PaginationMeta:
       type: object
@@ -52,6 +65,7 @@ components:
         limit: { type: integer }
         total: { type: integer }
 
+    # ── User ──────────────────────────────────────────────────────────────────
     User:
       type: object
       properties:
@@ -63,12 +77,13 @@ components:
         phone:             { type: string }
         gender:            { type: string, enum: [Male, Female, "LGBTQ+", Unspecified] }
         interests:         { type: array, items: { type: string } }
-        profile_image_url: { type: string, nullable: true }
+        profile_image_url: { type: string, nullable: true, description: "S3/R2 CDN link (profile only)" }
         address:           { type: string, nullable: true }
         education_level:   { type: string, nullable: true }
         institution:       { type: string, nullable: true }
         created_at:        { type: string, format: date-time }
 
+    # ── Activity ──────────────────────────────────────────────────────────────
     ScheduleSlot:
       type: object
       properties:
@@ -80,9 +95,10 @@ components:
     ScheduleItem:
       type: object
       properties:
-        date:  { type: string, format: date }
-        venue: { type: string }
-        slots: { type: array, items: { $ref: '#/components/schemas/ScheduleSlot' } }
+        date:        { type: string, format: date }
+        venue:       { type: string, description: "Short venue label" }
+        location_id: { type: string, nullable: true, description: "Ref to Location collection (future)" }
+        slots:       { type: array, items: { $ref: '#/components/schemas/ScheduleSlot' } }
 
     ExtraQuestion:
       type: object
@@ -93,33 +109,56 @@ components:
         options:       { type: array, items: { type: string }, nullable: true }
         is_required:   { type: boolean }
 
-    Speaker:
-      type: object
-      properties:
-        _id:         { type: string, format: uuid }
-        activity_id: { type: string, format: uuid }
-        name:        { type: string }
-        position:    { type: string }
-        image_url:   { type: string, nullable: true }
-
     Activity:
       type: object
       properties:
-        _id:                  { type: string, format: uuid }
-        name:                 { type: string }
-        description:          { type: string }
-        hero_image_url:       { type: string }
-        price:                { type: number }
-        seat_capacity:        { type: integer }
-        enrolled_count:       { type: integer }
-        tags:                 { type: array, items: { type: string } }
-        benefits:             { type: array, items: { type: string } }
-        is_registration_open: { type: boolean }
-        is_featured:          { type: boolean }
-        schedule:             { type: array, items: { $ref: '#/components/schemas/ScheduleItem' } }
-        extra_questions:      { type: array, items: { $ref: '#/components/schemas/ExtraQuestion' } }
-        speakers:             { type: array, items: { $ref: '#/components/schemas/Speaker' } }
+        _id:                        { type: string, format: uuid }
+        name:                       { type: string }
+        description:                { type: string }
+        hero_image_url:             { type: string, description: "Google Drive share link or public image URL" }
+        price:                      { type: number, minimum: 0 }
+        seat_capacity:              { type: integer }
+        enrolled_count:             { type: integer, description: "Real-time count via $inc — never count on read" }
+        tags:                       { type: array, items: { type: string } }
+        benefits:                   { type: array, items: { type: string } }
+        open_registration_at:       { type: string, format: date-time, nullable: true, description: "Registration auto-opens at this datetime. null = open from creation." }
+        close_registration_at:      { type: string, format: date-time, nullable: true, description: "Registration auto-closes at this datetime. null = no auto-close." }
+        registration_open_override: { type: boolean, nullable: true, description: "null = use date window. true = force open. false = force closed." }
+        is_registration_open:       { type: boolean, description: "Computed virtual — priority: override → date window → false" }
+        is_featured:                { type: boolean }
+        schedule:                   { type: array, items: { $ref: '#/components/schemas/ScheduleItem' } }
+        extra_questions:            { type: array, items: { $ref: '#/components/schemas/ExtraQuestion' } }
+        created_at:                 { type: string, format: date-time }
+        updated_at:                 { type: string, format: date-time }
 
+    ActivityInput:
+      type: object
+      required: [name, description, hero_image_url, price, seat_capacity]
+      properties:
+        name:                       { type: string }
+        description:                { type: string }
+        hero_image_url:             { type: string, description: "Google Drive share link or any public image URL" }
+        price:                      { type: number, minimum: 0 }
+        seat_capacity:              { type: integer }
+        tags:                       { type: array, items: { type: string } }
+        benefits:                   { type: array, items: { type: string } }
+        open_registration_at:       { type: string, format: date-time, nullable: true }
+        close_registration_at:      { type: string, format: date-time, nullable: true }
+        registration_open_override: { type: boolean, nullable: true }
+        is_featured:                { type: boolean }
+        schedule:                   { type: array, items: { $ref: '#/components/schemas/ScheduleItem' } }
+        extra_questions:
+          type: array
+          items:
+            type: object
+            properties:
+              question_id:   { type: string, description: "Optional — auto-generated if omitted" }
+              question_text: { type: string }
+              type:          { type: string, enum: [text, single_choice] }
+              options:       { type: array, items: { type: string }, nullable: true }
+              is_required:   { type: boolean }
+
+    # ── Registration ──────────────────────────────────────────────────────────
     CustomAnswer:
       type: object
       properties:
@@ -137,18 +176,25 @@ components:
         registered_at:  { type: string, format: date-time }
         custom_answers: { type: array, items: { $ref: '#/components/schemas/CustomAnswer' } }
 
+    # ── Payment ───────────────────────────────────────────────────────────────
     Payment:
       type: object
       properties:
-        _id:             { type: string, format: uuid }
-        registration_id: { type: string, format: uuid }
-        user_id:         { type: string, format: uuid }
-        amount:          { type: number }
-        status:          { type: string, enum: [WAITING, VERIFIED, FAILED] }
-        verified_at:     { type: string, format: date-time, nullable: true }
+        _id:               { type: string, format: uuid }
+        registration_id:   { type: string, format: uuid }
+        user_id:           { type: string, format: uuid }
+        amount:            { type: number, nullable: true, description: "Best-effort EMV tag 54 extraction. null if QR had no amount." }
+        promptpay_qr_data: { type: string, description: "Raw QR string decoded from slip — any bank app format" }
+        slip_submitted_at: { type: string, format: date-time }
+        status:            { type: string, enum: [WAITING, VERIFIED, FAILED] }
+        verified_at:       { type: string, format: date-time, nullable: true }
+        note:              { type: string, nullable: true, description: "Finance team note on verify/reject" }
+        created_at:        { type: string, format: date-time }
 
 paths:
-  # ── AUTH ────────────────────────────────────────────────────────
+  # ═══════════════════════════════════════════════════════════════════════════
+  # AUTH
+  # ═══════════════════════════════════════════════════════════════════════════
   /auth/register:
     post:
       tags: [Auth]
@@ -170,13 +216,25 @@ paths:
                 gender:     { type: string, enum: [Male, Female, "LGBTQ+", Unspecified] }
                 interests:  { type: array, items: { type: string } }
       responses:
-        '201': { description: Account created, content: { application/json: { schema: { $ref: '#/components/schemas/SuccessEnvelope' } } } }
-        '409': { description: Email already registered }
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/User' }
+        '409': { description: "DUPLICATE_EMAIL — email already registered" }
 
   /auth/login:
     post:
       tags: [Auth]
-      summary: Authenticate and get JWT
+      summary: Authenticate user, receive JWT
+      description: |
+        Returns access token in body. Sets refresh token as HttpOnly cookie.
+        **Never distinguishes between wrong email vs wrong password** (anti-enumeration).
       requestBody:
         required: true
         content:
@@ -188,21 +246,36 @@ paths:
                 email:    { type: string }
                 password: { type: string }
       responses:
-        '200': { description: Authenticated }
-        '401': { description: Invalid credentials }
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:     { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      access_token: { type: string }
+                      token_type:   { type: string, example: Bearer }
+                      expires_in:   { type: integer, example: 900 }
+                      user:         { $ref: '#/components/schemas/User' }
+        '401': { description: "INVALID_CREDENTIALS" }
 
   /auth/logout:
     post:
       tags: [Auth]
-      summary: Terminate session
+      summary: Terminate session, clear refresh cookie
       security: [{ BearerAuth: [] }]
       responses:
         '204': { description: Logged out }
+        '401': { description: TOKEN_MISSING or TOKEN_EXPIRED }
 
   /auth/otp/send:
     post:
       tags: [Auth]
-      summary: Send OTP
+      summary: Send OTP to phone or email
       requestBody:
         required: true
         content:
@@ -213,12 +286,23 @@ paths:
                 phone: { type: string }
                 email: { type: string }
       responses:
-        '200': { description: OTP sent }
+        '200':
+          description: OTP sent (response identical regardless of whether identifier exists)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:    { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      expires_in: { type: integer, example: 300 }
 
   /auth/otp/verify:
     post:
       tags: [Auth]
-      summary: Verify OTP
+      summary: Verify OTP, receive short-lived OTP token
       requestBody:
         required: true
         content:
@@ -229,19 +313,42 @@ paths:
               properties:
                 phone: { type: string }
                 email: { type: string }
-                code:  { type: string }
+                code:  { type: string, example: "483920" }
       responses:
-        '200': { description: OTP verified, returns otp_token }
-        '422': { description: Invalid or expired OTP }
+        '200':
+          description: Verified — returns otp_token for use as X-OTP-Token header
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      otp_token:  { type: string }
+                      expires_in: { type: integer, example: 600 }
+        '422': { description: "Invalid or expired OTP" }
 
-  # ── USERS ───────────────────────────────────────────────────────
+  # ═══════════════════════════════════════════════════════════════════════════
+  # USERS
+  # ═══════════════════════════════════════════════════════════════════════════
   /users/me:
     get:
       tags: [Users]
       summary: Get current user profile
       security: [{ BearerAuth: [] }]
       responses:
-        '200': { description: User profile, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/User' }
     patch:
       tags: [Users]
       summary: Update profile
@@ -254,7 +361,7 @@ paths:
               properties:
                 nickname:          { type: string }
                 interests:         { type: array, items: { type: string } }
-                profile_image_url: { type: string }
+                profile_image_url: { type: string, description: "S3/R2 URL — profile is the only R2-stored image" }
                 address:           { type: string }
                 education_level:   { type: string }
                 institution:       { type: string }
@@ -264,22 +371,28 @@ paths:
   /users/me/activities:
     get:
       tags: [Users]
-      summary: Get my registered activities
+      summary: My registered activities (My Tickets)
       security: [{ BearerAuth: [] }]
       parameters:
         - in: query
           name: status
           schema: { type: string, enum: [upcoming, past] }
+          description: Filter by schedule date relative to now
         - in: query
           name: reg_status
           schema: { type: string, enum: [PENDING, PAID, JOINED] }
       responses:
-        '200': { description: List of registrations with activity detail }
+        '200': { description: List of registrations with embedded activity snapshot }
 
   /users/me/qr:
     get:
       tags: [Users]
-      summary: Generate participant QR token (5-min TTL)
+      summary: Generate participant check-in QR (5-minute TTL)
+      description: |
+        Returns a HMAC-signed compact token encoding `{ user_id, iat, exp }`.
+        The QR is **identity-only** — one QR covers all the user's PAID activities.
+        The scanner provides `event_id` at scan time to identify which event.
+        Frontend must display a countdown and auto-refresh when `expires_in` reaches 0.
       security: [{ BearerAuth: [] }]
       responses:
         '200':
@@ -289,11 +402,17 @@ paths:
               schema:
                 type: object
                 properties:
-                  qr_token:   { type: string }
-                  expires_at: { type: string, format: date-time }
-                  expires_in: { type: integer, example: 300 }
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      qr_token:   { type: string, description: "base64url(payload).HMAC — render as QR code client-side" }
+                      expires_at: { type: string, format: date-time }
+                      expires_in: { type: integer, example: 300 }
 
-  # ── ACTIVITIES ──────────────────────────────────────────────────
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ACTIVITIES (public)
+  # ═══════════════════════════════════════════════════════════════════════════
   /activities:
     get:
       tags: [Activities]
@@ -302,12 +421,9 @@ paths:
         - in: query
           name: tags
           schema: { type: string }
-          description: Comma-separated tags (OR match)
+          description: Comma-separated tags — OR match (e.g. `drama,improv`)
         - in: query
           name: is_featured
-          schema: { type: boolean }
-        - in: query
-          name: is_registration_open
           schema: { type: boolean }
         - in: query
           name: page
@@ -316,39 +432,78 @@ paths:
           name: limit
           schema: { type: integer, default: 20 }
       responses:
-        '200': { description: Paginated activity list }
+        '200':
+          description: Paginated activity list (excludes extra_questions for payload size)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  meta:    { $ref: '#/components/schemas/PaginationMeta' }
+                  data:    { type: array, items: { $ref: '#/components/schemas/Activity' } }
 
   /activities/recommended:
     get:
       tags: [Activities]
-      summary: Personalized recommendations (matches user interests)
+      summary: Personalized activity recommendations
+      description: |
+        Matches activities by tag overlap with the authenticated user's `interests` array.
+        Falls back to featured activities if user has no interests set.
       security: [{ BearerAuth: [] }]
       parameters:
         - in: query
           name: limit
           schema: { type: integer, default: 10 }
       responses:
-        '200': { description: Recommended activities }
+        '200':
+          description: Recommended activities ordered by interest-tag overlap score
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:    { type: array, items: { $ref: '#/components/schemas/Activity' } }
 
   /activities/{id}:
     get:
       tags: [Activities]
       summary: Full activity detail
+      description: Returns full document including schedule, extra_questions, and enrolled_count.
       parameters:
         - in: path
           name: id
           required: true
           schema: { type: string }
       responses:
-        '200': { description: Activity detail including schedule, speakers, extra_questions }
-        '404': { description: Not found }
+        '200':
+          description: Full activity document
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Activity' }
+        '404': { description: "NOT_FOUND" }
 
-  # ── REGISTRATIONS ───────────────────────────────────────────────
+  # ═══════════════════════════════════════════════════════════════════════════
+  # REGISTRATIONS
+  # ═══════════════════════════════════════════════════════════════════════════
   /registrations:
     post:
       tags: [Registrations]
-      summary: Initiate registration (existing or new user)
-      security: [{ BearerAuth: [] }]
+      summary: Initiate registration
+      description: |
+        **Case A — Existing user:** Send Bearer token. No `new_user` block needed.
+
+        **Case B — New user:** Omit Bearer token. Include `new_user` object.
+        Account is created atomically and an `access_token` is returned alongside the registration.
+
+        **Free activities** (`price === 0`): status is set to `PAID` immediately and `enrolled_count` is incremented.
+      security: []
       requestBody:
         required: true
         content:
@@ -357,23 +512,48 @@ paths:
               type: object
               required: [activity_id]
               properties:
-                activity_id:    { type: string }
-                custom_answers: { type: array, items: { $ref: '#/components/schemas/CustomAnswer' } }
+                activity_id:
+                  type: string
+                custom_answers:
+                  type: array
+                  items: { $ref: '#/components/schemas/CustomAnswer' }
                 new_user:
-                  description: Provide this block instead of Bearer token for new-user flow
+                  description: "Case B only — omit when sending Bearer token"
                   type: object
+                  required: [first_name, last_name, nickname, email, phone, password, gender]
                   properties:
                     first_name: { type: string }
                     last_name:  { type: string }
                     nickname:   { type: string }
                     email:      { type: string }
                     phone:      { type: string }
-                    password:   { type: string }
-                    gender:     { type: string }
+                    password:   { type: string, minLength: 8 }
+                    gender:     { type: string, enum: [Male, Female, "LGBTQ+", Unspecified] }
       responses:
-        '201': { description: Registration created (PENDING) }
-        '409': { description: Already registered }
-        '422': { description: Registration closed or activity full }
+        '201':
+          description: Registration created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      registration_id: { type: string }
+                      status:          { type: string, enum: [PENDING, PAID] }
+                      activity_id:     { type: string }
+                      registered_at:   { type: string, format: date-time }
+                      activity:
+                        type: object
+                        properties:
+                          name:  { type: string }
+                          price: { type: number }
+                      access_token: { type: string, description: "Case B only — new user JWT" }
+        '400': { description: "VALIDATION_ERROR — missing fields or unanswered required questions" }
+        '409': { description: "DUPLICATE_REGISTRATION or DUPLICATE_EMAIL" }
+        '422': { description: "REGISTRATION_CLOSED or ACTIVITY_FULL" }
 
   /registrations/{id}:
     get:
@@ -386,14 +566,33 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200': { description: Registration detail }
-        '403': { description: Not the owner }
-        '404': { description: Not found }
+        '200':
+          description: Registration with activity snapshot
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Registration' }
+        '403': { description: "FORBIDDEN — not the registration owner" }
+        '404': { description: "NOT_FOUND" }
 
   /registrations/{id}/payment:
     post:
       tags: [Payments]
-      summary: Submit PromptPay slip for verification
+      summary: Submit payment slip for QR extraction
+      description: |
+        Accepts a banking slip image (JPEG/PNG). Any bank app is accepted — PromptPay, SCB, KBank, BBL, etc.
+
+        **What we do:**
+        - Decode QR from anywhere in the image (3-pass: raw → greyscale+contrast → invert)
+        - Extract EMV amount if present (best-effort — never blocks submission)
+        - Store `slip_submitted_at` timestamp for finance reconciliation
+        - Set registration → `PAID`, increment `enrolled_count`
+
+        **What we don't do:** verify the actual money transfer — that's finance's job via export.
       security: [{ BearerAuth: [] }]
       parameters:
         - in: path
@@ -406,36 +605,138 @@ paths:
           multipart/form-data:
             schema:
               type: object
+              required: [slip]
               properties:
                 slip:
                   type: string
                   format: binary
-                  description: JPEG/PNG slip image (max 10 MB) — processed in-memory, never stored
+                  description: "JPEG or PNG slip image — processed in-memory, never stored to disk"
       responses:
-        '200': { description: Payment verified, registration set to PAID }
-        '409': { description: Duplicate QR data }
-        '422': { description: Amount mismatch or unreadable QR }
+        '200':
+          description: Slip received — payment status WAITING, registration set to PAID
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      payment_id:        { type: string }
+                      registration_id:   { type: string }
+                      status:            { type: string, example: WAITING }
+                      slip_submitted_at: { type: string, format: date-time }
+                      detected_amount:   { type: number, nullable: true, description: "From EMV tag 54 if present" }
+                      activity_price:    { type: number, description: "Expected amount for finance reference" }
+                      note:              { type: string, nullable: true }
+        '400': { description: "VALIDATION_ERROR — no slip file attached" }
+        '403': { description: "FORBIDDEN — not the registration owner" }
+        '404': { description: "NOT_FOUND" }
+        '409': { description: "DUPLICATE_PAYMENT — same QR already used" }
+        '422': { description: "ALREADY_PAID — registration not in PENDING state, or QR_UNREADABLE" }
 
-  
-
-  # ── ADMIN ───────────────────────────────────────────────────────
-  /admin/activities:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # EVENTS (check-in)
+  # ═══════════════════════════════════════════════════════════════════════════
+  /events/scan:
     post:
-      tags: [Admin]
-      summary: Create activity
+      tags: [Events]
+      summary: Scan participant QR at event entry
+      description: |
+        Called by the scanner device. Receives the QR token from the participant's screen
+        and the `event_id` of the activity being checked into.
+
+        **Flow:** verify HMAC → check expiry → look up registration → guard status → set JOINED → push to Attendance map
+
+        Attendance is tracked per-day using Bangkok time (UTC+7).
       security: [{ BearerAuth: [] }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Activity' }
+            schema:
+              type: object
+              required: [qr_token, event_id]
+              properties:
+                qr_token:
+                  type: string
+                  description: "Signed QR token from GET /users/me/qr"
+                event_id:
+                  type: string
+                  description: "Activity UUIDv7 — identifies which event to check into"
       responses:
-        '201': { description: Activity created }
+        '200':
+          description: Entry granted — registration set to JOINED
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      registration_id: { type: string }
+                      status:          { type: string, example: JOINED }
+                      checked_in_at:   { type: string, format: date-time }
+                      date_key:        { type: string, example: "2026-08-01", description: "Bangkok date used as Attendance map key" }
+                      user:
+                        type: object
+                        properties:
+                          full_name: { type: string }
+                          nickname:  { type: string }
+                          phone:     { type: string }
+                      activity_name: { type: string }
+        '400': { description: "VALIDATION_ERROR — missing qr_token or event_id" }
+        '403': { description: "FORBIDDEN — requester is not admin" }
+        '404': { description: "NOT_ENROLLED — user has no registration for this event" }
+        '422': { description: "QR_EXPIRED, INVALID_QR, ALREADY_JOINED, or PAYMENT_REQUIRED" }
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ADMIN — ACTIVITIES
+  # ═══════════════════════════════════════════════════════════════════════════
+  /admin/activities:
+    post:
+      tags: [Admin — Activities]
+      summary: Create activity
+      description: |
+        All image fields (`hero_image_url`) are Google Drive share links or any public URL — no file upload.
+        `enrolled_count` is always initialised to 0 regardless of what the client sends.
+        `question_id` is auto-generated for any `extra_question` that omits it.
+        Also creates a paired empty Attendance document.
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ActivityInput' }
+      responses:
+        '201':
+          description: Activity created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Activity' }
+        '400': { description: "VALIDATION_ERROR — missing hero_image_url or required fields" }
+        '403': { description: "FORBIDDEN" }
 
   /admin/activities/{id}:
     patch:
-      tags: [Admin]
+      tags: [Admin — Activities]
       summary: Update activity
+      description: |
+        Partial update. Send only the fields you want to change.
+
+        **Registration window:** use `open_registration_at`/`close_registration_at` for date-based
+        control, or `registration_open_override: true/false` to hard-toggle regardless of dates.
+        Set `registration_open_override: null` to revert to date-window behaviour.
+
+        `enrolled_count`, `_id`, `created_at`, and `deleted_at` are always blocked.
       security: [{ BearerAuth: [] }]
       parameters:
         - in: path
@@ -448,14 +749,40 @@ paths:
             schema:
               type: object
               properties:
-                is_registration_open: { type: boolean }
-                seat_capacity:        { type: integer }
-                is_featured:          { type: boolean }
+                name:                       { type: string }
+                description:                { type: string }
+                hero_image_url:             { type: string }
+                price:                      { type: number }
+                seat_capacity:              { type: integer }
+                tags:                       { type: array, items: { type: string } }
+                benefits:                   { type: array, items: { type: string } }
+                open_registration_at:       { type: string, format: date-time, nullable: true }
+                close_registration_at:      { type: string, format: date-time, nullable: true }
+                registration_open_override: { type: boolean, nullable: true }
+                is_featured:                { type: boolean }
+                schedule:                   { type: array, items: { $ref: '#/components/schemas/ScheduleItem' } }
+                extra_questions:            { type: array, items: { $ref: '#/components/schemas/ExtraQuestion' } }
       responses:
-        '200': { description: Updated }
+        '200':
+          description: Updated activity
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Activity' }
+        '400': { description: "VALIDATION_ERROR — no valid fields provided" }
+        '403': { description: "FORBIDDEN" }
+        '404': { description: "NOT_FOUND" }
     delete:
-      tags: [Admin]
-      summary: Delete activity
+      tags: [Admin — Activities]
+      summary: Soft-delete activity
+      description: |
+        Sets `deleted_at` timestamp — does NOT hard-delete.
+        Blocked if any PAID or JOINED registrations exist (returns 409).
+        All PENDING registrations are cancelled before soft-delete.
       security: [{ BearerAuth: [] }]
       parameters:
         - in: path
@@ -463,25 +790,18 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '204': { description: Deleted }
-        '409': { description: Cannot delete — active registrations exist }
+        '204': { description: Soft-deleted }
+        '403': { description: "FORBIDDEN" }
+        '404': { description: "NOT_FOUND" }
+        '409': { description: "HAS_ACTIVE_REGISTRATIONS" }
 
-  /admin/activities/{id}/export:
-    post:
-      tags: [Admin]
-      summary: Export registrations to Google Sheets
-      security: [{ BearerAuth: [] }]
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: string }
-      responses:
-        '200': { description: Export complete, returns sheet URL }
-
+  
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ADMIN — REGISTRATIONS
+  # ═══════════════════════════════════════════════════════════════════════════
   /admin/registrations:
     get:
-      tags: [Admin]
+      tags: [Admin — Registrations]
       summary: List all registrations
       security: [{ BearerAuth: [] }]
       parameters:
@@ -498,12 +818,34 @@ paths:
           name: limit
           schema: { type: integer, default: 50 }
       responses:
-        '200': { description: Paginated registration list }
+        '200':
+          description: Paginated registration list with user and activity detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  meta:    { $ref: '#/components/schemas/PaginationMeta' }
+                  data:    { type: array, items: { $ref: '#/components/schemas/Registration' } }
 
   /admin/registrations/{id}/status:
     patch:
-      tags: [Admin]
+      tags: [Admin — Registrations]
       summary: Manually override registration status
+      description: |
+        Allowed transitions:
+
+        | From | To |
+        |------|----|
+        | PENDING | PAID, CANCELLED |
+        | PAID | JOINED, CANCELLED |
+        | JOINED | (terminal — no transitions) |
+        | CANCELLED | PENDING (undo a mistake) |
+
+        **Side-effects:**
+        - `PENDING → PAID`: `$inc enrolled_count`
+        - `PAID/JOINED → CANCELLED`: `$inc enrolled_count: -1` (seat freed)
       security: [{ BearerAuth: [] }]
       parameters:
         - in: path
@@ -519,28 +861,77 @@ paths:
               required: [status]
               properties:
                 status:     { type: string, enum: [PENDING, PAID, JOINED, CANCELLED] }
-                group_name: { type: string }
+                group_name: { type: string, nullable: true, description: "Optionally assign/update group" }
       responses:
-        '200': { description: Status updated }
+        '200':
+          description: Updated registration
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Registration' }
+        '403': { description: "FORBIDDEN" }
+        '404': { description: "NOT_FOUND" }
+        '422': { description: "INVALID_STATUS_TRANSITION" }
 
-  # ── EVENTS ──────────────────────────────────────────────────────
-  /events/scan:
-    post:
-      tags: [Events]
-      summary: Scan participant QR at entry
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ADMIN — PAYMENTS
+  # ═══════════════════════════════════════════════════════════════════════════
+  /admin/payments/{id}/status:
+    patch:
+      tags: [Admin — Payments]
+      summary: Finance team verifies or rejects a payment
+      description: |
+        Allowed transitions:
+
+        | From | To | Side-effect |
+        |------|----|-------------|
+        | WAITING | VERIFIED | Sets `verified_at`. Ensures registration is PAID. |
+        | WAITING | FAILED | Reverts registration to PENDING, `$dec enrolled_count` |
+        | VERIFIED | FAILED | Reverses verification — same revert chain |
+        | FAILED | WAITING | Re-opens for re-review |
+
+        Optionally assigns `group_name` on the linked registration at the same time as verifying.
       security: [{ BearerAuth: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [qr_token, event_id]
+              required: [status]
               properties:
-                qr_token:   { type: string, description: Signed QR token from GET /users/me/qr }
-                event_id:   { type: string, description: Activity UUIDv7 being checked into }
-                group_name: { type: string, nullable: true }
+                status:
+                  type: string
+                  enum: [WAITING, VERIFIED, FAILED]
+                note:
+                  type: string
+                  nullable: true
+                  description: "Finance note — shown in export"
+                group_name:
+                  type: string
+                  nullable: true
+                  description: "Assign group on the linked registration at verification time"
       responses:
-        '200': { description: Entry granted, registration set to JOINED }
-        '404': { description: User not enrolled in this event }
-        '422': { description: QR expired, invalid, or already scanned }
+        '200':
+          description: Payment status updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Payment' }
+        '400': { description: "VALIDATION_ERROR — invalid status value" }
+        '403': { description: "FORBIDDEN" }
+        '404': { description: "NOT_FOUND" }
+        '422': { description: "INVALID_STATUS_TRANSITION — already in that status" }

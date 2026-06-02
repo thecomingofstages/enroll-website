@@ -93,7 +93,7 @@ class EventHelper {
    * 7. $push user_id into Attendance map for today's Bangkok date key
    * 8. Return display data for scanner device
    */
-  static async scan(qrToken, eventId, groupName) {
+  static async scan(qrToken, eventId) {
     // ── 1. Verify QR ───────────────────────────────────────────────────────
     if (!qrToken || !eventId) {
       const err = new Error('qr_token and event_id are required.');
@@ -142,10 +142,7 @@ class EventHelper {
     const activity = await ActivityModel.findById(eventId).select('name').lean();
 
     // ── 6. Set registration → JOINED ──────────────────────────────────────
-    const updateFields = { status: 'JOINED' };
-    if (groupName) updateFields.group_name = groupName;
-
-    await RegistrationModel.findByIdAndUpdate(registration._id, { $set: updateFields });
+    await RegistrationModel.findByIdAndUpdate(registration._id, { $set: { status: 'JOINED' } });
 
     // ── 7. Push to Attendance map for today (Bangkok UTC+7) ───────────────
     const dateKey = bangkokDateKey();
@@ -159,7 +156,6 @@ class EventHelper {
     return {
       registration_id: registration._id,
       status:          'JOINED',
-      group_name:      groupName || registration.group_name || null,
       checked_in_at:   new Date().toISOString(),
       user: {
         full_name: user ? `${user.first_name} ${user.last_name}` : '—',

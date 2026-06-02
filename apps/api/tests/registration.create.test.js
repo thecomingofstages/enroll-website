@@ -32,11 +32,16 @@ const USER_TOKEN = JWTUtil.signAccess({ sub: EXISTING_USER._id, nickname: EXISTI
 
 const OPEN_ACTIVITY = {
   _id: 'activity-uuid-001', name: 'Improv Workshop', price: 500,
-  seat_capacity: 30, enrolled_count: 10, is_registration_open: true,
+  seat_capacity: 30, enrolled_count: 10,
+  // new registration window fields — null means always open
+  open_registration_at:       null,
+  close_registration_at:      null,
+  registration_open_override: null, // null = use date window → open (both dates null)
   extra_questions: [{ question_id: 'q1', question_text: 'T-Shirt size?', type: 'single_choice', is_required: true }],
 };
 const FREE_ACTIVITY   = { ...OPEN_ACTIVITY, _id: 'activity-uuid-free',   price: 0, extra_questions: [] };
-const CLOSED_ACTIVITY = { ...OPEN_ACTIVITY, _id: 'activity-uuid-closed', is_registration_open: false };
+// Hard-closed via override = false (ignores date window)
+const CLOSED_ACTIVITY = { ...OPEN_ACTIVITY, _id: 'activity-uuid-closed', registration_open_override: false };
 const FULL_ACTIVITY   = { ...OPEN_ACTIVITY, _id: 'activity-uuid-full',   enrolled_count: 30 };
 
 const VALID_ANSWERS = [{ question_id: 'q1', answer: 'M' }];

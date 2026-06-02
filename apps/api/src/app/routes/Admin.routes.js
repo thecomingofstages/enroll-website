@@ -9,18 +9,16 @@ const EventController        = require('../controllers/Event.controller');
 router.use(AuthMiddleware.requireAdmin);
 
 // ── Activities ─────────────────────────────────────────────────────────────────
-// JSON body — hero_image_url is a Google Drive link string
-router.post('/activities',           ActivityController.create);
-router.patch('/activities/:id',      ActivityController.update);
-router.delete('/activities/:id',     ActivityController.remove);
+router.post('/activities',            ActivityController.create);
+router.patch('/activities/:id',       ActivityController.update);
+router.delete('/activities/:id',      ActivityController.remove);
 router.post('/activities/:id/export', EventController.exportActivity);
 
 // ── Registrations ──────────────────────────────────────────────────────────────
-router.get('/registrations',                 RegistrationController.adminList);
-router.patch('/registrations/:id/status',    RegistrationController.adminUpdateStatus);
+router.get('/registrations',               RegistrationController.adminList);
+router.patch('/registrations/:id/status',  RegistrationController.adminUpdateStatus);
 
-// ── Payments ───────────────────────────────────────────────────────────────────
-// Finance team verifies/rejects payment slips + can assign group_name
-router.patch('/payments/:id/status',         PaymentController.adminUpdatePaymentStatus);
+// ── Payments — finance team verifies/rejects slips + group name ────────────────────────────
+router.patch('/payments/:id/status',       PaymentController.adminUpdatePaymentStatus);
 
 module.exports = router;
