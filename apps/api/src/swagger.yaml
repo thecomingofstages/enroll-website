@@ -84,6 +84,15 @@ components:
         created_at:        { type: string, format: date-time }
 
     # ── Activity ──────────────────────────────────────────────────────────────
+    Speaker:
+      type: object
+      required: [name, position]
+      properties:
+        _id:      { type: string, format: uuid, description: "Auto-generated if omitted" }
+        name:     { type: string }
+        position: { type: string }
+        image_url: { type: string, nullable: true, description: "Google Drive share link or any public image URL" }
+
     ScheduleSlot:
       type: object
       properties:
@@ -97,8 +106,9 @@ components:
       properties:
         date:        { type: string, format: date }
         venue:       { type: string, description: "Short venue label" }
-        location_id: { type: string, nullable: true, description: "Ref to Location collection (future)" }
+        location:    { type: string, nullable: true }
         slots:       { type: array, items: { $ref: '#/components/schemas/ScheduleSlot' } }
+        speakers:    { type: array, items: { $ref: '#/components/schemas/Speaker' }}
 
     ExtraQuestion:
       type: object

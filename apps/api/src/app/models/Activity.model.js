@@ -1,11 +1,20 @@
 const mongoose       = require('mongoose');
 const { v7: uuidv7 } = require('uuid');
 
+const SpeakerSchema = new mongoose.Schema(
+  {
+    _id:               { type: String, default: uuidv7 },
+    name:              { type: String, required: true },
+    position:          { type: String, required: true },
+    image_url:         { type: String, default: null },
+  }
+);
+
 const ScheduleItemSchema = new mongoose.Schema(
   {
     date:        { type: Date,   required: true },
     venue:       { type: String, required: true },
-    location_id: { type: String, ref: 'Location', default: null },
+    location:    { type: String, default: null },
     slots: [
       {
         start_time:  { type: String, required: true },
@@ -14,6 +23,7 @@ const ScheduleItemSchema = new mongoose.Schema(
         description: { type: String, default: null },
       },
     ],
+    speakers:    { type: [SpeakerSchema], default: [] },
   },
   { _id: false }
 );
