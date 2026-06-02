@@ -106,9 +106,11 @@ components:
       properties:
         date:        { type: string, format: date }
         venue:       { type: string, description: "Short venue label" }
-        location:    { type: string, nullable: true }
+        location_link_gg_map:     { type: string, nullable: true }
+        location_pics:            { type: array, items: { type: string }, nullable: true }
+        additional_location_info: { type: array, items: { type: string }, nullable: true }
         slots:       { type: array, items: { $ref: '#/components/schemas/ScheduleSlot' } }
-        speakers:    { type: array, items: { $ref: '#/components/schemas/Speaker' }}
+        
 
     ExtraQuestion:
       type: object
@@ -136,6 +138,7 @@ components:
         registration_open_override: { type: boolean, nullable: true, description: "null = use date window. true = force open. false = force closed." }
         is_registration_open:       { type: boolean, description: "Computed virtual — priority: override → date window → false" }
         is_featured:                { type: boolean }
+        speakers:                   { type: array, items: { $ref: '#/components/schemas/Speaker' }}
         schedule:                   { type: array, items: { $ref: '#/components/schemas/ScheduleItem' } }
         extra_questions:            { type: array, items: { $ref: '#/components/schemas/ExtraQuestion' } }
         created_at:                 { type: string, format: date-time }

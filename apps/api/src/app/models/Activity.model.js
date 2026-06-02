@@ -12,9 +12,11 @@ const SpeakerSchema = new mongoose.Schema(
 
 const ScheduleItemSchema = new mongoose.Schema(
   {
-    date:        { type: Date,   required: true },
-    venue:       { type: String, required: true },
-    location:    { type: String, default: null },
+    date:                     { type: Date,   required: true },
+    venue:                    { type: String, required: true },
+    location_link_gg_map:     { type: String, default: null },
+    location_pics:            { type: [String], default: [] },
+    additional_location_info: { type: [String], default: null }, // e.g. "Entrance at the back", "3rd floor, room 305", etc.
     slots: [
       {
         start_time:  { type: String, required: true },
@@ -23,7 +25,6 @@ const ScheduleItemSchema = new mongoose.Schema(
         description: { type: String, default: null },
       },
     ],
-    speakers:    { type: [SpeakerSchema], default: [] },
   },
   { _id: false }
 );
@@ -60,6 +61,7 @@ const ActivitySchema = new mongoose.Schema(
     close_registration_at: { type: Date, default: null },
     // Hard override: false = always closed, true = always open, null = use date window
     registration_open_override: { type: Boolean, default: null },
+    speakers:    { type: [SpeakerSchema], default: [] },
 
     is_featured:     { type: Boolean, default: false },
     schedule:        { type: [ScheduleItemSchema], default: [] },
