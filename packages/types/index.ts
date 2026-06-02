@@ -35,21 +35,27 @@ export interface ActivityExtraQuestion {
 }
 
 export interface ActivitySpeaker {
+  _id?: string
   name: string
-  role: string
-  avatar_url?: string
+  position: string
+  image_url?: string
+}
+
+export interface ActivityScheduleSlot {
+  start_time: string
+  end_time: string
+  title: string
+  description?: string
+  highlight?: boolean
 }
 
 export interface ActivityScheduleItem {
   date: string
-  start_time: string
-  end_time: string
   venue?: string
-  venue_detail?: ActivityVenue
-  title?: string
-  description?: string
-  /** First / current item can be highlighted in UI */
-  highlight?: boolean
+  location_link_gg_map?: string
+  location_pics?: string[]
+  additional_location_info?: string[]
+  slots: ActivityScheduleSlot[]
 }
 
 export interface ActivityVenue {
@@ -61,11 +67,15 @@ export interface ActivityVenue {
 
 export interface ActivityDetail extends Activity {
   hero_image_url: string
-  venue?: ActivityVenue
-  highlights?: string[]
-  speaker?: ActivitySpeaker
+  benefits?: string[]
+  speakers?: ActivitySpeaker[]
   schedule: ActivityScheduleItem[]
   extra_questions: ActivityExtraQuestion[]
+  open_registration_at?: string
+  close_registration_at?: string
+  registration_open_override?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface ActivityRegistrationPayload {

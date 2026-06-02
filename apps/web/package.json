@@ -9,13 +9,15 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@enroll-website/types": "*",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "@enroll-website/types": "*"
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

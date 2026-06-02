@@ -11,9 +11,9 @@ interface StepConfig {
   label: string;
 }
 
-const slipAccept = "image/png,image/jpeg,application/pdf";
+const slipAccept = "image/png,image/jpeg";
 
-const slipAllowedMime = new Set(["image/png", "image/jpeg", "application/pdf"]);
+const slipAllowedMime = new Set(["image/png", "image/jpeg"]);
 
 function validateFirstName(name: string): string | null {
   const trimmed = name.trim();
@@ -66,6 +66,7 @@ export function RegisterModal({
   }
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [isSuccess, setIsSuccess] = useState(false);
   const currentStep = steps[currentStepIndex];
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === steps.length - 1;
@@ -86,9 +87,10 @@ export function RegisterModal({
     variant: "success" | "error";
   } | null>(null);
   const [slipError, setSlipError] = useState<string | null>(null);
-  const [firstNameError, setFirstNameError] = useState<string | null>(null);
-  const [lastNameError, setLastNameError] = useState<string | null>(null);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const firstNameError = firstName.length > 0 ? validateFirstName(firstName) : null;
+  const lastNameError = lastName.length > 0 ? validateLastName(lastName) : null;
+  const phoneError = phone.length > 0 ? validatePhone(phone) : null;
+  const emailError = email.length > 0 ? validateEmail(email) : null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -148,13 +150,7 @@ export function RegisterModal({
     );
     setSubmitting(false);
     if (res.ok) {
-      setFeedback({
-        message: res.message ?? "ลงทะเบียนสำเร็จ",
-        variant: "success",
-      });
-      setTimeout(() => {
-        onClose();
-      }, 900);
+      setIsSuccess(true);
     } else {
       setFeedback({
         message: res.message ?? "เกิดข้อผิดพลาด",
@@ -184,7 +180,7 @@ export function RegisterModal({
           <button
             type="button"
             onClick={onClose}
-            disabled={submitting}
+            disabled={submitting && !isSuccess}
             className="rounded-lg p-2 text-stone-500 hover:bg-stone-200/60 hover:text-stone-800 disabled:pointer-events-none disabled:opacity-40"
             aria-label="ปิด"
           >
@@ -192,317 +188,353 @@ export function RegisterModal({
           </button>
         </div>
 
-        <div className="flex shrink-0 gap-1 border-b border-stone-200/60 px-2 py-3 sm:gap-2 sm:px-5">
-          {steps.map((s, idx) => (
-            <div key={s.id} className="flex flex-1 flex-col items-center justify-center gap-1 sm:flex-row sm:justify-start sm:gap-2">
-              <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-                  currentStepIndex === idx
-                    ? "bg-red-800 text-white"
-                    : currentStepIndex > idx
-                      ? "bg-red-200 text-red-900"
-                      : "bg-stone-200 text-stone-600"
-                }`}
-              >
-                {idx + 1}
-              </span>
-              <span className="text-center text-[10px] font-medium text-stone-600 sm:text-left sm:text-xs">
-                {s.label}
-              </span>
+        {isSuccess ? (
+          <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[350px]">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
             </div>
-          ))}
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-          {currentStep.id === "info" ? (
-            <>
-              <p className="rounded-lg bg-sky-100 px-3 py-2 text-sm text-sky-900">
-                {activity.price > 0 
-                  ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือชำระเงินผ่าน PromptPay และอัปโหลดสลิป"
-                  : activity.extra_questions && activity.extra_questions.length > 0 
-                    ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือตอบคำถามเพิ่มเติม"
-                    : "กรอกข้อมูลผู้เข้าร่วมให้ครบถ้วน จากนั้นกดยืนยันการลงทะเบียนได้เลย"}
-              </p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <label className="block sm:col-span-1">
-                  <span className="text-sm font-medium text-stone-700">
-                    ชื่อ
-                  </span>
-                  <input
-                    className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
-                      firstNameError
-                        ? "border-red-400 bg-red-50"
-                        : "border-stone-200 bg-white"
+            <h3 className="text-xl font-bold text-stone-900">ลงทะเบียนสำเร็จ!</h3>
+            <p className="mt-3 text-sm text-stone-600">
+              ข้อมูลของคุณถูกบันทึกเรียบร้อยแล้ว<br />
+              คุณสามารถตรวจสอบสถานะและดูตั๋วเข้างานได้ที่หน้าโปรไฟล์ของคุณ
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="mt-8 w-full max-w-[200px] rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white hover:bg-stone-800"
+            >
+              กลับสู่หน้ากิจกรรม
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex shrink-0 gap-1 border-b border-stone-200/60 px-2 py-3 sm:gap-2 sm:px-5">
+              {steps.map((s, idx) => (
+                <div key={s.id} className="flex flex-1 flex-col items-center justify-center gap-1 sm:flex-row sm:justify-start sm:gap-2">
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+                      currentStepIndex === idx
+                        ? "bg-red-800 text-white"
+                        : currentStepIndex > idx
+                          ? "bg-red-200 text-red-900"
+                          : "bg-stone-200 text-stone-600"
                     }`}
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    autoComplete="given-name"
-                  />
-                  {firstNameError && (
-                    <p className="mt-1 text-xs text-red-600">
-                      {firstNameError}
-                    </p>
-                  )}
-                </label>
-                <label className="block sm:col-span-1">
-                  <span className="text-sm font-medium text-stone-700">
-                    นามสกุล
-                  </span>
-                  <input
-                    className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
-                      lastNameError
-                        ? "border-red-400 bg-red-50"
-                        : "border-stone-200 bg-white"
-                    }`}
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    autoComplete="family-name"
-                  />
-                  {lastNameError && (
-                    <p className="mt-1 text-xs text-red-600">{lastNameError}</p>
-                  )}
-                </label>
-                <label className="block sm:col-span-1">
-                  <span className="text-sm font-medium text-stone-700">
-                    ชื่อเล่น
-                  </span>
-                  <input
-                    className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
-                    value={nickname}
-                    onChange={(e) => setNickname(e.target.value)}
-                  />
-                </label>
-                <label className="block sm:col-span-1">
-                  <span className="text-sm font-medium text-stone-700">
-                    เบอร์โทร
-                  </span>
-                  <input
-                    className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
-                      phoneError
-                        ? "border-red-400 bg-red-50"
-                        : "border-stone-200 bg-white"
-                    }`}
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    inputMode="tel"
-                    autoComplete="tel"
-                  />
-                  {phoneError && (
-                    <p className="mt-1 text-xs text-red-600">{phoneError}</p>
-                  )}
-                </label>
-                <label className="block sm:col-span-2">
-                  <span className="text-sm font-medium text-stone-700">
-                    อีเมล
-                  </span>
-                  <input
-                    className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    type="email"
-                  />
-                </label>
-                <label className="block sm:col-span-1">
-                  <span className="text-sm font-medium text-stone-700">
-                    เพศ
-                  </span>
-                  <select
-                    className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
                   >
-                    <option value="" disabled>
-                      เลือกเพศ
-                    </option>
-                    <option value="Male">ชาย (Male)</option>
-                    <option value="Female">หญิง (Female)</option>
-                    <option value="LGBTQ+">เพศทางเลือก (LGBTQ+)</option>
-                    <option value="Unspecified">ไม่ระบุ</option>
-                  </select>
-                </label>
-                <label className="block sm:col-span-1">
-                  <span className="text-sm font-medium text-stone-700">
-                    ระดับชั้น
+                    {idx + 1}
                   </span>
-                  <input
-                    className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
-                    value={educationLevel}
-                    onChange={(e) => setEducationLevel(e.target.value)}
-                    placeholder="เช่น ม.4, ปี 1"
-                  />
-                </label>
-                <label className="block sm:col-span-2">
-                  <span className="text-sm font-medium text-stone-700">
-                    สถาบันการศึกษา
+                  <span className="text-center text-[10px] font-medium text-stone-600 sm:text-left sm:text-xs">
+                    {s.label}
                   </span>
-                  <input
-                    className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
-                    value={institution}
-                    onChange={(e) => setInstitution(e.target.value)}
-                    placeholder="เช่น ชื่อโรงเรียน หรือ มหาวิทยาลัย"
-                  />
-                </label>
-                <label className="block sm:col-span-2">
-                  <span className="text-sm font-medium text-stone-700">
-                    ที่อยู่
-                  </span>
-                  <textarea
-                    className="mt-1 min-h-[80px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="รายละเอียดที่อยู่"
-                  />
-                </label>
-              </div>
-            </>
-          ) : null}
+                </div>
+              ))}
+            </div>
 
-          {currentStep.id === "payment" ? (
-            <div className="space-y-4">
-              <p className="text-sm font-medium text-stone-800">
-                ชำระเงินผ่าน PromptPay (฿{activity.price})
-              </p>
-              <p className="text-sm text-stone-600">สแกน QR เพื่อโอน</p>
-              <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-xl bg-white text-sm font-medium text-stone-400 ring-1 ring-stone-200">
-                QR Code
-              </div>
-              <p className="text-center text-xs text-stone-500">
-                PromptPay: 062-345-6789 (TCOS) — ตัวอย่างสำหรับ UI
-              </p>
-              <div>
-                <span className="text-sm font-medium text-stone-700">
-                  อัปโหลดสลิปการโอน
-                </span>
-                <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-stone-300 bg-white px-4 py-8 text-center text-sm text-stone-500 transition hover:border-red-400 hover:bg-red-50/30">
-                  <input
-                    type="file"
-                    accept={slipAccept}
-                    className="sr-only"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0] ?? null;
-                      if (!f) {
-                        setSlip(null);
-                        setSlipError(null);
-                        return;
-                      }
-                      if (f.size > 5 * 1024 * 1024) {
-                        setSlip(null);
-                        e.target.value = "";
-                        setSlipError("ไฟล์ใหญ่เกิน 5MB");
-                        return;
-                      }
-                      const mime = f.type.toLowerCase();
-                      const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
-                      const extOk = ["png", "jpg", "jpeg", "pdf"].includes(ext);
-                      const typeOk = mime ? slipAllowedMime.has(mime) : extOk;
-                      if (!typeOk) {
-                        setSlip(null);
-                        e.target.value = "";
-                        setSlipError("ใช้ได้เฉพาะ PNG, JPG หรือ PDF");
-                        return;
-                      }
-                      setSlipError(null);
-                      setSlip(f);
-                    }}
-                  />
-                  {slip ? (
-                    <span className="font-medium text-stone-800">
-                      {slip.name}
-                    </span>
-                  ) : (
-                    <>
-                      <span>คลิกหรือลากไฟล์สลิปมาวาง</span>
-                      <span className="mt-1 text-xs">
-                        PNG, JPG, PDF — ไม่เกิน 5MB
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
+              {currentStep.id === "info" ? (
+                <>
+                  <p className="rounded-lg bg-sky-100 px-3 py-2 text-sm text-sky-900">
+                    {activity.price > 0 
+                      ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือชำระเงินผ่าน PromptPay และอัปโหลดสลิป"
+                      : activity.extra_questions && activity.extra_questions.length > 0 
+                        ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือตอบคำถามเพิ่มเติม"
+                        : "กรอกข้อมูลผู้เข้าร่วมให้ครบถ้วน จากนั้นกดยืนยันการลงทะเบียนได้เลย"}
+                  </p>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <label className="block sm:col-span-1">
+                      <span className="text-sm font-medium text-stone-700">
+                        ชื่อ <span className="text-red-500">*</span>
                       </span>
-                    </>
+                      <input
+                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                          firstNameError
+                            ? "border-red-400 bg-red-50"
+                            : "border-stone-200 bg-white"
+                        }`}
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        autoComplete="given-name"
+                      />
+                      {firstNameError && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {firstNameError}
+                        </p>
+                      )}
+                    </label>
+                    <label className="block sm:col-span-1">
+                      <span className="text-sm font-medium text-stone-700">
+                        นามสกุล <span className="text-red-500">*</span>
+                      </span>
+                      <input
+                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                          lastNameError
+                            ? "border-red-400 bg-red-50"
+                            : "border-stone-200 bg-white"
+                        }`}
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        autoComplete="family-name"
+                      />
+                      {lastNameError && (
+                        <p className="mt-1 text-xs text-red-600">{lastNameError}</p>
+                      )}
+                    </label>
+                    <label className="block sm:col-span-1">
+                      <span className="text-sm font-medium text-stone-700">
+                        ชื่อเล่น <span className="text-red-500">*</span>
+                      </span>
+                      <input
+                        className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                        value={nickname}
+                        onChange={(e) => setNickname(e.target.value)}
+                      />
+                    </label>
+                    <label className="block sm:col-span-1">
+                      <span className="text-sm font-medium text-stone-700">
+                        เบอร์โทร <span className="text-red-500">*</span>
+                      </span>
+                      <input
+                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                          phoneError
+                            ? "border-red-400 bg-red-50"
+                            : "border-stone-200 bg-white"
+                        }`}
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        inputMode="tel"
+                        autoComplete="tel"
+                      />
+                      {phoneError && (
+                        <p className="mt-1 text-xs text-red-600">{phoneError}</p>
+                      )}
+                    </label>
+                    <label className="block sm:col-span-2">
+                      <span className="text-sm font-medium text-stone-700">
+                        อีเมล <span className="text-red-500">*</span>
+                      </span>
+                      <input
+                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                          emailError
+                            ? "border-red-400 bg-red-50"
+                            : "border-stone-200 bg-white"
+                        }`}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        type="email"
+                      />
+                      {emailError && (
+                        <p className="mt-1 text-xs text-red-600">{emailError}</p>
+                      )}
+                    </label>
+                    <label className="block sm:col-span-1">
+                      <span className="text-sm font-medium text-stone-700">
+                        เพศ <span className="text-red-500">*</span>
+                      </span>
+                      <select
+                        className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                        value={gender}
+                        onChange={(e) => setGender(e.target.value)}
+                      >
+                        <option value="" disabled>
+                          เลือกเพศ
+                        </option>
+                        <option value="Male">ชาย (Male)</option>
+                        <option value="Female">หญิง (Female)</option>
+                        <option value="LGBTQ+">เพศทางเลือก (LGBTQ+)</option>
+                        <option value="Unspecified">ไม่ระบุ</option>
+                      </select>
+                    </label>
+                    <label className="block sm:col-span-1">
+                      <span className="text-sm font-medium text-stone-700">
+                        ระดับชั้น
+                      </span>
+                      <input
+                        className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                        value={educationLevel}
+                        onChange={(e) => setEducationLevel(e.target.value)}
+                        placeholder="เช่น ม.4, ปี 1"
+                      />
+                    </label>
+                    <label className="block sm:col-span-2">
+                      <span className="text-sm font-medium text-stone-700">
+                        สถาบันการศึกษา
+                      </span>
+                      <input
+                        className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                        value={institution}
+                        onChange={(e) => setInstitution(e.target.value)}
+                        placeholder="เช่น ชื่อโรงเรียน หรือ มหาวิทยาลัย"
+                      />
+                    </label>
+                    <label className="block sm:col-span-2">
+                      <span className="text-sm font-medium text-stone-700">
+                        ที่อยู่
+                      </span>
+                      <textarea
+                        className="mt-1 min-h-[80px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="รายละเอียดที่อยู่"
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : null}
+
+              {currentStep.id === "payment" ? (
+                <div className="space-y-4">
+                  <p className="text-sm font-medium text-stone-800">
+                    ชำระเงินผ่าน PromptPay (฿{activity.price})
+                  </p>
+                  <p className="text-sm text-stone-600">สแกน QR เพื่อโอน</p>
+                  <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-xl bg-white ring-1 ring-stone-200 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`https://promptpay.io/0623456789/${activity.price}.png`}
+                      alt={`QR Code for ฿${activity.price}`}
+                      className="h-full w-full object-contain p-2"
+                    />
+                  </div>
+                  <p className="text-center text-xs text-stone-500">
+                    PromptPay: 062-345-6789 (TCOS)
+                  </p>
+                  <div>
+                    <span className="text-sm font-medium text-stone-700">
+                      อัปโหลดสลิปการโอน <span className="text-red-500">*</span>
+                    </span>
+                    <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-stone-300 bg-white px-4 py-8 text-center text-sm text-stone-500 transition hover:border-red-400 hover:bg-red-50/30">
+                      <input
+                        type="file"
+                        accept={slipAccept}
+                        className="sr-only"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0] ?? null;
+                          if (!f) {
+                            setSlip(null);
+                            setSlipError(null);
+                            return;
+                          }
+                          if (f.size > 5 * 1024 * 1024) {
+                            setSlip(null);
+                            e.target.value = "";
+                            setSlipError("ไฟล์ใหญ่เกิน 5MB");
+                            return;
+                          }
+                          const mime = f.type.toLowerCase();
+                          const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
+                          const extOk = ["png", "jpg", "jpeg"].includes(ext);
+                          const typeOk = mime ? slipAllowedMime.has(mime) : extOk;
+                          if (!typeOk) {
+                            setSlip(null);
+                            e.target.value = "";
+                            setSlipError("ใช้ได้เฉพาะรูปภาพ PNG หรือ JPG");
+                            return;
+                          }
+                          setSlipError(null);
+                          setSlip(f);
+                        }}
+                      />
+                      {slip ? (
+                        <span className="font-medium text-stone-800">
+                          {slip.name}
+                        </span>
+                      ) : (
+                        <>
+                          <span>คลิกหรือลากไฟล์สลิปมาวาง</span>
+                          <span className="mt-1 text-xs">
+                            PNG, JPG — ไม่เกิน 5MB
+                          </span>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                  {slipError ? (
+                    <p className="text-sm font-medium text-red-700">{slipError}</p>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {currentStep.id === "questions" ? (
+                <div className="space-y-4">
+                  {activity.extra_questions.length === 0 ? (
+                    <p className="text-sm text-stone-600">
+                      ไม่มีคำถามเพิ่มเติมสำหรับกิจกรรมนี้
+                    </p>
+                  ) : (
+                    activity.extra_questions.map((q) => (
+                      <label key={q.question_id} className="block">
+                        <span className="text-sm font-medium text-stone-800">
+                          {q.question_text}
+                        </span>
+                        <textarea
+                          className="mt-2 min-h-[100px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                          placeholder={q.placeholder ?? "กรอกคำตอบ..."}
+                          value={extraAnswers[q.question_id] ?? ""}
+                          onChange={(e) => setAnswer(q.question_id, e.target.value)}
+                        />
+                      </label>
+                    ))
                   )}
-                </label>
-              </div>
-              {slipError ? (
-                <p className="text-sm font-medium text-red-700">{slipError}</p>
+                </div>
+              ) : null}
+
+              {feedback ? (
+                <p
+                  className={`mt-4 rounded-lg px-3 py-2 text-sm ${
+                    feedback.variant === "success"
+                      ? "bg-emerald-100 text-emerald-900"
+                      : "bg-red-100 text-red-900"
+                  }`}
+                >
+                  {feedback.message}
+                </p>
               ) : null}
             </div>
-          ) : null}
 
-          {currentStep.id === "questions" ? (
-            <div className="space-y-4">
-              {activity.extra_questions.length === 0 ? (
-                <p className="text-sm text-stone-600">
-                  ไม่มีคำถามเพิ่มเติมสำหรับกิจกรรมนี้
-                </p>
+            <div className="flex shrink-0 gap-2 border-t border-stone-200/80 bg-[#f4f0ea] p-4 sm:p-5">
+              {!isFirstStep ? (
+                <button
+                  type="button"
+                  className="rounded-xl border border-stone-300 px-4 py-3 text-sm font-medium text-stone-800 hover:bg-stone-100"
+                  onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
+                  disabled={submitting}
+                >
+                  ย้อนกลับ
+                </button>
               ) : (
-                activity.extra_questions.map((q) => (
-                  <label key={q.question_id} className="block">
-                    <span className="text-sm font-medium text-stone-800">
-                      {q.question_text}
-                    </span>
-                    <textarea
-                      className="mt-2 min-h-[100px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-red-800/30 focus:ring-2"
-                      placeholder={q.placeholder ?? "กรอกคำตอบ..."}
-                      value={extraAnswers[q.question_id] ?? ""}
-                      onChange={(e) => setAnswer(q.question_id, e.target.value)}
-                    />
-                  </label>
-                ))
+                <span />
+              )}
+              {!isLastStep ? (
+                <button
+                  type="button"
+                  className="ml-auto min-w-[120px] rounded-xl bg-red-800 px-4 py-3 text-sm font-semibold text-white hover:bg-red-900 disabled:opacity-40"
+                  disabled={
+                    submitting ||
+                    (currentStep.id === "info" && !canNextFrom1) ||
+                    (currentStep.id === "payment" && !canNextFrom2)
+                  }
+                  onClick={() => setCurrentStepIndex((prev) => Math.min(steps.length - 1, prev + 1))}
+                >
+                  ถัดไป
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="ml-auto min-w-[160px] rounded-xl bg-red-800 px-4 py-3 text-sm font-semibold text-white hover:bg-red-900 disabled:opacity-40"
+                  disabled={submitting}
+                  onClick={handleSubmit}
+                >
+                  {submitting
+                    ? "กำลังส่ง..."
+                    : activity.price > 0
+                      ? `ยืนยันการลงทะเบียน (฿${activity.price})`
+                      : "ยืนยันการลงทะเบียน (ฟรี)"}
+                </button>
               )}
             </div>
-          ) : null}
-
-          {feedback ? (
-            <p
-              className={`mt-4 rounded-lg px-3 py-2 text-sm ${
-                feedback.variant === "success"
-                  ? "bg-emerald-100 text-emerald-900"
-                  : "bg-red-100 text-red-900"
-              }`}
-            >
-              {feedback.message}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="flex shrink-0 gap-2 border-t border-stone-200/80 bg-[#f4f0ea] p-4 sm:p-5">
-          {!isFirstStep ? (
-            <button
-              type="button"
-              className="rounded-xl border border-stone-300 px-4 py-3 text-sm font-medium text-stone-800 hover:bg-stone-100"
-              onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
-              disabled={submitting}
-            >
-              ย้อนกลับ
-            </button>
-          ) : (
-            <span />
-          )}
-          {!isLastStep ? (
-            <button
-              type="button"
-              className="ml-auto min-w-[120px] rounded-xl bg-red-800 px-4 py-3 text-sm font-semibold text-white hover:bg-red-900 disabled:opacity-40"
-              disabled={
-                submitting ||
-                (currentStep.id === "info" && !canNextFrom1) ||
-                (currentStep.id === "payment" && !canNextFrom2)
-              }
-              onClick={() => setCurrentStepIndex((prev) => Math.min(steps.length - 1, prev + 1))}
-            >
-              ถัดไป
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="ml-auto min-w-[160px] rounded-xl bg-red-800 px-4 py-3 text-sm font-semibold text-white hover:bg-red-900 disabled:opacity-40"
-              disabled={submitting}
-              onClick={handleSubmit}
-            >
-              {submitting
-                ? "กำลังส่ง..."
-                : activity.price > 0
-                  ? `ยืนยันการลงทะเบียน (฿${activity.price})`
-                  : "ยืนยันการลงทะเบียน (ฟรี)"}
-            </button>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -510,8 +542,10 @@ export function RegisterModal({
 
 export function ActivityRegisterSection({
   activity,
+  isRegistered = false,
 }: {
   activity: ActivityDetail;
+  isRegistered?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -519,10 +553,12 @@ export function ActivityRegisterSection({
     activity.seat_capacity > 0 &&
     activity.enrolled_count >= activity.seat_capacity;
   const isClosed = !activity.is_registration_open;
-  const isDisabled = isClosed || isFull;
+  const isDisabled = isClosed || isFull || isRegistered;
 
   let buttonText = activity.price > 0 ? `ลงทะเบียนเข้าร่วม (฿${activity.price})` : "ลงทะเบียนเข้าร่วม (ฟรี)";
-  if (isClosed) {
+  if (isRegistered) {
+    buttonText = "✅ ลงทะเบียนแล้ว";
+  } else if (isClosed) {
     buttonText = "ปิดรับสมัครแล้ว";
   } else if (isFull) {
     buttonText = "ที่นั่งเต็มแล้ว";
@@ -538,9 +574,11 @@ export function ActivityRegisterSection({
           aria-expanded={open}
           aria-haspopup="dialog"
           className={`w-full rounded-xl py-3.5 text-center text-base font-semibold shadow-sm transition sm:text-lg ${
-            isDisabled
-              ? "bg-stone-300 text-stone-500 cursor-not-allowed"
-              : "bg-red-800 text-white hover:bg-red-900"
+            isRegistered
+              ? "bg-emerald-100 text-emerald-800 cursor-default border border-emerald-200"
+              : isDisabled
+                ? "bg-stone-300 text-stone-500 cursor-not-allowed"
+                : "bg-red-800 text-white hover:bg-red-900"
           }`}
         >
           {buttonText}
