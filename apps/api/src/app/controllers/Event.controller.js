@@ -5,8 +5,8 @@ class EventController {
   /** POST /events/scan */
   static async scan(req, res, next) {
     try {
-      const { qr_token, event_id, group_name } = req.body;
-      const data = await EventHelper.scan(qr_token, event_id, group_name);
+      const { qr_token, event_id } = req.body;
+      const data = await EventHelper.scan(qr_token, event_id);
       return res.status(200).json({ success: true, data });
     } catch (err) {
       Logger.error(`[EventController.scan] ${err.message}`);
