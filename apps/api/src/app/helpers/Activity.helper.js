@@ -2,84 +2,71 @@ const { v7: uuidv7 }    = require('uuid');
 const ActivityModel     = require('../models/Activity.model');
 const RegistrationModel = require('../models/Registration.model');
 const AttendanceModel   = require('../models/Attendance.model');
-const R2Util            = require('../utils/R2.util');
 
-// Fields an admin is NOT allowed to set directly via create/update
-const BLOCKED_ON_CREATE = ['enrolled_count', 'deleted_at', 'hero_image_url'];
-const BLOCKED_ON_UPDATE = ['enrolled_count', 'deleted_at', '_id', 'created_at', 'hero_image_url'];
+// Fields client must never set directly
+const BLOCKED_ON_CREATE = ['enrolled_count', 'deleted_at'];
+const BLOCKED_ON_UPDATE = ['enrolled_count', 'deleted_at', '_id', 'created_at'];
 
-// Fields allowed on update (whitelist — anything not here is silently dropped)
+// Whitelist for PATCH
 const UPDATABLE_FIELDS = [
-  'name', 'description', 'hero_image_url', 'price', 'seat_capacity',
-  'tags', 'benefits', 'is_registration_open', 'is_featured',
+  'name', 'description', 'hero_image_url',
+  'price', 'seat_capacity',
+  'tags', 'benefits',
+  'open_registration_at', 'close_registration_at', 'registration_open_override',
+  'is_featured',
   'schedule', 'extra_questions',
 ];
 
+/**
+ * Compute is_registration_open from the activity document fields.
+ * Mirrors the virtual in the model — used when we have a plain lean() object.
+ */
+function computeIsOpen(activity) {
+  if (activity.registration_open_override !== null && activity.registration_open_override !== undefined) {
+    return activity.registration_open_override;
+  }
+  const now         = new Date();
+  const afterOpen   = !activity.open_registration_at  || now >= new Date(activity.open_registration_at);
+  const beforeClose = !activity.close_registration_at || now <= new Date(activity.close_registration_at);
+  return afterOpen && beforeClose;
+}
+
 class ActivityHelper {
 
-  // ── GET /activities ─────────────────────────────────────────────
+  // ── GET /activities ──────────────────────────────────────────────
   static async list(filters, pagination) {
-    // TODO: build $match from tags/$in, is_featured, is_registration_open; paginate
+    // TODO: build $match, paginate
     throw new Error('Not implemented');
   }
 
   // ── GET /activities/recommended ─────────────────────────────────
   static async getRecommended(userInterests, limit) {
-    // TODO: $in tags, score by overlap, sort desc, fallback to featured
+    // TODO: interest tag match, score, sort
     throw new Error('Not implemented');
   }
 
   // ── GET /activities/:id ─────────────────────────────────────────
   static async getById(activityId) {
-    // TODO: findById, join speakers, join attendance, return full doc
+    // TODO: findById, join speakers + attendance
     throw new Error('Not implemented');
   }
 
-  // ── POST /admin/activities ──────────────────────────────────────
-  /**
-   * Create a new activity and its paired Attendance document.
-   *
-   * @param {object} payload  - req.body (multipart form fields, all strings — parse as needed)
-   * @param {object|null} file - req.file from multer (memoryStorage), or null if no file sent
-   *
-   * Flow:
-   * 1. Require hero_image file (or fallback to hero_image_url in body if already a CDN link)
-   * 2. Upload hero_image buffer to R2 → get back the CDN URL
-   * 3. Strip blocked fields, force enrolled_count = 0, auto-gen question_ids
-   * 4. Insert Activity doc
-   * 5. Create paired Attendance doc (empty map — scan fills it per day)
-   * 6. Return saved activity
-   */
-  static async create(payload, file) {
-    // 1. Hero image — file takes priority over any URL in body
-    let hero_image_url;
-
-    if (file) {
-      hero_image_url = await R2Util.upload(
-        file.buffer,
-        'activity-heroes',
-        file.originalname,
-        file.mimetype
-      );
-    } else if (payload.hero_image_url) {
-      // Allow passing a pre-existing CDN URL (e.g. in tests or seeding)
-      hero_image_url = payload.hero_image_url;
-    } else {
-      const err = new Error('hero_image file is required.');
-      err.statusCode = 400;
-      err.code = 'VALIDATION_ERROR';
-      err.field = 'hero_image';
-      throw err;
-    }
-
-    // 2. Strip blocked fields from payload
+  // ── POST /admin/activities ───────────────────────────────────────
+  static async create(payload) {
+    // 1. Strip blocked fields
     const clean = { ...payload };
     BLOCKED_ON_CREATE.forEach(f => delete clean[f]);
 
-    // 3. Inject the resolved URL
-    clean.hero_image_url = hero_image_url;
+    // 2. hero_image_url is required — must be a non-empty string
+    if (!clean.hero_image_url || typeof clean.hero_image_url !== 'string' || !clean.hero_image_url.trim()) {
+      const err = new Error('hero_image_url is required (Google Drive or public image link).');
+      err.statusCode = 400;
+      err.code = 'VALIDATION_ERROR';
+      err.field = 'hero_image_url';
+      throw err;
+    }
 
-    // 4. Auto-generate question_id for any extra_question missing one
+    // 3. Auto-generate question_id for any extra_question missing one
     if (Array.isArray(clean.extra_questions)) {
       clean.extra_questions = clean.extra_questions.map(q => ({
         ...q,
@@ -87,47 +74,33 @@ class ActivityHelper {
       }));
     }
 
-    // 5. Force enrolled_count to 0 — never trust client value
+    // 4. Force enrolled_count = 0
     clean.enrolled_count = 0;
 
-    // 6. Insert activity
+    // 5. Insert activity
     const activity = await ActivityModel.create(clean);
 
-    // 7. Create paired Attendance doc (empty — scan adds date keys)
+    // 6. Create paired Attendance doc (empty map — scan adds date keys)
     await AttendanceModel.create({ activity_id: activity._id });
 
-    return activity.toObject();
+    const obj = activity.toObject();
+    obj.is_registration_open = computeIsOpen(obj);
+    return obj;
   }
 
-  // ── PATCH /admin/activities/:id ─────────────────────────────────
+  // ── PATCH /admin/activities/:id ──────────────────────────────────
   /**
-   * Partial update of an activity.
-   *
-   * @param {string}      activityId
-   * @param {object}      payload  - req.body
-   * @param {object|null} file     - req.file (only present when admin is changing the image)
-   *
-   * If a new hero_image file is sent → upload to R2 and update hero_image_url.
-   * If no file → hero_image_url is unchanged (blocked from body payload).
+   * Partial update. All image URLs are plain strings (Google Drive links).
+   * To open/close registration:
+   *   - Set open_registration_at / close_registration_at for a date-window
+   *   - Or set registration_open_override: true/false for a hard toggle
+   *   - Set registration_open_override: null to go back to date-window behaviour
    */
-  static async update(activityId, payload, file) {
-    // 1. Build safe $set from whitelisted fields only (hero_image_url blocked from body)
+  static async update(activityId, payload) {
     const $set = {};
     UPDATABLE_FIELDS.forEach(field => {
-      // hero_image_url comes from file upload only, not from body
-      if (field === 'hero_image_url') return;
       if (payload[field] !== undefined) $set[field] = payload[field];
     });
-
-    // 2. If a new image was uploaded, push to R2 and add to $set
-    if (file) {
-      $set.hero_image_url = await R2Util.upload(
-        file.buffer,
-        'activity-heroes',
-        file.originalname,
-        file.mimetype
-      );
-    }
 
     if (Object.keys($set).length === 0) {
       const err = new Error('No valid fields provided for update.');
@@ -136,7 +109,6 @@ class ActivityHelper {
       throw err;
     }
 
-    // 3. findByIdAndUpdate — returns null if not found
     const updated = await ActivityModel.findByIdAndUpdate(
       activityId,
       { $set },
@@ -150,17 +122,11 @@ class ActivityHelper {
       throw err;
     }
 
+    updated.is_registration_open = computeIsOpen(updated);
     return updated;
   }
 
-  // ── DELETE /admin/activities/:id ────────────────────────────────
-  /**
-   * Soft-delete an activity.
-   * - Throws 404 if not found or already deleted
-   * - Throws 409 if PAID/JOINED registrations exist
-   * - Cancels all PENDING registrations
-   * - Soft-deletes via deleted_at timestamp
-   */
+  // ── DELETE /admin/activities/:id ─────────────────────────────────
   static async remove(activityId) {
     const activity = await ActivityModel.findOne({
       _id: activityId,
@@ -181,7 +147,7 @@ class ActivityHelper {
 
     if (activeCount > 0) {
       const err = new Error(
-        `Cannot delete: ${activeCount} active registration(s) (PAID or JOINED) exist for this activity.`
+        `Cannot delete: ${activeCount} active registration(s) (PAID or JOINED) exist.`
       );
       err.statusCode = 409;
       err.code = 'HAS_ACTIVE_REGISTRATIONS';
