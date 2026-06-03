@@ -120,41 +120,31 @@ class RegistrationHelper {
   // ── GET /admin/registrations ─────────────────────────────────────
   static async adminList(filters, pagination) {
     const query = {};
+    if (filters.activity_id) query.activity_id = filters.activity_id;
+    if (filters.status) query.status = filters.status;
 
-    if (filters.activity_id) {
-      query.activity_id = filters.activity_id;
-    }
-    if (filters.status) {
-      query.status = filters.status;
-    }
-
-    const { page, limit } = pagination;
+    const page = Math.max(1, pagination.page || 1);
+    const limit = Math.max(1, pagination.limit || 50);
     const skip = (page - 1) * limit;
 
-    const total = await RegistrationModel.countDocuments(query);
-    const registrations = await RegistrationModel.find(query)
-      .sort({ registered_at: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    // เพื่อให้ Admin ดูข้อมูลได้ง่ายขึ้น เราจะ Populate ข้อมูล User และ Activity ไปด้วย
-    const enriched = await Promise.all(
-      registrations.map(async (reg) => {
-        const user = await require('../models/User.model').findById(reg.user_id)
-          .select('first_name last_name email phone')
-          .lean();
-        const activity = await ActivityModel.findById(reg.activity_id)
-          .select('name')
-          .lean();
-
-        return { ...reg, user, activity };
-      })
-    );
+    const [total, registrations] = await Promise.all([
+      RegistrationModel.countDocuments(query),
+      RegistrationModel.find(query)
+        .sort({ registered_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('user_id', 'first_name last_name nickname email phone gender interests profile_image_url address education_level institution created_at')
+        .populate('activity_id', 'name price seat_capacity enrolled_count open_registration_at close_registration_at registration_open_override is_featured created_at updated_at')
+        .lean(),
+    ]);
 
     return {
-      data: enriched,
-      meta: { page, limit, total },
+      meta: {
+        page,
+        limit,
+        total,
+      },
+      data: registrations,
     };
   }
 
