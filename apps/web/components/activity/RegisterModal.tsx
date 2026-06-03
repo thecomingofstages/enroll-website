@@ -463,17 +463,36 @@ export function RegisterModal({
                     </p>
                   ) : (
                     activity.extra_questions.map((q) => (
-                      <label key={q.question_id} className="block">
+                      <div key={q.question_id} className="block">
                         <span className="text-sm font-medium text-stone-800">
                           {q.question_text}
+                          {q.is_required && <span className="text-red-500 ml-1">*</span>}
                         </span>
-                        <textarea
-                          className="mt-2 min-h-[100px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-red-800/30 focus:ring-2"
-                          placeholder={q.placeholder ?? "กรอกคำตอบ..."}
-                          value={extraAnswers[q.question_id] ?? ""}
-                          onChange={(e) => setAnswer(q.question_id, e.target.value)}
-                        />
-                      </label>
+                        {q.type === "single_choice" && q.options ? (
+                          <div className="mt-3 flex flex-col gap-2.5 pl-1">
+                            {q.options.map((opt, idx) => (
+                              <label key={idx} className="flex items-center gap-3 cursor-pointer group">
+                                <input
+                                  type="radio"
+                                  name={q.question_id}
+                                  value={opt}
+                                  checked={extraAnswers[q.question_id] === opt}
+                                  onChange={(e) => setAnswer(q.question_id, e.target.value)}
+                                  className="h-4 w-4 border-stone-300 text-red-800 focus:ring-red-800/30"
+                                />
+                                <span className="text-sm text-stone-700 group-hover:text-stone-900">{opt}</span>
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <textarea
+                            className="mt-2 min-h-[100px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                            placeholder={q.placeholder ?? "กรอกคำตอบ..."}
+                            value={extraAnswers[q.question_id] ?? ""}
+                            onChange={(e) => setAnswer(q.question_id, e.target.value)}
+                          />
+                        )}
+                      </div>
                     ))
                   )}
                 </div>

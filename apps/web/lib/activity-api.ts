@@ -84,9 +84,15 @@ export async function postActivityRegistration(
         });
         const payData = await payRes.json().catch(() => ({}));
         if (!payRes.ok || !payData.success) {
+           let msg = payData.error?.message ?? "อัปโหลดสลิปไม่สำเร็จ";
+           if (payRes.status === 409) {
+             msg = "สลิปนี้ถูกใช้ชำระเงินไปแล้ว (สลิปซ้ำ)";
+           } else if (payRes.status === 422) {
+             msg = "ยอดเงินไม่ตรงกับราคา หรือ แสกน QR บนสลิปไม่พบ กรุณาอัปโหลดรูปใหม่";
+           }
            return {
              ok: false,
-             message: payData.error?.message ?? "อัปโหลดสลิปไม่สำเร็จ",
+             message: msg,
            };
         }
       }

@@ -97,8 +97,20 @@ const sample: ActivityDetail = {
   updated_at: "2026-06-02T15:14:36.813Z",
   extra_questions: [
     {
-      question_id: "open-mic",
-      question_text: "คำถามเพิ่มเติมเกี่ยวกับกิจกรรม",
+      question_id: "q-67-vibe-check",
+      question_text: "Who is the ultimate sigma of episode 67?",
+      type: "single_choice",
+      options: [
+        "Titan Speakerman",
+        "Upgraded Titan Cameraman",
+        "Scientist Toilet",
+        "Plunger Cameraman"
+      ],
+      is_required: true,
+    },
+    {
+      question_id: "q-67-ohio-status",
+      question_text: "Explain why you deserve to escape the Fanum Tax",
       placeholder: "กรอกคำตอบ...",
       type: "text",
       is_required: false,
