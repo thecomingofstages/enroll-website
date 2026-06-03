@@ -8,9 +8,12 @@ class AuthHelper {
 
   // ── POST /auth/register ────────────────────────────────────────
   static async register(payload) {
-    const { first_name, last_name, nickname, email, phone, password, gender, interests } = payload;
+    const {
+      first_name, last_name, nickname, email, phone, password, gender, interests,
+      address, education_level, institution,
+    } = payload;
 
-    if (!first_name || !last_name || !nickname || !email || !phone || !password || !gender) {
+    if (!first_name || !last_name || !nickname || !email || !phone || !password || !gender || !address || !education_level || !institution) {
       const err = new Error('Missing required fields.');
       err.code = 'VALIDATION_ERROR';
       err.status = 400;
@@ -25,7 +28,7 @@ class AuthHelper {
       throw err;
     }
 
-    const existing = await UserModel.findOne({ email: email.toLowerCase() }).lean();
+    const existing = await UserModel.findOne({ email: email.toLowerCase().trim() }).lean();
     if (existing) {
       const err = new Error('Email already registered.');
       err.code = 'DUPLICATE_EMAIL';
@@ -39,11 +42,14 @@ class AuthHelper {
       first_name,
       last_name,
       nickname,
-      email,
+      email: email.toLowerCase().trim(),
       phone,
       password_hash,
       gender,
       interests: interests || [],
+      address,
+      education_level,
+      institution,
     });
 
     const { password_hash: _, ...sanitized } = user.toObject();
