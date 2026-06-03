@@ -44,32 +44,55 @@ function NavIconAccount() {
   );
 }
 
-const navLinkClass =
-  "inline-flex min-w-0 items-center justify-center gap-3 whitespace-nowrap rounded-lg px-5 py-3 text-base font-semibold text-white transition-colors hover:bg-white/10 hover:text-primary-yellow";
+const baseNavLinkClass =
+  "relative inline-flex min-w-0 items-center justify-center gap-3 whitespace-nowrap rounded-lg px-5 py-3 text-base font-semibold transition-colors";
+
+const inactiveNavClass = "text-white hover:bg-white/10 hover:text-[#d8b85a]";
+const activeNavClass = "text-[#d8b85a]";
+const activeUnderlineClass =
+  "after:absolute after:bottom-1 after:left-3 after:right-3 after:h-[2px] after:rounded-full after:bg-[#d8b85a]";
 
 export default function Header() {
-  const { user, openLoginModal, openSignupModal, openCheckinModal, openAccountModal, logout } = useAppState();
+  const {
+    user,
+    openLoginModal,
+    openSignupModal,
+    openCheckinModal,
+    openAccountModal,
+    logout,
+    closeModals,
+    activeModal,
+  } = useAppState();
 
   const firstName = user?.name.split(" ")[0] ?? "";
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const handleHomeClick = () => {
+    if (activeModal) {
+      closeModals();
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
+
+  const isHomeActive =
+    !activeModal || (activeModal !== "checkin" && activeModal !== "account");
+  const isQrActive = activeModal === "checkin";
+  const isAccountActive = activeModal === "account";
 
   return (
     <>
-      <header className="flex w-full items-center justify-between gap-3 border-b border-[#2a2a27] bg-[#1b1b19] px-4 py-3 text-white md:hidden">
-        <a href="#" className="shrink-0 rounded-lg bg-[#1b1b19] px-2 py-1.5">
+      <header className="font-serif flex w-full items-center justify-between gap-3 border-b border-[#2a2a27] bg-[#1b1b19] px-4 py-2 text-white md:hidden">
+        <div className="shrink-0 rounded-lg bg-[#1b1b19] px-2 py-1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={LOGO_SRC}
             alt="House of TCOS"
             width={132}
             height={60}
-            className="h-12 w-auto object-contain"
+            className="h-14 w-auto object-contain"
             decoding="async"
           />
-        </a>
+        </div>
 
         <div className="flex min-w-0 shrink-0 items-center justify-end gap-2">
           {user ? (
@@ -80,7 +103,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={logout}
-                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-white px-3 py-1.5 text-[11px] font-semibold text-base-black shadow-sm transition-colors hover:border-primary-yellow active:scale-[0.98]"
+                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98]"
               >
                 ออกจากระบบ
               </button>
@@ -90,14 +113,14 @@ export default function Header() {
               <button
                 type="button"
                 onClick={openLoginModal}
-                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-white px-3 py-1.5 text-[11px] font-semibold text-base-black shadow-sm transition-colors hover:border-primary-yellow active:scale-[0.98]"
+                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98]"
               >
                 เข้าสู่ระบบ
               </button>
               <button
                 type="button"
                 onClick={openSignupModal}
-                className="shrink-0 whitespace-nowrap rounded-lg border border-primary-yellow bg-primary-yellow px-3 py-1.5 text-[11px] font-bold text-base-black shadow-sm transition-all hover:bg-[#c7a94f] active:scale-[0.98]"
+                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98]"
               >
                 สมัครสมาชิก
               </button>
@@ -106,32 +129,50 @@ export default function Header() {
         </div>
       </header>
 
-      <header className="hidden w-full grid-cols-[auto_1fr_auto] items-center gap-6 border-b border-white/10 bg-base-black px-6 py-5 text-white md:grid lg:px-8 lg:py-6">
+      <header className="font-serif hidden w-full grid-cols-[auto_1fr_auto] items-center gap-6 border-b border-white/10 bg-base-black px-6 py-1.5 text-white md:grid lg:px-8 lg:py-2">
         <div className="flex min-w-0 items-center">
-          <a href="#" className="shrink-0 rounded-lg bg-base-black px-3 py-2">
+          <div className="shrink-0 rounded-lg bg-base-black px-2 py-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={LOGO_SRC}
               alt="House of TCOS"
               width={220}
               height={170}
-              className="h-20 w-auto object-contain lg:h-24"
+              className="h-16 w-auto object-contain lg:h-20"
               decoding="async"
             />
-          </a>
+          </div>
 
         </div>
 
         <nav className="mx-auto grid w-full max-w-3xl grid-cols-3 items-center justify-center gap-14 lg:gap-24">
-          <button type="button" onClick={scrollToTop} className={navLinkClass}>
+          <button
+            type="button"
+            onClick={handleHomeClick}
+            className={`${baseNavLinkClass} ${
+              isHomeActive ? activeNavClass : inactiveNavClass
+            } ${isHomeActive ? activeUnderlineClass : ""}`}
+          >
             <NavIconHome />
             Home
           </button>
-          <button type="button" onClick={user ? openCheckinModal : openLoginModal} className={navLinkClass}>
+          <button
+            type="button"
+            onClick={user ? openCheckinModal : openLoginModal}
+            className={`${baseNavLinkClass} ${
+              isQrActive ? activeNavClass : inactiveNavClass
+            } ${isQrActive ? activeUnderlineClass : ""}`}
+          >
             <NavIconQr />
             QR Code
           </button>
-          <button type="button" onClick={user ? openAccountModal : openLoginModal} className={navLinkClass}>
+          <button
+            type="button"
+            onClick={user ? openAccountModal : openLoginModal}
+            className={`${baseNavLinkClass} ${
+              isAccountActive ? activeNavClass : inactiveNavClass
+            } ${isAccountActive ? activeUnderlineClass : ""}`}
+          >
             <NavIconAccount />
             Account
           </button>
@@ -147,7 +188,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={logout}
-                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-white px-3 py-1.5 text-xs font-semibold text-base-black shadow-sm transition-colors hover:border-primary-yellow active:scale-[0.98] sm:px-4"
+                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4"
               >
                 ออกจากระบบ
               </button>
@@ -157,14 +198,14 @@ export default function Header() {
               <button
                 type="button"
                 onClick={openLoginModal}
-                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-white px-3 py-1.5 text-xs font-semibold text-base-black shadow-sm transition-colors hover:border-primary-yellow active:scale-[0.98] sm:px-4"
+                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4"
               >
                 เข้าสู่ระบบ
               </button>
               <button
                 type="button"
                 onClick={openSignupModal}
-                className="shrink-0 whitespace-nowrap rounded-lg border border-primary-yellow bg-primary-yellow px-3 py-2 text-xs font-bold text-base-black shadow-sm transition-all hover:bg-[#c7a94f] active:scale-[0.98] sm:px-4"
+                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4"
               >
                 สมัครสมาชิก
               </button>
