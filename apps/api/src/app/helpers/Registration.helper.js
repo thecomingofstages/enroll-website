@@ -89,7 +89,32 @@ class RegistrationHelper {
 
   // ── GET /registrations/:id ───────────────────────────────────────
   static async getById(registrationId, requestingUser) {
-    throw new Error('Not implemented');
+    const registration = await RegistrationModel.findById(registrationId).lean();
+
+    if (!registration) {
+      const err = new Error('Registration not found.');
+      err.statusCode = 404;
+      err.code = 'NOT_FOUND';
+      throw err;
+    }
+
+    // ตรวจสอบสิทธิ์: ผู้ใช้ทั่วไปจะดูได้เฉพาะของตัวเอง (admin ดูได้ทุกคน)
+    if (requestingUser.role !== 'admin' && registration.user_id !== requestingUser._id.toString()) {
+      const err = new Error('Forbidden: You can only view your own registrations.');
+      err.statusCode = 403;
+      err.code = 'FORBIDDEN';
+      throw err;
+    }
+
+    // ดึงข้อมูล Activity มาแสดงด้วย (Populate)
+    const activity = await ActivityModel.findById(registration.activity_id)
+      .select('name description hero_image_url price schedule')
+      .lean();
+
+    return {
+      ...registration,
+      activity,
+    };
   }
 
   // ── GET /admin/registrations ─────────────────────────────────────

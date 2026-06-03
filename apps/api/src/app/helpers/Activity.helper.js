@@ -1,5 +1,6 @@
 const { v7: uuidv7 }    = require('uuid');
 const ActivityModel     = require('../models/Activity.model');
+const SpeakerModel      = require('../models/Speaker.model');
 const RegistrationModel = require('../models/Registration.model');
 const AttendanceModel   = require('../models/Attendance.model');
 
@@ -35,20 +36,80 @@ class ActivityHelper {
 
   // ── GET /activities ──────────────────────────────────────────────
   static async list(filters, pagination) {
-    // TODO: build $match, paginate
-    throw new Error('Not implemented');
+    const query = { deleted_at: { $exists: false } };
+
+    if (filters.tags) {
+      // รองรับการค้นหาหลาย Tag พร้อมกันแบบ OR
+      const tagsArray = filters.tags.split(',').map(t => t.trim());
+      query.tags = { $in: tagsArray };
+    }
+
+    if (filters.is_featured !== undefined) {
+      if (filters.is_featured === 'true' || filters.is_featured === true) query.is_featured = true;
+      if (filters.is_featured === 'false' || filters.is_featured === false) query.is_featured = false;
+    }
+
+    const { page, limit } = pagination;
+    const skip = (page - 1) * limit;
+
+    const total = await ActivityModel.countDocuments(query);
+    let activities = await ActivityModel.find(query)
+      .sort({ created_at: -1 }) // เรียงกิจกรรมใหม่ล่าสุดขึ้นก่อน
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    activities = activities.map(act => {
+      act.is_registration_open = computeIsOpen(act);
+      return act;
+    });
+
+    return {
+      data: activities,
+      meta: { page, limit, total }
+    };
   }
 
   // ── GET /activities/recommended ─────────────────────────────────
   static async getRecommended(userInterests, limit) {
-    // TODO: interest tag match, score, sort
-    throw new Error('Not implemented');
+    const query = {
+      deleted_at: { $exists: false },
+      tags: { $in: userInterests || [] } // ดึงตามความสนใจของ User
+    };
+
+    let activities = await ActivityModel.find(query)
+      .limit(limit)
+      .lean();
+
+    activities = activities.map(act => {
+      act.is_registration_open = computeIsOpen(act);
+      return act;
+    });
+
+    return activities;
   }
 
   // ── GET /activities/:id ─────────────────────────────────────────
   static async getById(activityId) {
-    // TODO: findById, join speakers + attendance
-    throw new Error('Not implemented');
+    const activity = await ActivityModel.findOne({
+      _id: activityId,
+      deleted_at: { $exists: false }
+    }).lean();
+
+    if (!activity) {
+      const err = new Error('Activity not found.');
+      err.statusCode = 404;
+      err.code = 'NOT_FOUND';
+      throw err;
+    }
+
+    // Join ข้อมูล Speaker ที่เกี่ยวข้อง
+    const speakers = await SpeakerModel.find({ activity_id: activityId }).lean();
+    
+    activity.speakers = speakers;
+    activity.is_registration_open = computeIsOpen(activity);
+
+    return activity;
   }
 
   // ── POST /admin/activities ───────────────────────────────────────
