@@ -94,7 +94,33 @@ class RegistrationHelper {
 
   // ── GET /admin/registrations ─────────────────────────────────────
   static async adminList(filters, pagination) {
-    throw new Error('Not implemented');
+    const query = {};
+    if (filters.activity_id) query.activity_id = filters.activity_id;
+    if (filters.status) query.status = filters.status;
+
+    const page = Math.max(1, pagination.page || 1);
+    const limit = Math.max(1, pagination.limit || 50);
+    const skip = (page - 1) * limit;
+
+    const [total, registrations] = await Promise.all([
+      RegistrationModel.countDocuments(query),
+      RegistrationModel.find(query)
+        .sort({ registered_at: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('user_id', 'first_name last_name nickname email phone gender interests profile_image_url address education_level institution created_at')
+        .populate('activity_id', 'name price seat_capacity enrolled_count open_registration_at close_registration_at registration_open_override is_featured created_at updated_at')
+        .lean(),
+    ]);
+
+    return {
+      meta: {
+        page,
+        limit,
+        total,
+      },
+      data: registrations,
+    };
   }
 
   // ── PATCH /admin/registrations/:id/status ────────────────────────
