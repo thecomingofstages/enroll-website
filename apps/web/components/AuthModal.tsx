@@ -173,11 +173,7 @@ export default function AuthModal() {
       >
         <div className="flex items-start justify-between gap-2 border-b border-muted-charcoal/40 px-4 py-3 sm:px-6 sm:py-4">
           <div className="min-w-0 pr-2">
-            <h3
-              className={`text-base font-extrabold leading-tight tracking-wide text-primary-yellow sm:text-xl sm:tracking-wider ${
-                authMode === "signup" ? "font-trirong" : "font-serif"
-              }`}
-            >
+            <h3 className="font-taviraj text-base font-extrabold leading-tight tracking-wide text-primary-yellow sm:text-xl sm:tracking-wider">
               {authMode === "login"
                 ? "เข้าสู่ระบบ TCOS Account"
                 : "สร้างบัญชี TCOS Account"}
@@ -273,7 +269,7 @@ export default function AuthModal() {
                 <FieldError message={errors.password} />
               </div>
 
-              <button type="submit" disabled={isSubmitting} className={submitButtonClass}>
+              <button type="submit" disabled={isSubmitting} className={`${submitButtonClass} font-taviraj`}>
                 {isSubmitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
               </button>
 
@@ -481,7 +477,7 @@ export default function AuthModal() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`${submitButtonClass} font-trirong`}
+                className={`${submitButtonClass} font-taviraj`}
               >
                 {isSubmitting ? "กำลังสมัครสมาชิก..." : "สมัครสมาชิก"}
               </button>

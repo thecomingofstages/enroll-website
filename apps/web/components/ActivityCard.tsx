@@ -106,7 +106,7 @@ export default function ActivityCard({
         </div>
 
         <div className="flex flex-1 flex-col gap-2 p-3 pb-2">
-          <h3 className="line-clamp-2 font-trirong text-base font-bold leading-tight text-zinc-100">
+          <h3 className="line-clamp-2 font-taviraj text-base font-bold leading-tight text-zinc-100">
             {activity.name}
           </h3>
           <div className="space-y-1 font-kanit text-xs font-medium text-zinc-400">
@@ -145,7 +145,7 @@ export default function ActivityCard({
           : "bg-gradient-to-t from-base-black/70 via-base-black/20 to-white/5"
       }`} />
       <div className={`absolute inset-x-0 bottom-0 space-y-1.5 p-4 ${isLightCard ? "text-base-black" : "text-white"}`}>
-        <h3 className="line-clamp-2 font-trirong text-xl font-extrabold leading-tight sm:text-2xl md:text-3xl">
+        <h3 className="line-clamp-2 font-taviraj text-xl font-extrabold leading-tight sm:text-2xl md:text-3xl">
           {activity.name}
         </h3>
 
