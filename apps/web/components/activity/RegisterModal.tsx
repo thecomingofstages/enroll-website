@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import type { ActivityDetail } from "@enroll-website/types";
 import { postActivityRegistration } from "@/lib/activity-api";
+import { useAppState } from "@/lib/context";
 
 type StepId = "info" | "payment" | "questions";
 
@@ -68,6 +69,7 @@ export function RegisterModal({
   onClose: () => void;
 }) {
   const titleId = useId();
+  const { user, openAccountModal } = useAppState();
   
   const steps: StepConfig[] = [{ id: "info", label: "ข้อมูล" }];
   if (activity.price > 0) {
@@ -124,15 +126,16 @@ export function RegisterModal({
     };
   }, []);
 
-  const canNextFrom1 =
-    !validateFirstName(firstName) &&
-    !validateLastName(lastName) &&
-    !validatePhone(phone) &&
-    nickname.trim().length > 0 &&
-    !validateEmail(email) &&
-    !validatePassword(password) &&
-    !validateConfirmPassword(password, confirmPassword) &&
-    gender !== "";
+  const canNextFrom1 = user
+    ? true
+    : !validateFirstName(firstName) &&
+      !validateLastName(lastName) &&
+      !validatePhone(phone) &&
+      nickname.trim().length > 0 &&
+      !validateEmail(email) &&
+      !validatePassword(password) &&
+      !validateConfirmPassword(password, confirmPassword) &&
+      gender !== "";
   const canNextFrom2 = slip !== null;
 
   const setAnswer = (id: string, value: string) => {
@@ -146,23 +149,26 @@ export function RegisterModal({
       question_id: k,
       answer: v,
     }));
+    
+    const newUserPayload = user ? undefined : {
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      nickname: nickname.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      password: password,
+      gender: gender || "Unspecified",
+      education_level: educationLevel.trim() || undefined,
+      institution: institution.trim() || undefined,
+      address: address.trim() || undefined,
+    };
+
     const res = await postActivityRegistration(
       activity._id,
       {
         activity_id: activity._id,
         custom_answers,
-        new_user: {
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          nickname: nickname.trim(),
-          phone: phone.trim(),
-          email: email.trim(),
-          password: password,
-          gender: gender || "Unspecified",
-          education_level: educationLevel.trim() || undefined,
-          institution: institution.trim() || undefined,
-          address: address.trim() || undefined,
-        },
+        new_user: newUserPayload,
       },
       slip,
     );
@@ -251,6 +257,52 @@ export function RegisterModal({
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
               {currentStep.id === "info" ? (
+                user ? (
+                  <div className="relative flex flex-col items-center justify-center p-6 sm:p-8 min-h-[400px] overflow-hidden">
+                    {/* Background Glow */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#d8b85a]/20 blur-[80px] rounded-full pointer-events-none" />
+                    
+                    <div className="relative z-10 flex flex-col items-center w-full max-w-sm rounded-3xl bg-white/60 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] backdrop-blur-xl border border-white/60">
+                      
+                      {/* Avatar with rings */}
+                      <div className="relative mb-6">
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#d8b85a] to-[#f4f0ea] animate-pulse blur-md opacity-60"></div>
+                        <div className="relative h-24 w-24 rounded-full bg-stone-100 overflow-hidden ring-4 ring-white shadow-xl flex items-center justify-center text-4xl font-playfair font-black text-[#d8b85a]">
+                          {user.avatarUrl ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                          ) : (
+                            user.name.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        {/* Verified Badge */}
+                        <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-[#1b1b19] text-white ring-4 ring-white shadow-md">
+                          <svg className="h-4 w-4 text-[#d8b85a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      <h3 className="font-playfair text-2xl font-black text-stone-900 tracking-tight">{user.name}</h3>
+                      <p className="text-sm font-medium text-stone-500 mt-1">{user.email}</p>
+                      
+                      <button 
+                        type="button" 
+                        onClick={openAccountModal}
+                        className="mt-6 rounded-full border border-stone-200 bg-white/80 px-5 py-2 text-xs font-bold text-stone-600 shadow-sm transition-all hover:border-[#d8b85a] hover:text-[#d8b85a] hover:bg-white"
+                      >
+                        แก้ไขข้อมูลส่วนตัว
+                      </button>
+
+                      <div className="mt-8 w-full border-t border-stone-200/60 pt-6 text-center">
+                        <p className="text-sm font-bold text-[#1b1b19]">✓ ยืนยันตัวตนเรียบร้อย</p>
+                        <p className="mt-2 text-xs font-medium text-stone-500 leading-relaxed">
+                          ระบบพบข้อมูลโปรไฟล์ของคุณแล้ว<br/>กด <strong className="text-stone-800">&quot;ถัดไป&quot;</strong> เพื่อดำเนินการต่อได้เลย
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
                 <>
                   <p className="rounded-lg bg-sky-100 px-3 py-2 text-sm text-sky-900">
                     {activity.price > 0 
@@ -436,6 +488,7 @@ export function RegisterModal({
                     </label>
                   </div>
                 </>
+                )
               ) : null}
 
               {currentStep.id === "payment" ? (

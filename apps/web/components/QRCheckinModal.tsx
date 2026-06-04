@@ -110,7 +110,7 @@ function getAttendeeDisplay(user: TCOSAccount) {
 }
 
 export default function QRCheckinModal() {
-  const { activeModal, user } = useAppState();
+  const { activeModal, user, closeModals } = useAppState();
   const [timeLeft, setTimeLeft] = useState(FALLBACK_QR_TTL_SECONDS);
   const [qrToken, setQrToken] = useState("");
   const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null);
@@ -190,16 +190,26 @@ export default function QRCheckinModal() {
     : "rounded-lg border border-white/25 bg-transparent px-3 py-2 text-xs font-bold text-white transition-all hover:text-[#d8b85a] active:scale-[0.98]";
 
   return (
-    <div className="flex flex-1 items-start justify-center px-4 py-10">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-sm">
       <div
-        className={`w-full max-w-sm overflow-hidden rounded-2xl border shadow-2xl transition-colors ${
+        className={`relative w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
           brightnessMode
             ? "border-zinc-300 bg-white text-black"
             : "border-muted-charcoal bg-base-black text-white"
         }`}
       >
+        <button 
+          onClick={closeModals} 
+          className={`absolute right-4 top-4 z-10 rounded-full p-2 transition-colors ${
+            brightnessMode ? "text-zinc-400 hover:bg-black/10 hover:text-black" : "text-zinc-400 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
         <div
-          className={`flex items-center justify-between border-b px-4 py-3 ${
+          className={`flex items-center justify-between border-b px-4 py-3 pr-14 ${
             brightnessMode ? "border-zinc-200" : "border-muted-charcoal/50"
           }`}
         >
