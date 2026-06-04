@@ -12,50 +12,31 @@ export function ActivityScheduleAndVenue({ activity }: { activity: ActivityDetai
     return null;
   }
 
-  // Group items by date
-  const groupedByDate: Record<string, ActivityScheduleItem[]> = {};
-  activity.schedule.forEach((item) => {
-    if (!groupedByDate[item.date]) {
-      groupedByDate[item.date] = [];
-    }
-    groupedByDate[item.date].push(item);
-  });
-
-  const sortedDates = Object.keys(groupedByDate).sort();
-  const currentDate = sortedDates[currentDayIndex];
-  const currentDayItems = groupedByDate[currentDate] || [];
+  // Backend schema already groups by date. We just ensure it's sorted.
+  const sortedSchedule = [...activity.schedule].sort((a, b) => a.date.localeCompare(b.date));
+  const currentDay = sortedSchedule[currentDayIndex];
 
   const handlePrev = () => {
     setCurrentDayIndex((prev) => Math.max(0, prev - 1));
   };
 
   const handleNext = () => {
-    setCurrentDayIndex((prev) => Math.min(sortedDates.length - 1, prev + 1));
+    setCurrentDayIndex((prev) => Math.min(sortedSchedule.length - 1, prev + 1));
   };
 
-  const hasMultipleDays = sortedDates.length > 1;
+  const hasMultipleDays = sortedSchedule.length > 1;
 
-  // Determine current venue detail
-  // 1. Look for venue_detail in the first item of the current day that has it
-  // 2. Fallback to main activity venue
-  const currentVenueDetail = 
-    currentDayItems.find(item => item.venue_detail)?.venue_detail || 
-    activity.venue;
-
-  // We pass down specific props to ActivityTimeline so it doesn't need to do the math again
   return (
     <div className="flex flex-col gap-6">
       <ActivityTimeline
-        currentDate={currentDate}
+        currentDay={currentDay}
         currentDayIndex={currentDayIndex}
-        currentDayItems={currentDayItems}
         hasMultipleDays={hasMultipleDays}
         onPrev={handlePrev}
         onNext={handleNext}
-        totalDays={sortedDates.length}
-        globalVenueName={activity.venue?.name}
+        totalDays={sortedSchedule.length}
       />
-      <ActivityLocation venue={currentVenueDetail} />
+      <ActivityLocation day={currentDay} />
     </div>
   );
 }

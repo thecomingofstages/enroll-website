@@ -1,27 +1,24 @@
 import type { ActivityScheduleItem } from "@enroll-website/types";
 
 interface ActivityTimelineProps {
-  currentDate: string;
+  currentDay: ActivityScheduleItem;
   currentDayIndex: number;
-  currentDayItems: ActivityScheduleItem[];
   hasMultipleDays: boolean;
   onPrev: () => void;
-  onNext: () => void;
   totalDays: number;
-  globalVenueName?: string;
 }
 
 export function ActivityTimeline({
-  currentDate,
+  currentDay,
   currentDayIndex,
-  currentDayItems,
   hasMultipleDays,
   onPrev,
   onNext,
   totalDays,
-  globalVenueName,
 }: ActivityTimelineProps) {
-  const currentVenue = currentDayItems.find(item => item.venue)?.venue || globalVenueName;
+  const currentVenue = currentDay.venue;
+  const currentDate = currentDay.date;
+  const slots = currentDay.slots || [];
 
   const formatDisplayDate = (dateStr: string) => {
     try {
@@ -92,7 +89,7 @@ export function ActivityTimeline({
             className="absolute bottom-2 left-[11px] top-2 w-px bg-zinc-800"
             aria-hidden
           />
-          {currentDayItems.map((item, index) => (
+          {slots.map((item, index) => (
             <li key={index} className="relative flex gap-4 pb-8 last:pb-0">
               <div className="relative z-10 flex shrink-0 flex-col items-center pt-1">
                 <span

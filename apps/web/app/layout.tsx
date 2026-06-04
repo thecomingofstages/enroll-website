@@ -76,7 +76,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${prompt.variable} ${playfair.variable} ${sarabun.variable} ${trirong.variable} ${taviraj.variable} ${kanit.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-zinc-50">
+        {children}
+      </body>
     </html>
   );
 }

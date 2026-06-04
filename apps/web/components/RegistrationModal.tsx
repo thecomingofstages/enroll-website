@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAppState } from "../lib/context";
 import { Activity } from "../lib/mockData";
+import { postActivityRegistration } from "../lib/activity-api";
 
 export default function RegistrationModal() {
   const { 
@@ -21,6 +22,9 @@ export default function RegistrationModal() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   
   // Payment State
   const [slipFile, setSlipFile] = useState<File | null>(null);
@@ -57,9 +61,16 @@ export default function RegistrationModal() {
       return;
     }
     
-    // If user is guest, automatically register their TCOS Account
+    // Validate password for new users
     if (!user) {
-      await login(name, email, phone, []);
+      if (password.length < 8) {
+        alert("รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร");
+        return;
+      }
+      if (password !== confirmPassword) {
+        alert("รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน");
+        return;
+      }
     }
 
     if (isPaid) {
@@ -77,27 +88,17 @@ export default function RegistrationModal() {
   const handleSlipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Check file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setPaymentError("ขนาดไฟล์ต้องไม่เกิน 5MB");
+      return;
+    }
 
     setSlipFile(file);
     setSlipFileName(file.name);
-    setIsVerifyingSlip(true);
+    setSlipVerifiedCode("READY_TO_UPLOAD");
     setPaymentError("");
-
-    try {
-      // Simulate slip scanning and verifying
-      const result = await simulateSlipVerification(file);
-      if (result.success) {
-        setSlipVerifiedCode(result.code);
-      } else {
-        setPaymentError(result.message);
-        setSlipFile(null);
-        setSlipFileName("");
-      }
-    } catch (err) {
-      setPaymentError("ไม่สามารถสแกนสลิปได้ กรุณาลองใหม่อีกครั้ง");
-    } finally {
-      setIsVerifyingSlip(false);
-    }
   };
 
   const handlePaymentSubmit = (e: React.FormEvent) => {
@@ -129,13 +130,38 @@ export default function RegistrationModal() {
   const handleFinalRegistration = async () => {
     setIsRegistering(true);
     try {
-      const reg = await registerToEvent(
-        activity.id, 
-        answers, 
-        isPaid ? { slipFile, slipCode: slipVerifiedCode } : undefined
+      const payload: any = {
+        activity_id: activity.id,
+        answers,
+      };
+
+      if (!user) {
+        payload.new_user = {
+          name,
+          email,
+          phone,
+          password,
+          preferences: [],
+        };
+      }
+
+      const res = await postActivityRegistration(
+        activity.id,
+        payload,
+        isPaid ? slipFile : null
       );
-      setTicketDetails(reg);
-      setStep("success");
+
+      if (res.ok) {
+        // If it's a guest registration, we should also log them in locally after success.
+        if (!user) {
+          await login(name, email, phone, []);
+        }
+        
+        setTicketDetails({ ticketCode: res.registration_id });
+        setStep("success");
+      } else {
+        alert(res.message);
+      }
     } catch (err) {
       alert("เกิดข้อผิดพลาดในการลงทะเบียนกิจกรรม");
     } finally {
@@ -148,6 +174,8 @@ export default function RegistrationModal() {
     setName("");
     setEmail("");
     setPhone("");
+    setPassword("");
+    setConfirmPassword("");
     setSlipFile(null);
     setSlipFileName("");
     setSlipVerifiedCode("");
@@ -246,6 +274,43 @@ export default function RegistrationModal() {
                     className="w-full rounded-lg bg-zinc-950 border border-muted-charcoal px-3 py-2 text-sm text-zinc-200 focus:border-primary-yellow/60 outline-none transition-colors"
                   />
                 </div>
+
+                {!user && (
+                  <>
+                    <div className="pt-2 border-t border-muted-charcoal/40">
+                      <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-500 mb-1">ตั้งรหัสผ่านสำหรับเข้าสู่ระบบ (8 ตัวอักษรขึ้นไป)</label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          required
+                          placeholder="รหัสผ่านอย่างน้อย 8 ตัวอักษร"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full rounded-lg bg-zinc-950 border border-muted-charcoal px-3 py-2 pr-12 text-sm text-zinc-200 focus:border-primary-yellow/60 outline-none transition-colors"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-zinc-400 hover:text-primary-yellow transition-colors"
+                        >
+                          {showPassword ? "ซ่อน" : "แสดง"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-extrabold uppercase tracking-widest text-zinc-500 mb-1">ยืนยันรหัสผ่าน</label>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        placeholder="ยืนยันรหัสผ่านอีกครั้ง"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full rounded-lg bg-zinc-950 border border-muted-charcoal px-3 py-2 text-sm text-zinc-200 focus:border-primary-yellow/60 outline-none transition-colors"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               <button
@@ -318,25 +383,18 @@ export default function RegistrationModal() {
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                     disabled={isVerifyingSlip}
                   />
-                  {isVerifyingSlip ? (
-                    <div className="flex flex-col items-center py-2 space-y-2">
-                      <div className="animate-spin h-6 w-6 border-2 border-primary-yellow border-t-transparent rounded-full" />
-                      <span className="text-xs text-primary-yellow font-bold tracking-wide">
-                        กำลังสแกนหา QR Code ในสลิปของคุณ...
-                      </span>
-                    </div>
-                  ) : slipVerifiedCode ? (
+                  {slipFileName ? (
                     <div className="flex flex-col items-center py-2 space-y-1">
-                      <div className="bg-light-green/20 p-2 rounded-full border border-light-green/30">
-                        <svg className="h-5 w-5 text-light-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                      <div className="bg-primary-yellow/20 p-2 rounded-full border border-primary-yellow/30">
+                        <svg className="h-5 w-5 text-primary-yellow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
                       </div>
-                      <span className="text-xs text-light-green font-bold">
-                        ตรวจสอบสลิปเรียบร้อยแล้ว!
+                      <span className="text-xs text-primary-yellow font-bold">
+                        แนบไฟล์สลิปเรียบร้อยแล้ว
                       </span>
                       <span className="text-[10px] text-zinc-400 font-mono">
-                        รหัสสลิป: {slipVerifiedCode}
+                        ไฟล์: {slipFileName}
                       </span>
                     </div>
                   ) : (

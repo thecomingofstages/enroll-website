@@ -21,6 +21,19 @@ function apiBase(): string | null {
   return base && base.length > 0 ? base : null;
 }
 
+function getAuthToken(): string | null {
+  if (typeof document !== "undefined") {
+    // Check cookie
+    const match = document.cookie.match(/(?:^|; )access_token=([^;]*)/);
+    if (match && match[1]) return match[1];
+  }
+  if (typeof localStorage !== "undefined") {
+    // Fallback to localStorage
+    return localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
+  }
+  return null;
+}
+
 export async function fetchActivityDetail(id: string): Promise<ActivityDetail | null> {
   const base = apiBase();
   if (base) {
@@ -31,7 +44,28 @@ export async function fetchActivityDetail(id: string): Promise<ActivityDetail | 
       if (res.ok) {
         try {
           const payload = (await res.json()) as { data: ActivityDetail };
-          return payload.data;
+          const activity = payload.data;
+
+          // Compute is_registration_open from date range if not set by Backend
+          if (activity.is_registration_open === undefined || activity.is_registration_open === null || activity.is_registration_open === false) {
+            const now = new Date();
+            const openAt  = activity.open_registration_at  ? new Date(activity.open_registration_at)  : null;
+            const closeAt = activity.close_registration_at ? new Date(activity.close_registration_at) : null;
+
+            if (activity.registration_open_override === true) {
+              const afterOpen   = !openAt  || now >= openAt;
+              const beforeClose = !closeAt || now <= closeAt;
+              activity.is_registration_open = afterOpen && beforeClose;
+            } else if (activity.registration_open_override === false) {
+              activity.is_registration_open = false;
+            } else if (openAt || closeAt) {
+              const afterOpen   = !openAt  || now >= openAt;
+              const beforeClose = !closeAt || now <= closeAt;
+              activity.is_registration_open = afterOpen && beforeClose;
+            }
+          }
+
+          return activity;
         } catch {
           throw new ActivityApiLoadError("รูปแบบข้อมูลจาก API ไม่ถูกต้อง");
         }
@@ -58,17 +92,40 @@ export async function postActivityRegistration(
   if (base) {
     try {
       // Step 1: Create registration
+      const currentToken = getAuthToken();
+      const regHeaders: HeadersInit = { "Content-Type": "application/json" };
+      if (currentToken) {
+        regHeaders["Authorization"] = `Bearer ${currentToken}`;
+      }
+
       const regRes = await fetch(`${base}/registrations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: regHeaders,
         body: JSON.stringify(payload),
       });
       const regData = await regRes.json().catch(() => ({}));
       
       if (!regRes.ok || !regData.success) {
+        const msg = regData.error?.message ?? `ลงทะเบียนไม่สำเร็จ (${regRes.status})`;
+        const code = regData.error?.code;
+
+        if (code === "DUPLICATE_REGISTRATION" || msg.toLowerCase().includes("already registered") || msg.includes("แล้ว")) {
+          return {
+            ok: false,
+            message: "คุณได้ลงทะเบียนกิจกรรมนี้ไปแล้ว (หากยังชำระเงินไม่เสร็จ กรุณาทำรายการต่อที่หน้าโปรไฟล์ของคุณ)",
+          };
+        }
+
+        if (code === "DUPLICATE_EMAIL" || msg.toLowerCase().includes("email already registered")) {
+          return {
+            ok: false,
+            message: "อีเมลนี้มีในระบบแล้ว กรุณาเข้าสู่ระบบก่อนลงทะเบียน",
+          };
+        }
+
         return {
           ok: false,
-          message: regData.error?.message ?? `ลงทะเบียนไม่สำเร็จ (${regRes.status})`,
+          message: msg,
         };
       }
       
@@ -78,15 +135,30 @@ export async function postActivityRegistration(
       if (paymentSlip) {
         const form = new FormData();
         form.set("slip", paymentSlip);
+        
+        // Use token from step 1 response (new user) or fallback to existing token
+        const paymentToken = regData.data?.access_token || getAuthToken();
+        const payHeaders: HeadersInit = {};
+        if (paymentToken) {
+          payHeaders["Authorization"] = `Bearer ${paymentToken}`;
+        }
+
         const payRes = await fetch(`${base}/registrations/${encodeURIComponent(registrationId)}/payment`, {
           method: "POST",
+          headers: payHeaders,
           body: form,
         });
         const payData = await payRes.json().catch(() => ({}));
         if (!payRes.ok || !payData.success) {
+           let msg = payData.error?.message ?? "อัปโหลดสลิปไม่สำเร็จ";
+           if (payRes.status === 409) {
+             msg = "สลิปนี้ถูกใช้ชำระเงินไปแล้ว (สลิปซ้ำ)";
+           } else if (payRes.status === 422) {
+             msg = "ยอดเงินไม่ตรงกับราคา หรือ แสกน QR บนสลิปไม่พบ กรุณาอัปโหลดรูปใหม่";
+           }
            return {
              ok: false,
-             message: payData.error?.message ?? "อัปโหลดสลิปไม่สำเร็จ",
+             message: msg,
            };
         }
       }
@@ -105,6 +177,8 @@ export async function postActivityRegistration(
   }
 
   await new Promise((r) => setTimeout(r, 400));
+  alert("⚠️ ระบบยังอยู่ใน 'โหมดจำลอง (Offline Mode)' ครับ! (เนื่องจาก NEXT_PUBLIC_API_URL ยังไม่ถูกอัปเดต) \n\nกรุณากด Ctrl+C ใน Terminal แล้วพิมพ์ `npm run dev` ใหม่อีกครั้งครับ");
+  
   return {
     ok: true,
     registration_id: `mock-${activityId}-${Date.now()}`,
