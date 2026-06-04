@@ -23,6 +23,16 @@ const nextConfig: NextConfig = {
         hostname: "*.openstreetmap.org",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "example.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "example.com",
+        pathname: "/**",
+      },
     ],
   },
 };

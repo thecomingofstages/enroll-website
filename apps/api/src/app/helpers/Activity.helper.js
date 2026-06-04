@@ -31,8 +31,47 @@ class ActivityHelper {
 
   // ── GET /activities/:id ─────────────────────────────────────────
   static async getById(activityId) {
-    // TODO: findById, join speakers, join attendance, return full doc
-    throw new Error('Not implemented');
+    const SpeakerModel = require('../models/Speaker.model');
+
+    const activity = await ActivityModel.findOne({
+      _id: activityId,
+      deleted_at: { $exists: false },
+    }).lean();
+
+    if (!activity) {
+      const err = new Error('Activity not found.');
+      err.statusCode = 404;
+      err.code = 'NOT_FOUND';
+      throw err;
+    }
+
+    // Compute is_registration_open from date range + override
+    if (activity.is_registration_open === undefined || activity.is_registration_open === null) {
+      const now = new Date();
+      const openAt  = activity.open_registration_at  ? new Date(activity.open_registration_at)  : null;
+      const closeAt = activity.close_registration_at ? new Date(activity.close_registration_at) : null;
+
+      if (activity.registration_open_override === true) {
+        // Admin override — force open if within date range (or no range set)
+        const afterOpen  = !openAt  || now >= openAt;
+        const beforeClose = !closeAt || now <= closeAt;
+        activity.is_registration_open = afterOpen && beforeClose;
+      } else if (activity.registration_open_override === false) {
+        // Admin explicitly closed
+        activity.is_registration_open = false;
+      } else {
+        // No override — use date range
+        const afterOpen  = !openAt  || now >= openAt;
+        const beforeClose = !closeAt || now <= closeAt;
+        activity.is_registration_open = afterOpen && beforeClose;
+      }
+    }
+
+    // Join speakers for this activity
+    const speakers = await SpeakerModel.find({ activity_id: activityId }).lean();
+    activity.speakers = speakers;
+
+    return activity;
   }
 
   // ── POST /admin/activities ──────────────────────────────────────

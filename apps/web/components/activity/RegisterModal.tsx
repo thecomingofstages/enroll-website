@@ -37,6 +37,18 @@ function validateEmail(email: string): string | null {
   return null;
 }
 
+function validatePassword(pw: string): string | null {
+  if (!pw) return "กรุณากรอกรหัสผ่าน";
+  if (pw.length < 8) return "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร";
+  return null;
+}
+
+function validateConfirmPassword(pw: string, cpw: string): string | null {
+  if (!cpw) return "กรุณายืนยันรหัสผ่าน";
+  if (pw !== cpw) return "รหัสผ่านไม่ตรงกัน";
+  return null;
+}
+
 function validatePhone(phone: string): string | null {
   const trimmed = phone.trim();
   if (!trimmed) return "กรุณากรอกเบอร์โทร";
@@ -74,6 +86,8 @@ export function RegisterModal({
   const [lastName, setLastName] = useState("");
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState("");
   const [educationLevel, setEducationLevel] = useState("");
@@ -91,6 +105,8 @@ export function RegisterModal({
   const lastNameError = lastName.length > 0 ? validateLastName(lastName) : null;
   const phoneError = phone.length > 0 ? validatePhone(phone) : null;
   const emailError = email.length > 0 ? validateEmail(email) : null;
+  const passwordError = password.length > 0 ? validatePassword(password) : null;
+  const confirmPasswordError = confirmPassword.length > 0 ? validateConfirmPassword(password, confirmPassword) : null;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -114,6 +130,8 @@ export function RegisterModal({
     !validatePhone(phone) &&
     nickname.trim().length > 0 &&
     !validateEmail(email) &&
+    !validatePassword(password) &&
+    !validateConfirmPassword(password, confirmPassword) &&
     gender !== "";
   const canNextFrom2 = slip !== null;
 
@@ -139,7 +157,7 @@ export function RegisterModal({
           nickname: nickname.trim(),
           phone: phone.trim(),
           email: email.trim(),
-          password: `Temp@${phone.trim()}`,
+          password: password,
           gender: gender || "Unspecified",
           education_level: educationLevel.trim() || undefined,
           institution: institution.trim() || undefined,
@@ -325,6 +343,44 @@ export function RegisterModal({
                       />
                       {emailError && (
                         <p className="mt-1 text-xs text-red-600">{emailError}</p>
+                      )}
+                    </label>
+                    <label className="block sm:col-span-1">
+                      <span className="text-sm font-medium text-stone-700">
+                        รหัสผ่าน <span className="text-red-500">*</span>
+                      </span>
+                      <input
+                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                          passwordError
+                            ? "border-red-400 bg-red-50"
+                            : "border-stone-200 bg-white"
+                        }`}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        type="password"
+                        placeholder="อย่างน้อย 8 ตัวอักษร"
+                      />
+                      {passwordError && (
+                        <p className="mt-1 text-xs text-red-600">{passwordError}</p>
+                      )}
+                    </label>
+                    <label className="block sm:col-span-1">
+                      <span className="text-sm font-medium text-stone-700">
+                        ยืนยันรหัสผ่าน <span className="text-red-500">*</span>
+                      </span>
+                      <input
+                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                          confirmPasswordError
+                            ? "border-red-400 bg-red-50"
+                            : "border-stone-200 bg-white"
+                        }`}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        type="password"
+                        placeholder="พิมพ์รหัสผ่านอีกครั้ง"
+                      />
+                      {confirmPasswordError && (
+                        <p className="mt-1 text-xs text-red-600">{confirmPasswordError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
