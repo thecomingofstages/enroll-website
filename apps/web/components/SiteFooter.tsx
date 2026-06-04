@@ -24,20 +24,10 @@ export default function SiteFooter() {
           />
         </div>
 
-        <nav className="flex w-full max-w-md flex-nowrap items-center justify-center gap-x-7 sm:gap-x-10">
-          {footerLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-100 transition-colors hover:text-primary-yellow sm:text-[11px]"
-            >
-              {link.label}
-            </a>
-          ))}
-        </nav>
+
 
         <p className="text-[10px] leading-relaxed text-zinc-500 sm:text-xs">
-          © 2026 The Coming of Stages. Thai Youth Theatre Collective.
+          © 2026 The Coming of Stages. Youth Power of Thai Theatre
         </p>
       </div>
     </footer>

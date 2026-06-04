@@ -169,7 +169,7 @@ export default function RegistrationModal() {
             <span className="inline-block rounded-full bg-primary-yellow/10 px-2 py-0.5 text-[10px] font-extrabold uppercase text-primary-yellow tracking-wider">
               {activity.price === 0 ? "FREE EVENT" : `${activity.price} THB`}
             </span>
-            <h3 className="font-playfair text-base font-extrabold text-zinc-100 tracking-wide truncate max-w-[200px] sm:max-w-[280px]">
+            <h3 className="font-inter text-base font-extrabold text-zinc-100 tracking-wide truncate max-w-[200px] sm:max-w-[280px]">
               ลงทะเบียน: {activity.name}
             </h3>
           </div>
@@ -467,7 +467,7 @@ export default function RegistrationModal() {
                   <div className="flex justify-between items-start border-b border-muted-charcoal/40 pb-3">
                     <div>
                       <span className="text-[9px] font-extrabold tracking-widest text-zinc-500 uppercase">TCOS Ticket Pass</span>
-                      <h5 className="font-playfair text-sm font-extrabold text-primary-yellow mt-0.5 truncate max-w-[180px]">
+                      <h5 className="font-inter text-sm font-extrabold text-primary-yellow mt-0.5 truncate max-w-[180px]">
                         {activity.name}
                       </h5>
                     </div>
@@ -490,7 +490,7 @@ export default function RegistrationModal() {
                     </div>
                     <div className="col-span-2">
                       <span className="text-[8px] font-extrabold uppercase tracking-wider text-zinc-500">วันเวลาจัดแสดง</span>
-                      <span className="text-zinc-200 block mt-0.5">
+                      <span className="font-sans text-zinc-200 block mt-0.5">
                         {new Date(activity.date).toLocaleString("th-TH", {
                           dateStyle: "medium",
                           timeStyle: "short"
@@ -499,7 +499,7 @@ export default function RegistrationModal() {
                     </div>
                     <div className="col-span-2">
                       <span className="text-[8px] font-extrabold uppercase tracking-wider text-zinc-500">สถานที่จัดงาน</span>
-                      <span className="text-zinc-300 block mt-0.5">{activity.location}</span>
+                      <span className="font-sans text-zinc-300 block mt-0.5">{activity.location}</span>
                     </div>
                   </div>
 

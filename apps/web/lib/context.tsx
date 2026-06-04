@@ -6,9 +6,26 @@ import { Activity, INITIAL_ACTIVITIES } from "./mockData";
 export interface TCOSAccount {
   id: string; // UUID v7 simulation
   name: string;
+  firstName?: string;
+  lastName?: string;
+  nickname?: string;
+  gender?: string;
+  gradeLevel?: string;
+  avatarUrl?: string;
   email: string;
   phone: string;
   preferences: string[];
+}
+
+export interface SignupProfile {
+  firstName: string;
+  lastName: string;
+  nickname: string;
+  email: string;
+  phone: string;
+  gender: string;
+  gradeLevel?: string;
+  preferences?: string[];
 }
 
 export interface UserRegistration {
@@ -38,7 +55,8 @@ interface AppContextType {
   openAccountModal: () => void;
   closeModals: () => void;
   login: (name: string, email: string, phone: string, preferences: string[]) => Promise<void>;
-  updateProfile: (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences">) => void;
+  signup: (profile: SignupProfile) => Promise<void>;
+  updateProfile: (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => void;
   logout: () => void;
   requestOTP: (phone: string) => Promise<string>;
   verifyOTP: (phone: string, code: string) => Promise<boolean>;
@@ -138,24 +156,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     
     if (savedUser && savedUser !== "null") {
       try {
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser) as TCOSAccount;
+        setUser(parsedUser.id === MOCK_PIM_ACCOUNT.id ? null : parsedUser);
       } catch {
-        setUser(MOCK_PIM_ACCOUNT);
+        setUser(null);
       }
     } else {
-      // First load: Set preloaded mockup session matching Pim
-      setUser(MOCK_PIM_ACCOUNT);
+      setUser(null);
     }
 
     if (savedRegs && savedRegs !== "[]") {
       try {
-        setRegistrations(JSON.parse(savedRegs));
+        const parsedRegs = JSON.parse(savedRegs) as UserRegistration[];
+        const hasMockRegistration = parsedRegs.some((reg) =>
+          MOCK_PIM_REGISTRATIONS.some((mockReg) => mockReg.id === reg.id)
+        );
+        setRegistrations(hasMockRegistration ? [] : parsedRegs);
       } catch {
-        setRegistrations(MOCK_PIM_REGISTRATIONS);
+        setRegistrations([]);
       }
     } else {
-      // Set preloaded registrations matching Pim
-      setRegistrations(MOCK_PIM_REGISTRATIONS);
+      setRegistrations([]);
     }
   }, []);
 
@@ -206,7 +227,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     closeModals();
   };
 
-  const updateProfile = (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences">) => {
+  const signup = async (profile: SignupProfile) => {
+    const fullName = `${profile.firstName} ${profile.lastName}`.trim();
+    const newAccount: TCOSAccount = {
+      id: generateUUIDv7(),
+      name: fullName,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      nickname: profile.nickname,
+      gender: profile.gender,
+      gradeLevel: profile.gradeLevel || undefined,
+      email: profile.email,
+      phone: profile.phone,
+      preferences: profile.preferences ?? [],
+    };
+    setUser(newAccount);
+    localStorage.setItem("tcos_user", JSON.stringify(newAccount));
+    setRegistrations([]);
+    localStorage.setItem("tcos_registrations", JSON.stringify([]));
+    closeModals();
+  };
+
+  const updateProfile = (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => {
     setUser((current) => {
       if (!current) return current;
       const updatedUser = { ...current, ...profile };
@@ -356,6 +398,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         openAccountModal,
         closeModals,
         login,
+        signup,
         updateProfile,
         logout,
         requestOTP,
