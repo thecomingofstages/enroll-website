@@ -2,7 +2,7 @@
 @plugin "@tailwindcss/typography";
 
 :root {
-  --background: #121212;
+  --background: #131311;
   --foreground: #ededed;
   --gold: #D4AF37;
   --gold-hover: #E5B83B;
@@ -16,9 +16,15 @@
   --color-gold-hover: var(--gold-hover);
   --color-card: var(--card-bg);
   --font-sans: var(--font-geist-sans);
+  --font-inter: var(--font-inter);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-serif);
   --font-prompt: var(--font-prompt);
+  --font-playfair: var(--font-serif);
+  --font-sarabun: var(--font-sarabun);
+  --font-trirong: var(--font-trirong);
+  --font-taviraj: var(--font-taviraj);
+  --font-kanit: var(--font-kanit);
 }
 
 body {

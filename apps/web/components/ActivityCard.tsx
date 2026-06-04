@@ -9,13 +9,79 @@ interface ActivityCardProps {
   onRegister: (activity: Activity) => void;
 }
 
+function ActivityRegistrants({
+  registeredCount,
+  capacity,
+  tone = "dark",
+  compact = false,
+}: {
+  registeredCount: number;
+  capacity: number;
+  tone?: "dark" | "light";
+  compact?: boolean;
+}) {
+  const safeCapacity = Math.max(capacity, 1);
+  const count = Math.min(Math.max(registeredCount, 0), safeCapacity);
+  const fillPercent = (count / safeCapacity) * 100;
+
+  const labelClass = tone === "light" ? "text-base-black/70" : "text-zinc-300";
+  const trackClass = tone === "light" ? "bg-base-black/25" : "bg-zinc-700";
+
+  if (compact) {
+    return (
+      <div className="min-w-0 max-w-[11rem] flex-1 sm:max-w-[13.5rem]">
+        <div className="flex items-center justify-between gap-1.5">
+          <span className={`font-kanit text-[11px] font-medium sm:text-xs ${labelClass}`}>
+            ผู้สมัคร
+          </span>
+          <span className="font-kanit text-xs font-semibold text-[#d8b85a] sm:text-sm">
+            {count}/{capacity}
+          </span>
+        </div>
+        <div className={`mt-0.5 h-[3px] w-full sm:h-1 ${trackClass}`}>
+          <div
+            className="h-full bg-[#d8b85a] transition-[width] duration-300"
+            style={{ width: `${fillPercent}%` }}
+            role="progressbar"
+            aria-valuenow={count}
+            aria-valuemin={0}
+            aria-valuemax={capacity}
+            aria-label={`ผู้สมัคร ${count} จาก ${capacity}`}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between gap-2">
+        <span className={`font-kanit text-sm font-medium ${labelClass}`}>ผู้สมัคร</span>
+        <span className="font-kanit text-sm font-semibold text-[#d8b85a]">
+          {count}/{capacity}
+        </span>
+      </div>
+      <div className={`mt-1.5 h-1 w-full ${trackClass}`}>
+        <div
+          className="h-full bg-[#d8b85a] transition-[width] duration-300"
+          style={{ width: `${fillPercent}%` }}
+          role="progressbar"
+          aria-valuenow={count}
+          aria-valuemin={0}
+          aria-valuemax={capacity}
+          aria-label={`ผู้สมัคร ${count} จาก ${capacity}`}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function ActivityCard({
   activity,
   variant,
   onRegister,
 }: ActivityCardProps) {
   const dateLabel = formatActivityDate(activity.date);
-  const tags = activity.tags.slice(0, 2);
   const isRecommended = variant === "recommended";
   const cardColors = [
     "bg-base-black",
@@ -29,10 +95,48 @@ export default function ActivityCard({
     .reduce((total, char) => total + char.charCodeAt(0), 0) % cardColors.length;
   const isLightCard = cardColors[colorIndex] === "bg-primary-yellow" || cardColors[colorIndex] === "bg-light-green";
 
+  if (!isRecommended) {
+    return (
+      <article className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-700/70 bg-zinc-900 shadow-sm transition-shadow hover:shadow-md">
+        <div className="relative aspect-[16/9] overflow-hidden bg-zinc-800">
+          <div className="absolute inset-0 bg-gradient-to-br from-zinc-700/40 via-zinc-800 to-zinc-900" />
+          <div className="absolute right-2 top-2 rounded-md border border-black bg-[#131311] px-2 py-0.5 font-kanit text-[10px] font-bold text-[#d8b85a] shadow-sm">
+            {activity.price === 0 ? "ฟรี" : `฿${activity.price}`}
+          </div>
+        </div>
+
+        <div className="flex flex-1 flex-col gap-2 p-3 pb-2">
+          <h3 className="line-clamp-2 font-taviraj text-base font-bold leading-tight text-zinc-100">
+            {activity.name}
+          </h3>
+          <div className="space-y-1 font-kanit text-xs font-medium text-zinc-400">
+            <p>{dateLabel}</p>
+            <p>{activity.location}</p>
+          </div>
+
+          <ActivityRegistrants
+            registeredCount={activity.registeredCount}
+            capacity={activity.capacity}
+          />
+
+          <button
+            type="button"
+            onClick={() => onRegister(activity)}
+            className="mt-auto w-full rounded-md border border-zinc-600 bg-[#131311] px-3 py-1.5 font-kanit text-xs font-bold text-zinc-200 transition-colors hover:border-[#d8b85a] hover:text-[#d8b85a]"
+          >
+            Register
+          </button>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article
-      className={`group relative overflow-hidden rounded-lg border border-muted-charcoal/40 ${cardColors[colorIndex]} shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-yellow/40 ${
-        isRecommended ? "aspect-[16/10]" : "aspect-[16/9]"
+      className={`group relative overflow-hidden ${cardColors[colorIndex]} shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-yellow/40 ${
+        isRecommended 
+          ? "h-[calc(100dvh-156px)] md:h-[calc(100dvh-88px)] w-full rounded-none border-b border-muted-charcoal/40" 
+          : "aspect-[16/9] rounded-lg border border-muted-charcoal/40"
       }`}
     >
       <div className={`absolute inset-0 ${
@@ -41,26 +145,11 @@ export default function ActivityCard({
           : "bg-gradient-to-t from-base-black/70 via-base-black/20 to-white/5"
       }`} />
       <div className={`absolute inset-x-0 bottom-0 space-y-1.5 p-4 ${isLightCard ? "text-base-black" : "text-white"}`}>
-        <div className="flex flex-wrap gap-1.5">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className={`rounded px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide ${
-                isLightCard
-                  ? "bg-base-black/85 text-white"
-                  : "bg-primary-yellow/90 text-base-black"
-              }`}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        <h3 className="line-clamp-2 font-playfair text-lg font-extrabold leading-tight sm:text-xl">
+        <h3 className="line-clamp-2 font-taviraj text-xl font-extrabold leading-tight sm:text-2xl md:text-3xl">
           {activity.name}
         </h3>
 
-        <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-semibold ${isLightCard ? "text-base-black/80" : "text-zinc-300"}`}>
+        <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 font-kanit text-[11px] font-semibold sm:text-xs ${isLightCard ? "text-base-black/80" : "text-zinc-300"}`}>
           <span>{dateLabel}</span>
           <span>|</span>
           <span>{activity.location}</span>
@@ -68,17 +157,21 @@ export default function ActivityCard({
           <span>{activity.price === 0 ? "Free" : `฿${activity.price}`}</span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => onRegister(activity)}
-          className={`mt-2 rounded-md px-3 py-1.5 text-[10px] font-bold transition-colors ${
-            isLightCard
-              ? "border border-base-black/50 bg-base-black text-primary-yellow hover:bg-muted-charcoal"
-              : "border border-primary-yellow/40 bg-base-black/60 text-primary-yellow hover:bg-primary-yellow hover:text-base-black"
-          }`}
-        >
-          Register
-        </button>
+        <div className="mt-2 flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => onRegister(activity)}
+            className="shrink-0 rounded-md border border-zinc-600 bg-[#131311] px-3.5 py-1.5 font-kanit text-xs font-bold text-zinc-200 transition-colors hover:border-[#d8b85a] hover:text-[#d8b85a]"
+          >
+            Register
+          </button>
+          <ActivityRegistrants
+            registeredCount={activity.registeredCount}
+            capacity={activity.capacity}
+            tone={isLightCard ? "light" : "dark"}
+            compact
+          />
+        </div>
       </div>
     </article>
   );

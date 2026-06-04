@@ -4,9 +4,32 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Activity, formatActivityDate } from "../lib/mockData";
 import { useAppState } from "../lib/context";
 
-type ActivityTab = "all" | "upcoming" | "past";
+// type ActivityTab = "all" | "upcoming" | "past";
 
-function ProfileAvatar({ name }: { name: string }) {
+function ImageIcon() {
+  return (
+    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M4 16l4.5-4.5a2 2 0 012.8 0L16 16m-2-2l1.5-1.5a2 2 0 012.8 0L20 14m-1-9H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2zm-3 4h.01"
+      />
+    </svg>
+  );
+}
+
+function ProfileAvatar({
+  name,
+  avatarUrl,
+  isEditing,
+  onAvatarChange,
+}: {
+  name: string;
+  avatarUrl?: string;
+  isEditing?: boolean;
+  onAvatarChange?: (avatarUrl: string) => void;
+}) {
   const initials = name
     .split(/\s+/)
     .filter(Boolean)
@@ -15,8 +38,41 @@ function ProfileAvatar({ name }: { name: string }) {
     .join("");
 
   return (
-    <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border-2 border-primary-yellow bg-muted-charcoal font-playfair text-3xl font-black text-primary-yellow shadow-xl md:h-28 md:w-28">
-      {initials || "TC"}
+    <div className="relative mx-auto h-24 w-24 md:h-28 md:w-28">
+      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-primary-yellow bg-muted-charcoal font-playfair text-3xl font-black text-primary-yellow shadow-xl">
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={avatarUrl}
+            alt={`${name} profile`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          initials || "TC"
+        )}
+      </div>
+      {isEditing && (
+        <label className="absolute bottom-1 right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-primary-yellow bg-base-black text-primary-yellow shadow-lg transition-colors hover:bg-primary-yellow hover:text-base-black">
+          <ImageIcon />
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file || !onAvatarChange) return;
+
+              const reader = new FileReader();
+              reader.onload = () => {
+                if (typeof reader.result === "string") {
+                  onAvatarChange(reader.result);
+                }
+              };
+              reader.readAsDataURL(file);
+            }}
+          />
+        </label>
+      )}
     </div>
   );
 }
@@ -42,13 +98,13 @@ function ActivityTicket({
       <div className="relative flex min-h-44 flex-col justify-end gap-3 p-4">
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <h4 className="line-clamp-2 font-playfair text-xl font-black text-white">
+            <h4 className="line-clamp-2 font-inter text-xl font-black text-white">
               {activity.name}
             </h4>
-            <p className="mt-1 text-[11px] font-semibold text-zinc-300">
+            <p className="mt-1 font-sans text-[11px] font-semibold text-zinc-300">
               {formatActivityDate(activity.date)}
             </p>
-            <p className="text-[11px] font-semibold text-zinc-400">
+            <p className="font-sans text-[11px] font-semibold text-zinc-400">
               {activity.location}
             </p>
           </div>
@@ -60,7 +116,7 @@ function ActivityTicket({
         <button
           type="button"
           onClick={onViewTicket}
-          className="ml-auto rounded-md bg-primary-yellow px-4 py-2 text-xs font-black text-base-black transition-all hover:bg-[#c7a94f] active:scale-[0.98]"
+          className="ml-auto rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:text-[#d8b85a] active:scale-[0.98]"
         >
           View Ticket
         </button>
@@ -80,10 +136,11 @@ export default function AccountModal() {
     updateProfile,
   } = useAppState();
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState<ActivityTab>("all");
+  const [selectedActivityId, setSelectedActivityId] = useState("all");
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl ?? "");
   const [preferencesText, setPreferencesText] = useState(
     user?.preferences.join(", ") ?? ""
   );
@@ -93,12 +150,27 @@ export default function AccountModal() {
     setName(user.name);
     setEmail(user.email);
     setPhone(user.phone);
+    setAvatarUrl(user.avatarUrl ?? "");
     setPreferencesText(user.preferences.join(", "));
     setIsEditing(false);
   }, [activeModal, user]);
 
+  const registeredActivityOptions = useMemo(() => {
+    const uniqueIds = new Set<string>();
+    const options: { id: string; name: string }[] = [];
+    registrations.forEach((reg) => {
+      if (!uniqueIds.has(reg.activityId)) {
+        uniqueIds.add(reg.activityId);
+        const activity = activities.find((a) => a.id === reg.activityId);
+        if (activity) {
+          options.push({ id: activity.id, name: activity.name });
+        }
+      }
+    });
+    return options;
+  }, [registrations, activities]);
+
   const registeredActivities = useMemo(() => {
-    const now = Date.now();
     return registrations
       .map((registration) => {
         const activity = activities.find((item) => item.id === registration.activityId);
@@ -107,11 +179,10 @@ export default function AccountModal() {
       .filter(Boolean)
       .filter((item) => {
         if (!item) return false;
-        if (activeTab === "upcoming") return new Date(item.activity.date).getTime() >= now;
-        if (activeTab === "past") return new Date(item.activity.date).getTime() < now;
+        if (selectedActivityId !== "all" && item.activity.id !== selectedActivityId) return false;
         return true;
       }) as { registration: (typeof registrations)[number]; activity: Activity }[];
-  }, [activeTab, activities, registrations]);
+  }, [selectedActivityId, activities, registrations]);
 
   if (activeModal !== "account" || !user) return null;
 
@@ -120,6 +191,7 @@ export default function AccountModal() {
       name: name.trim() || user.name,
       email: email.trim() || user.email,
       phone: phone.trim() || user.phone,
+      avatarUrl,
       preferences: preferencesText
         .split(",")
         .map((item) => item.trim())
@@ -128,29 +200,32 @@ export default function AccountModal() {
     setIsEditing(false);
   };
 
-  const tabs: { id: ActivityTab; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "upcoming", label: "Upcoming" },
-    { id: "past", label: "Past" },
-  ];
+  const cancelProfileEdit = () => {
+    setName(user.name);
+    setEmail(user.email);
+    setPhone(user.phone);
+    setAvatarUrl(user.avatarUrl ?? "");
+    setPreferencesText(user.preferences.join(", "));
+    setIsEditing(false);
+  };
+
+
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-base-black/85 px-4 pb-8 pt-8 backdrop-blur-md md:pt-12">
-      <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-muted-charcoal bg-base-black text-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-muted-charcoal px-5 py-3">
+    <div className="flex flex-1 items-start justify-center px-4 py-10">
+      <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 text-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-muted-charcoal px-5 py-4">
           <h3 className="font-playfair text-xl font-black text-primary-yellow">Account</h3>
-          <button
-            type="button"
-            onClick={closeModals}
-            className="rounded-full border border-muted-charcoal px-3 py-1.5 text-xs font-bold transition-colors hover:border-primary-yellow hover:text-primary-yellow"
-          >
-            Close
-          </button>
         </div>
 
         <div className="grid gap-5 p-5 md:grid-cols-[320px_1fr] md:p-6">
           <aside className="rounded-lg border border-muted-charcoal bg-dark-grey p-5">
-            <ProfileAvatar name={user.name} />
+            <ProfileAvatar
+              name={name || user.name}
+              avatarUrl={avatarUrl}
+              isEditing={isEditing}
+              onAvatarChange={setAvatarUrl}
+            />
 
             {isEditing ? (
               <div className="mt-5 space-y-3">
@@ -197,14 +272,14 @@ export default function AccountModal() {
                   <button
                     type="button"
                     onClick={saveProfile}
-                    className="rounded-md border border-primary-yellow bg-primary-yellow px-4 py-2 text-xs font-black text-base-black transition-all hover:bg-[#c7a94f] active:scale-[0.98]"
+                    className="rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:text-[#d8b85a] active:scale-[0.98]"
                   >
                     Save Profile
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:border-primary-yellow hover:text-primary-yellow"
+                    onClick={cancelProfileEdit}
+                    className="rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:text-[#d8b85a] active:scale-[0.98]"
                   >
                     Cancel
                   </button>
@@ -214,16 +289,16 @@ export default function AccountModal() {
                   <button
                     type="button"
                     onClick={() => setIsEditing(true)}
-                    className="rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:border-primary-yellow hover:text-primary-yellow"
+                    className="rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:text-[#d8b85a] active:scale-[0.98]"
                   >
                     Edit Profile
                   </button>
                   <button
                     type="button"
                     onClick={openCheckinModal}
-                    className="rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:border-primary-yellow hover:text-primary-yellow"
+                    className="rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:text-[#d8b85a] active:scale-[0.98]"
                   >
-                    My QR Code
+                    QR Code
                   </button>
                 </>
               )}
@@ -231,26 +306,24 @@ export default function AccountModal() {
           </aside>
 
           <section className="space-y-4">
-            <div>
+            <div className="mb-4 flex flex-col gap-3 border-b border-muted-charcoal pb-3 md:flex-row md:items-center md:justify-between">
               <h3 className="font-playfair text-2xl font-black text-white md:text-3xl">
                 My Activities
               </h3>
-              <div className="mt-3 flex gap-5 border-b border-muted-charcoal">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`pb-2 text-xs font-black transition-colors ${
-                      activeTab === tab.id
-                        ? "border-b-2 border-primary-yellow text-primary-yellow"
-                        : "text-zinc-500 hover:text-zinc-200"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+              {registeredActivityOptions.length > 0 && (
+                <select
+                  value={selectedActivityId}
+                  onChange={(e) => setSelectedActivityId(e.target.value)}
+                  className="rounded-lg border border-muted-charcoal bg-dark-grey px-3 py-2 text-xs font-bold text-white outline-none transition-colors focus:border-primary-yellow"
+                >
+                  <option value="all">แสดงทั้งหมด</option>
+                  {registeredActivityOptions.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {registeredActivities.length > 0 ? (
