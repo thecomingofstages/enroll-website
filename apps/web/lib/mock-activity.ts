@@ -32,7 +32,7 @@ const sample: ActivityDetail = {
       position: "ผู้เชี่ยวชาญด้านแสงและเสียง",
       image_url:
         "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80",
-    }
+    },
   ],
   schedule: [
     {
@@ -40,19 +40,15 @@ const sample: ActivityDetail = {
       venue: "The Indigo Grand Hall",
       location_link_gg_map: "https://maps.app.goo.gl/HP1KwHAY1WdPBjAU9",
       location_pics: [
-        "https://images.unsplash.com/photo-1524661135-423995f22d0f?w=1200&q=80"
+        "https://images.unsplash.com/photo-1524661135-423995f22d0f?w=1200&q=80",
       ],
-      additional_location_info: [
-        "24 Exhibition Way",
-        "SE1 7PB, London"
-      ],
+      additional_location_info: ["24 Exhibition Way", "SE1 7PB, London"],
       slots: [
         {
           start_time: "09:00",
           end_time: "10:30",
           title: "พื้นฐานเสียงตามพื้นที่เชิงลึก (Spatial Audio)",
-          description:
-            "เรียนรู้ทฤษฎีและการประยุกต์ใช้ซาวด์สเคปสำหรับการแสดงสด",
+          description: "เรียนรู้ทฤษฎีและการประยุกต์ใช้ซาวด์สเคปสำหรับการแสดงสด",
           highlight: true,
         },
         {
@@ -61,19 +57,16 @@ const sample: ActivityDetail = {
           title: "เวิร์กช็อปแสงดิจิทัลเบื้องต้น",
           description: "พื้นฐานการใช้ระบบ DMX และการโปรแกรมแสง",
         },
-      ]
+      ],
     },
     {
       date: "2026-06-22",
       venue: "The Indigo Grand Hall",
       location_link_gg_map: "https://maps.app.goo.gl/HP1KwHAY1WdPBjAU9",
       location_pics: [
-        "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&q=80"
+        "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&q=80",
       ],
-      additional_location_info: [
-        "24 Exhibition Way",
-        "SE1 7PB, London"
-      ],
+      additional_location_info: ["24 Exhibition Way", "SE1 7PB, London"],
       slots: [
         {
           start_time: "13:00",
@@ -86,8 +79,8 @@ const sample: ActivityDetail = {
           end_time: "17:00",
           title: "การแสดงผลงานและรับประกาศนียบัตร",
           description: "นำเสนอผลงานที่ร่วมกันสร้างในเวิร์กช็อป",
-        }
-      ]
+        },
+      ],
     },
   ],
   open_registration_at: "2026-06-02T15:14:36.813Z",
@@ -104,7 +97,7 @@ const sample: ActivityDetail = {
         "Titan Speakerman",
         "Upgraded Titan Cameraman",
         "Scientist Toilet",
-        "Plunger Cameraman"
+        "Plunger Cameraman",
       ],
       is_required: true,
     },
