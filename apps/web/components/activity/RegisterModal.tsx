@@ -693,12 +693,13 @@ export function RegisterModal({
 
 export function ActivityRegisterSection({
   activity,
-  isRegistered = false,
 }: {
   activity: ActivityDetail;
-  isRegistered?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const { registrations } = useAppState();
+  
+  const isRegistered = registrations.some(r => r.activityId === activity._id || r.activityId === activity.id);
 
   const isFull =
     activity.seat_capacity > 0 &&

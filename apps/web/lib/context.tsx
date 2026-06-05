@@ -275,29 +275,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data.error?.message || "สมัครสมาชิกไม่สำเร็จ");
     }
 
-    const { user: userData, access_token } = data.data || {};
-
-    const fullName = userData?.first_name ? `${userData.first_name} ${userData.last_name}` : `${profile.firstName} ${profile.lastName}`.trim();
-    const newAccount: TCOSAccount = {
-      id: userData?.id || userData?._id || "user-123",
-      name: fullName,
-      firstName: userData?.first_name || profile.firstName,
-      lastName: userData?.last_name || profile.lastName,
-      nickname: userData?.nickname || profile.nickname,
-      gender: userData?.gender || profile.gender,
-      gradeLevel: profile.gradeLevel || undefined,
-      email: userData?.email || profile.email,
-      phone: userData?.phone || profile.phone,
-      preferences: profile.preferences ?? [],
-    };
-    
-    setUser(newAccount);
-    localStorage.setItem("tcos_user", JSON.stringify(newAccount));
-    if (access_token) {
-      localStorage.setItem("tcos_access_token", access_token);
+    if (profile.password) {
+      await login(profile.email, profile.password);
+    } else {
+      closeModals();
     }
-    
-    closeModals();
   };
 
   const updateProfile = (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => {

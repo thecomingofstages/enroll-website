@@ -3,6 +3,8 @@
 import React from "react";
 import { Activity, formatActivityDate } from "../lib/mockData";
 
+import { useAppState } from "../lib/context";
+
 interface ActivityCardProps {
   activity: Activity;
   variant: "recommended" | "grid";
@@ -81,6 +83,9 @@ export default function ActivityCard({
   variant,
   onRegister,
 }: ActivityCardProps) {
+  const { registrations, openCheckinModal } = useAppState();
+  const isRegistered = registrations.some(r => r.activityId === activity.id || r.activityId === (activity as any)._id);
+  
   const dateLabel = formatActivityDate(activity.date);
   const isRecommended = variant === "recommended";
   const cardColors = [
@@ -121,10 +126,10 @@ export default function ActivityCard({
 
           <button
             type="button"
-            onClick={() => onRegister(activity)}
+            onClick={() => isRegistered ? openCheckinModal() : onRegister(activity)}
             className="mt-auto w-full rounded-md border border-zinc-600 bg-[#131311] px-3 py-1.5 font-kanit text-xs font-bold text-zinc-200 transition-colors hover:border-[#d8b85a] hover:text-[#d8b85a]"
           >
-            Register
+            {isRegistered ? "ดูบัตรของคุณ" : "Register"}
           </button>
         </div>
       </article>
@@ -160,10 +165,10 @@ export default function ActivityCard({
         <div className="mt-2 flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => onRegister(activity)}
+            onClick={() => isRegistered ? openCheckinModal() : onRegister(activity)}
             className="shrink-0 rounded-md border border-zinc-600 bg-[#131311] px-3.5 py-1.5 font-kanit text-xs font-bold text-zinc-200 transition-colors hover:border-[#d8b85a] hover:text-[#d8b85a]"
           >
-            Register
+            {isRegistered ? "ดูบัตรของคุณ" : "Register"}
           </button>
           <ActivityRegistrants
             registeredCount={activity.registeredCount}
