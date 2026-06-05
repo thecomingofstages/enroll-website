@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Activity, INITIAL_ACTIVITIES } from "./mockData";
+import { fetchMyRegistrations } from "./activity-api";
 
 export interface TCOSAccount {
   id: string; // UUID v7 simulation
@@ -24,6 +25,7 @@ export interface SignupProfile {
   email: string;
   phone: string;
   gender: string;
+  password?: string;
   gradeLevel?: string;
   preferences?: string[];
 }
@@ -36,7 +38,7 @@ export interface UserRegistration {
   checkedIn: boolean;
   additionalAnswers: Record<string, string>;
   ticketCode: string; // Dynamic code simulation
-  paymentStatus: "free" | "paid_verified";
+  paymentStatus: "free" | "paid_verified" | "pending";
   amountPaid: number;
 }
 
@@ -59,6 +61,7 @@ interface AppContextType {
   signup: (profile: SignupProfile) => Promise<void>;
   updateProfile: (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => void;
   logout: () => void;
+  refreshRegistrations: () => Promise<void>;
   requestOTP: (phone: string) => Promise<string>;
   verifyOTP: (phone: string, code: string) => Promise<boolean>;
   registerToEvent: (
@@ -175,11 +178,55 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setRegistrations(hasMockRegistration ? [] : parsedRegs);
       } catch {
         setRegistrations([]);
+        setRegistrations([]);
       }
     } else {
       setRegistrations([]);
     }
+    
+    // Fetch real registrations from API if logged in
+    const token = localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
+    if (token) {
+      fetchMyRegistrations().then(data => {
+        if (data && data.length > 0) {
+          const mapped = data.map((d: any) => ({
+            id: d.id || d._id,
+            activityId: d.activity_id?._id || d.activity_id?.id || d.activity_id,
+            enrolledAt: d.created_at || new Date().toISOString(),
+            status: d.status,
+            paymentStatus: d.payment?.status || "pending",
+            checkedIn: false,
+            ticketCode: d.ticket_code || "",
+            amountPaid: d.payment?.amount || 0,
+            additionalAnswers: d.custom_answers || {}
+          }));
+          setRegistrations(mapped);
+          localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
+        }
+      });
+    }
   }, []);
+
+  const refreshRegistrations = async () => {
+    const token = localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
+    if (!token) return;
+    const data = await fetchMyRegistrations();
+    if (data && data.length > 0) {
+      const mapped = data.map((d: any) => ({
+        id: d.id || d._id,
+        activityId: d.activity_id?._id || d.activity_id?.id || d.activity_id,
+        enrolledAt: d.created_at || new Date().toISOString(),
+        status: d.status,
+        paymentStatus: d.payment?.status || "pending",
+        checkedIn: false,
+        ticketCode: d.ticket_code || "",
+        amountPaid: d.payment?.amount || 0,
+        additionalAnswers: d.custom_answers || {}
+      }));
+      setRegistrations(mapped);
+      localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
+    }
+  };
 
   const openLoginModal = () => {
     setActiveModal("login");
@@ -242,6 +289,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("tcos_user", JSON.stringify(newAccount));
     localStorage.setItem("tcos_access_token", access_token);
     
+    fetchMyRegistrations().then(data => {
+      if (data && data.length > 0) {
+        const mapped = data.map((d: any) => ({
+          id: d.id || d._id,
+          activityId: d.activity_id?._id || d.activity_id?.id || d.activity_id,
+          enrolledAt: d.created_at || new Date().toISOString(),
+          status: d.status,
+          paymentStatus: d.payment?.status || "pending",
+          checkedIn: false,
+          ticketCode: d.ticket_code || "",
+          amountPaid: d.payment?.amount || 0,
+          additionalAnswers: d.custom_answers || {}
+        }));
+        setRegistrations(mapped);
+        localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
+      }
+    });
+
     closeModals();
   };
 
@@ -249,28 +314,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
     localStorage.setItem("tcos_user", JSON.stringify(newUser));
     localStorage.setItem("tcos_access_token", token);
+
+    fetchMyRegistrations().then(data => {
+      if (data && data.length > 0) {
+        const mapped = data.map((d: any) => ({
+          id: d.id || d._id,
+          activityId: d.activity_id?._id || d.activity_id?.id || d.activity_id,
+          enrolledAt: d.created_at || new Date().toISOString(),
+          status: d.status,
+          paymentStatus: d.payment?.status || "pending",
+          checkedIn: false,
+          ticketCode: d.ticket_code || "",
+          amountPaid: d.payment?.amount || 0,
+          additionalAnswers: d.custom_answers || {}
+        }));
+        setRegistrations(mapped);
+        localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
+      }
+    });
   };
 
   const signup = async (profile: SignupProfile) => {
-    const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-    const newAccount: TCOSAccount = {
-      id: generateUUIDv7(),
-      name: fullName,
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      nickname: profile.nickname,
-      gender: profile.gender,
-      gradeLevel: profile.gradeLevel || undefined,
-      email: profile.email,
-      phone: profile.phone,
-      preferences: profile.preferences ?? [],
-    };
-    setUser(newAccount);
-    localStorage.setItem("tcos_user", JSON.stringify(newAccount));
-    localStorage.setItem("tcos_access_token", `mock_token_${Date.now()}`);
-    setRegistrations([]);
-    localStorage.setItem("tcos_registrations", JSON.stringify([]));
-    closeModals();
+    const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+    if (!base) throw new Error("API URL is not configured");
+
+    const res = await fetch(`${base}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        first_name: profile.firstName,
+        last_name: profile.lastName,
+        nickname: profile.nickname,
+        email: profile.email,
+        phone: profile.phone,
+        gender: profile.gender,
+        password: profile.password
+      })
+    });
+    
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      throw new Error(data.error?.message || "สมัครสมาชิกไม่สำเร็จ");
+    }
+
+    if (profile.password) {
+      await login(profile.email, profile.password);
+    } else {
+      closeModals();
+    }
   };
 
   const updateProfile = (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => {
@@ -430,6 +521,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         signup,
         updateProfile,
         logout,
+        refreshRegistrations,
         requestOTP,
         verifyOTP,
         registerToEvent,

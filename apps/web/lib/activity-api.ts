@@ -187,3 +187,55 @@ export async function postActivityRegistration(
     message: "โหมดออฟไลน์: บันทึกฝั่งเครื่อง (รอ Backend จริง)",
   };
 }
+
+export async function fetchMyRegistrations(): Promise<any[]> {
+  const base = apiBase();
+  const token = getAuthToken();
+  if (!base || !token) return [];
+
+  try {
+    const res = await fetch(`${base}/registrations/mine`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.success && data.data) {
+      return data.data;
+    }
+  } catch (e) {
+    console.error("Failed to fetch registrations", e);
+  }
+  return [];
+}
+
+export async function postPaymentSlip(
+  registrationId: string,
+  paymentSlip: File
+): Promise<{ ok: boolean; message: string }> {
+  const base = apiBase();
+  const token = getAuthToken();
+  if (!base) return { ok: false, message: "Offline" };
+
+  try {
+    const form = new FormData();
+    form.set("slip", paymentSlip);
+    const headers: HeadersInit = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch(`${base}/registrations/${encodeURIComponent(registrationId)}/payment`, {
+      method: "POST",
+      headers,
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    
+    if (!res.ok || !data.success) {
+      let msg = data.error?.message ?? "อัปโหลดสลิปไม่สำเร็จ";
+      if (res.status === 409) msg = "สลิปนี้ถูกใช้ชำระเงินไปแล้ว (สลิปซ้ำ)";
+      else if (res.status === 422) msg = "ยอดเงินไม่ตรงกับราคา หรือ แสกน QR บนสลิปไม่พบ กรุณาอัปโหลดรูปใหม่";
+      return { ok: false, message: msg };
+    }
+    return { ok: true, message: "อัปโหลดสลิปสำเร็จ" };
+  } catch (e) {
+    return { ok: false, message: "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้" };
+  }
+}
