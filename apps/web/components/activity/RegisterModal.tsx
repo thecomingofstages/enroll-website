@@ -69,7 +69,7 @@ export function RegisterModal({
   onClose: () => void;
 }) {
   const titleId = useId();
-  const { user, openAccountModal } = useAppState();
+  const { user, openAccountModal, openLoginModal, loginWithToken } = useAppState();
   
   const steps: StepConfig[] = [{ id: "info", label: "ข้อมูล" }];
   if (activity.price > 0) {
@@ -174,6 +174,9 @@ export function RegisterModal({
     );
     setSubmitting(false);
     if (res.ok) {
+      if (res.access_token && res.user_data) {
+        loginWithToken(res.user_data, res.access_token);
+      }
       setIsSuccess(true);
     } else {
       setFeedback({
@@ -500,13 +503,13 @@ export function RegisterModal({
                   <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-xl bg-white ring-1 ring-stone-200 overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`https://promptpay.io/0623456789/${activity.price}.png`}
+                      src={`https://promptpay.io/${process.env.NEXT_PUBLIC_PROMPTPAY_NUMBER || "0623456789"}/${activity.price}.png`}
                       alt={`QR Code for ฿${activity.price}`}
                       className="h-full w-full object-contain p-2"
                     />
                   </div>
                   <p className="text-center text-xs text-stone-500">
-                    PromptPay: 062-345-6789 (TCOS)
+                    PromptPay: {process.env.NEXT_PUBLIC_PROMPTPAY_NUMBER || "062-345-6789"} (TCOS)
                   </p>
                   <div>
                     <span className="text-sm font-medium text-stone-700">
@@ -608,15 +611,27 @@ export function RegisterModal({
               ) : null}
 
               {feedback ? (
-                <p
-                  className={`mt-4 rounded-lg px-3 py-2 text-sm ${
+                <div
+                  className={`mt-4 rounded-lg px-3 py-2 text-sm flex flex-col gap-2 ${
                     feedback.variant === "success"
                       ? "bg-emerald-100 text-emerald-900"
                       : "bg-red-100 text-red-900"
                   }`}
                 >
-                  {feedback.message}
-                </p>
+                  <p>{feedback.message}</p>
+                  {feedback.message.includes("เข้าสู่ระบบ") && (
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        openLoginModal();
+                      }}
+                      className="mt-1 self-start rounded-md bg-red-800 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-red-900 transition-colors"
+                    >
+                      เข้าสู่ระบบทันที
+                    </button>
+                  )}
+                </div>
               ) : null}
             </div>
 
@@ -639,10 +654,18 @@ export function RegisterModal({
                   className="ml-auto min-w-[120px] rounded-xl bg-red-800 px-4 py-3 text-sm font-semibold text-white hover:bg-red-900 disabled:opacity-40"
                   disabled={
                     submitting ||
-                    (currentStep.id === "info" && !canNextFrom1) ||
-                    (currentStep.id === "payment" && !canNextFrom2)
+                    (currentStep.id === "info" && !canNextFrom1)
                   }
-                  onClick={() => setCurrentStepIndex((prev) => Math.min(steps.length - 1, prev + 1))}
+                  onClick={() => {
+                    if (currentStep.id === "payment") {
+                      if (!slip) {
+                        setSlipError("กรุณาอัปโหลดสลิปที่ถูกต้องก่อนดำเนินการต่อ");
+                        return;
+                      }
+                      if (slipError) return;
+                    }
+                    setCurrentStepIndex((prev) => Math.min(steps.length - 1, prev + 1));
+                  }}
                 >
                   ถัดไป
                 </button>

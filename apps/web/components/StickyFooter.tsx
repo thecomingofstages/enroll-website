@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAppState } from "../lib/context";
 
 function HomeIcon() {
@@ -65,16 +66,22 @@ export default function StickyFooter() {
     activeModal,
   } = useAppState();
 
+  const pathname = usePathname();
+  const router = useRouter();
+
   const handleHomeClick = () => {
     if (activeModal) {
       closeModals();
+    } else if (pathname !== "/") {
+      router.push("/");
     } else {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const isHomeActive =
-    !activeModal || (activeModal !== "checkin" && activeModal !== "account");
+    (pathname === "/" || pathname.startsWith("/activity")) &&
+    (!activeModal || (activeModal !== "checkin" && activeModal !== "account"));
   const isQrActive = activeModal === "checkin";
   const isAccountActive = activeModal === "account";
 
