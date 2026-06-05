@@ -292,6 +292,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
     localStorage.setItem("tcos_user", JSON.stringify(newUser));
     localStorage.setItem("tcos_access_token", token);
+
+    fetchMyRegistrations().then(data => {
+      if (data && data.length > 0) {
+        const mapped = data.map((d: any) => ({
+          id: d.id || d._id,
+          activityId: d.activity_id,
+          enrolledAt: d.created_at || new Date().toISOString(),
+          status: d.status,
+          paymentStatus: d.payment?.status || "pending",
+          checkedIn: false,
+          ticketCode: d.ticket_code || "",
+          amountPaid: d.payment?.amount || 0,
+          additionalAnswers: d.custom_answers || {}
+        }));
+        setRegistrations(mapped);
+        localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
+      }
+    });
   };
 
   const signup = async (profile: SignupProfile) => {

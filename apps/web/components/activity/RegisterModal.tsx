@@ -76,11 +76,11 @@ export function RegisterModal({
   const { user, openAccountModal, openLoginModal, loginWithToken } = useAppState();
   
   const steps: StepConfig[] = [{ id: "info", label: "ข้อมูล" }];
-  if (activity.price > 0) {
-    steps.push({ id: "payment", label: "ชำระเงิน" });
-  }
   if (activity.extra_questions && activity.extra_questions.length > 0) {
     steps.push({ id: "questions", label: "คำถาม" });
+  }
+  if (activity.price > 0) {
+    steps.push({ id: "payment", label: "ชำระเงิน" });
   }
 
   const defaultStepIndex = initialStep ? Math.max(0, steps.findIndex(s => s.id === initialStep)) : 0;
@@ -333,10 +333,10 @@ export function RegisterModal({
                 ) : (
                 <>
                   <p className="rounded-lg bg-sky-100 px-3 py-2 text-sm text-sky-900">
-                    {activity.price > 0 
-                      ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือชำระเงินผ่าน PromptPay และอัปโหลดสลิป"
-                      : activity.extra_questions && activity.extra_questions.length > 0 
-                        ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือตอบคำถามเพิ่มเติม"
+                    {activity.extra_questions && activity.extra_questions.length > 0
+                      ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือตอบคำถามเพิ่มเติม"
+                      : activity.price > 0 
+                        ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือชำระเงินผ่าน PromptPay และอัปโหลดสลิป"
                         : "กรอกข้อมูลผู้เข้าร่วมให้ครบถ้วน จากนั้นกดยืนยันการลงทะเบียนได้เลย"}
                   </p>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
