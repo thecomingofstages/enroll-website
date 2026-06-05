@@ -178,23 +178,20 @@ export default function QRCheckinModal() {
   const secondsLeft = String(timeLeft % 60).padStart(2, "0");
 
   return (
-    <div className="w-full h-[150%] py-8 px-4 sm:px-6 lg:px-8 relative z-50 bg-black">
+    <div className="w-full h-full py-8 px-4 sm:px-6 lg:px-8 relative z-1 bg-black">
 
-    {/* Glow - moved BEFORE the card, positioned relative to this wrapper */}
-    <div
-      className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-      aria-hidden="true"
-    >
-      <div
-        style={{
-          width: "700px",
-          height: "700px",
-          borderRadius: "100%",
-          background: "radial-gradient(circle, rgba(216,184,90,1) 0%, rgba(216,184,90,0.45) 40%, transparent 100%)",
-          filter: "blur(80px)",
-        }}
-      />
-    </div>
+    {/* Glow */}
+<div className="pointer-events-none fixed inset-0 flex items-center justify-center overflow-hidden">
+  <div
+    style={{
+      width: "700px",
+      height: "700px",
+      borderRadius: "100%",
+      background: "radial-gradient(circle, rgba(216,184,90,1) 0%, rgba(216,184,90,0.45) 40%, transparent 100%)",
+      filter: "blur(80px)",
+    }}
+  />
+</div>
       
       {/* Ticket Card */}
       <div className="w-full max-w-[26rem] mx-auto">

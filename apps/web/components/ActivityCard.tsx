@@ -95,7 +95,7 @@ export default function ActivityCard({
     "bg-primary-yellow",
     "bg-light-green",
   ];
-  const colorIndex = activity.id
+  const colorIndex = activity._id
     .split("")
     .reduce((total, char) => total + char.charCodeAt(0), 0) % cardColors.length;
   const isLightCard = cardColors[colorIndex] === "bg-primary-yellow" || cardColors[colorIndex] === "bg-light-green";
@@ -104,7 +104,8 @@ export default function ActivityCard({
     return (
       <article className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-700/70 bg-zinc-900 shadow-sm transition-shadow hover:shadow-md">
         <div className="relative aspect-[16/9] overflow-hidden bg-zinc-800">
-          <div className="absolute inset-0 bg-gradient-to-br from-zinc-700/40 via-zinc-800 to-zinc-900" />
+          {/*<div className="absolute inset-0 bg-gradient-to-br from-zinc-700/40 via-zinc-800 to-zinc-900" />*/}
+          <img src={activity.hero_image_url} className="h-full w-full object-cover" />
           <div className="absolute right-2 top-2 rounded-md border border-black bg-[#131311] px-2 py-0.5 font-kanit text-[10px] font-bold text-[#d8b85a] shadow-sm">
             {activity.price === 0 ? "ฟรี" : `฿${activity.price}`}
           </div>
@@ -120,17 +121,17 @@ export default function ActivityCard({
           </div>
 
           <ActivityRegistrants
-            registeredCount={activity.registeredCount}
-            capacity={activity.capacity}
+            registeredCount={activity.enrolled_count}
+            capacity={activity.seat_capacity}
           />
 
-          <button
+          <a
             type="button"
-            onClick={() => isRegistered ? openCheckinModal() : onRegister(activity)}
-            className="mt-auto w-full rounded-md border border-zinc-600 bg-[#131311] px-3 py-1.5 font-kanit text-xs font-bold text-zinc-200 transition-colors hover:border-[#d8b85a] hover:text-[#d8b85a]"
+            href={`activity/${activity._id}`}
+            className="mt-auto w-full rounded-md border border-zinc-600 bg-[#131311] px-3 py-1.5 font-kanit text-xs font-bold text-zinc-200 transition-colors hover:border-[#d8b85a] hover:text-[#d8b85a] text-center"
           >
-            {isRegistered ? "ดูบัตรของคุณ" : "Register"}
-          </button>
+            {isRegistered ? "✓ Enrolled" : "Register"}
+          </a>
         </div>
       </article>
     );
@@ -149,6 +150,10 @@ export default function ActivityCard({
           ? "bg-gradient-to-t from-base-black/20 via-base-black/5 to-white/10"
           : "bg-gradient-to-t from-base-black/70 via-base-black/20 to-white/5"
       }`} />
+      <div className="relative h-full w-full">
+        <img src={activity.hero_image_url} className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-black/75" />
+      </div>
       <div className={`absolute inset-x-0 bottom-0 space-y-1.5 p-4 ${isLightCard ? "text-base-black" : "text-white"}`}>
         <h3 className="line-clamp-2 font-taviraj text-xl font-extrabold leading-tight sm:text-2xl md:text-3xl">
           {activity.name}
@@ -171,8 +176,8 @@ export default function ActivityCard({
             {isRegistered ? "ดูบัตรของคุณ" : "Register"}
           </button>
           <ActivityRegistrants
-            registeredCount={activity.registeredCount}
-            capacity={activity.capacity}
+            registeredCount={activity.enrolled_count}
+            capacity={activity.seat_capacity}
             tone={isLightCard ? "light" : "dark"}
             compact
           />

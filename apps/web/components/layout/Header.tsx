@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppState } from "@/lib/context";
 
-const baseNavLinkClass = "relative inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-base font-semibold transition-colors group";
+const baseNavLinkClass = "relative inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-base font-playfair text-[18px] transition-colors group";
 const inactiveNavClass = "text-stone-300 hover:bg-white/10 hover:text-[#d8b85a]";
 const activeNavClass = "text-[#d8b85a]";
 const activeUnderlineClass = "after:absolute after:bottom-1 after:left-4 after:right-4 after:h-[2px] after:rounded-full after:bg-[#d8b85a]";
