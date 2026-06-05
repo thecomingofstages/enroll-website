@@ -61,6 +61,7 @@ interface AppContextType {
   signup: (profile: SignupProfile) => Promise<void>;
   updateProfile: (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => void;
   logout: () => void;
+  refreshRegistrations: () => Promise<void>;
   requestOTP: (phone: string) => Promise<string>;
   verifyOTP: (phone: string, code: string) => Promise<boolean>;
   registerToEvent: (
@@ -205,6 +206,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, []);
+
+  const refreshRegistrations = async () => {
+    const token = localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
+    if (!token) return;
+    const data = await fetchMyRegistrations();
+    if (data && data.length > 0) {
+      const mapped = data.map((d: any) => ({
+        id: d.id || d._id,
+        activityId: d.activity_id?._id || d.activity_id?.id || d.activity_id,
+        enrolledAt: d.created_at || new Date().toISOString(),
+        status: d.status,
+        paymentStatus: d.payment?.status || "pending",
+        checkedIn: false,
+        ticketCode: d.ticket_code || "",
+        amountPaid: d.payment?.amount || 0,
+        additionalAnswers: d.custom_answers || {}
+      }));
+      setRegistrations(mapped);
+      localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
+    }
+  };
 
   const openLoginModal = () => {
     setActiveModal("login");
@@ -499,6 +521,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         signup,
         updateProfile,
         logout,
+        refreshRegistrations,
         requestOTP,
         verifyOTP,
         registerToEvent,

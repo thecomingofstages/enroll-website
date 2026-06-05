@@ -73,7 +73,7 @@ export function RegisterModal({
   existingRegistrationId?: string;
 }) {
   const titleId = useId();
-  const { user, openAccountModal, openLoginModal, loginWithToken } = useAppState();
+  const { user, openAccountModal, openLoginModal, loginWithToken, refreshRegistrations } = useAppState();
   
   const steps: StepConfig[] = [{ id: "info", label: "ข้อมูล" }];
   if (activity.extra_questions && activity.extra_questions.length > 0) {
@@ -213,6 +213,8 @@ export function RegisterModal({
           phone: phone.trim(),
           preferences: [],
         }, res.access_token);
+      } else if (user) {
+        refreshRegistrations();
       }
       setIsSuccess(true);
     } else {
