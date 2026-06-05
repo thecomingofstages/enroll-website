@@ -199,8 +199,20 @@ export function RegisterModal({
     );
     setSubmitting(false);
     if (res.ok) {
-      if (res.access_token && res.user_data) {
-        loginWithToken(res.user_data, res.access_token);
+      if (res.access_token && !user) {
+        let subId = "temp-id";
+        try {
+          const payload = JSON.parse(atob(res.access_token.split('.')[1]));
+          subId = payload.sub || subId;
+        } catch(e) {}
+        
+        loginWithToken({
+          id: subId,
+          name: `${firstName.trim()} ${lastName.trim()}`,
+          email: email.trim(),
+          phone: phone.trim(),
+          preferences: [],
+        }, res.access_token);
       }
       setIsSuccess(true);
     } else {

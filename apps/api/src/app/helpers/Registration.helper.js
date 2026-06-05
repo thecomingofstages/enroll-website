@@ -15,7 +15,6 @@ class RegistrationHelper {
   // ── POST /registrations ──────────────────────────────────────────
   static async create(userId, activityId, customAnswers = [], newUserPayload = null) {
     let accessToken = null;
-    let createdUser = null;
 
     if (!userId) {
       if (!newUserPayload) {
@@ -24,7 +23,6 @@ class RegistrationHelper {
       }
       const newUser = await AuthHelper.register(newUserPayload);
       userId = newUser._id;
-      createdUser = newUser;
       accessToken = JWTUtil.signAccess({ sub: newUser._id, nickname: newUser.nickname, role: newUser.role || 'user' });
     }
 
@@ -85,10 +83,7 @@ class RegistrationHelper {
       registered_at:   registration.registered_at,
       activity:        { name: activity.name, price: activity.price },
     };
-    if (accessToken) {
-      result.access_token = accessToken;
-      result.user = createdUser;
-    }
+    if (accessToken) result.access_token = accessToken;
     return result;
   }
 
