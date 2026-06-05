@@ -15,6 +15,19 @@ class RegistrationController {
     }
   }
 
+
+  /** GET /registrations/mine */
+  static async getMyRegistrations(req, res, next) {
+    try {
+      const filters = { status: req.query.status };
+      const data    = await RegistrationHelper.getMyRegistrations(req.user._id, filters);
+      return res.status(200).json({ success: true, data });
+    } catch (err) {
+      Logger.error(`[RegistrationController.getMyRegistrations] ${err.message}`);
+      next(err);
+    }
+  }
+
   /** GET /registrations/:id */
   static async getById(req, res, next) {
     try {
