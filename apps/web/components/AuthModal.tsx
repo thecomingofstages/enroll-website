@@ -132,6 +132,7 @@ export default function AuthModal() {
         email: email.trim(),
         phone: phone.trim(),
         gender,
+        password,
         gradeLevel: gradeLevel.trim() || undefined,
       });
       resetState();

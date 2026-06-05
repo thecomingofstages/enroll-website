@@ -24,6 +24,7 @@ export interface SignupProfile {
   email: string;
   phone: string;
   gender: string;
+  password?: string;
   gradeLevel?: string;
   preferences?: string[];
 }
@@ -252,24 +253,50 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (profile: SignupProfile) => {
-    const fullName = `${profile.firstName} ${profile.lastName}`.trim();
+    const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+    if (!base) throw new Error("API URL is not configured");
+
+    const res = await fetch(`${base}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        first_name: profile.firstName,
+        last_name: profile.lastName,
+        nickname: profile.nickname,
+        email: profile.email,
+        phone: profile.phone,
+        gender: profile.gender,
+        password: profile.password
+      })
+    });
+    
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      throw new Error(data.error?.message || "สมัครสมาชิกไม่สำเร็จ");
+    }
+
+    const { user: userData, access_token } = data.data || {};
+
+    const fullName = userData?.first_name ? `${userData.first_name} ${userData.last_name}` : `${profile.firstName} ${profile.lastName}`.trim();
     const newAccount: TCOSAccount = {
-      id: generateUUIDv7(),
+      id: userData?.id || userData?._id || "user-123",
       name: fullName,
-      firstName: profile.firstName,
-      lastName: profile.lastName,
-      nickname: profile.nickname,
-      gender: profile.gender,
+      firstName: userData?.first_name || profile.firstName,
+      lastName: userData?.last_name || profile.lastName,
+      nickname: userData?.nickname || profile.nickname,
+      gender: userData?.gender || profile.gender,
       gradeLevel: profile.gradeLevel || undefined,
-      email: profile.email,
-      phone: profile.phone,
+      email: userData?.email || profile.email,
+      phone: userData?.phone || profile.phone,
       preferences: profile.preferences ?? [],
     };
+    
     setUser(newAccount);
     localStorage.setItem("tcos_user", JSON.stringify(newAccount));
-    localStorage.setItem("tcos_access_token", `mock_token_${Date.now()}`);
-    setRegistrations([]);
-    localStorage.setItem("tcos_registrations", JSON.stringify([]));
+    if (access_token) {
+      localStorage.setItem("tcos_access_token", access_token);
+    }
+    
     closeModals();
   };
 
