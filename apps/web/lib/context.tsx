@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Activity, INITIAL_ACTIVITIES } from "./mockData";
+import { fetchMyRegistrations } from "./activity-api";
 
 export interface TCOSAccount {
   id: string; // UUID v7 simulation
@@ -176,9 +177,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setRegistrations(hasMockRegistration ? [] : parsedRegs);
       } catch {
         setRegistrations([]);
+        setRegistrations([]);
       }
     } else {
       setRegistrations([]);
+    }
+    
+    // Fetch real registrations from API if logged in
+    const token = localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
+    if (token) {
+      fetchMyRegistrations().then(data => {
+        if (data && data.length > 0) {
+          const mapped = data.map((d: any) => ({
+            id: d.id || d._id,
+            activityId: d.activity_id,
+            enrolledAt: d.created_at || new Date().toISOString(),
+            status: d.status,
+            paymentStatus: d.payment?.status || "pending",
+            checkedIn: false,
+            ticketCode: d.ticket_code || "",
+            amountPaid: d.payment?.amount || 0,
+            additionalAnswers: d.custom_answers || {}
+          }));
+          setRegistrations(mapped);
+          localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
+        }
+      });
     }
   }, []);
 
@@ -243,6 +267,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("tcos_user", JSON.stringify(newAccount));
     localStorage.setItem("tcos_access_token", access_token);
     
+    fetchMyRegistrations().then(data => {
+      if (data && data.length > 0) {
+        const mapped = data.map((d: any) => ({
+          id: d.id || d._id,
+          activityId: d.activity_id,
+          enrolledAt: d.created_at || new Date().toISOString(),
+          status: d.status,
+          paymentStatus: d.payment?.status || "pending",
+          checkedIn: false,
+          ticketCode: d.ticket_code || "",
+          amountPaid: d.payment?.amount || 0,
+          additionalAnswers: d.custom_answers || {}
+        }));
+        setRegistrations(mapped);
+        localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
+      }
+    });
+
     closeModals();
   };
 

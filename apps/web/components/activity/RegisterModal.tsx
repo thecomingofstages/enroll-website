@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import type { ActivityDetail } from "@enroll-website/types";
-import { postActivityRegistration } from "@/lib/activity-api";
+import { postActivityRegistration, postPaymentSlip } from "@/lib/activity-api";
 import { useAppState } from "@/lib/context";
 
 type StepId = "info" | "payment" | "questions";
@@ -64,9 +64,13 @@ function validatePhone(phone: string): string | null {
 export function RegisterModal({
   activity,
   onClose,
+  initialStep,
+  existingRegistrationId,
 }: {
   activity: ActivityDetail;
   onClose: () => void;
+  initialStep?: StepId;
+  existingRegistrationId?: string;
 }) {
   const titleId = useId();
   const { user, openAccountModal, openLoginModal, loginWithToken } = useAppState();
@@ -79,10 +83,13 @@ export function RegisterModal({
     steps.push({ id: "questions", label: "คำถาม" });
   }
 
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  }
+
+  const defaultStepIndex = initialStep ? Math.max(0, steps.findIndex(s => s.id === initialStep)) : 0;
+  const [currentStepIndex, setCurrentStepIndex] = useState(defaultStepIndex);
   const [isSuccess, setIsSuccess] = useState(false);
   const currentStep = steps[currentStepIndex];
-  const isFirstStep = currentStepIndex === 0;
+  const isFirstStep = currentStepIndex === 0 || (existingRegistrationId && currentStep.id === "payment");
   const isLastStep = currentStepIndex === steps.length - 1;
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -145,6 +152,26 @@ export function RegisterModal({
   const handleSubmit = async () => {
     setSubmitting(true);
     setFeedback(null);
+    
+    if (existingRegistrationId) {
+      if (!slip) {
+        setSlipError("กรุณาอัปโหลดสลิป");
+        setSubmitting(false);
+        return;
+      }
+      const res = await postPaymentSlip(existingRegistrationId, slip);
+      setSubmitting(false);
+      if (res.ok) {
+        setIsSuccess(true);
+      } else {
+        setFeedback({
+          message: res.message ?? "เกิดข้อผิดพลาด",
+          variant: "error",
+        });
+      }
+      return;
+    }
+
     const custom_answers = Object.entries(extraAnswers).map(([k, v]) => ({
       question_id: k,
       answer: v,
@@ -699,16 +726,20 @@ export function ActivityRegisterSection({
   const [open, setOpen] = useState(false);
   const { registrations } = useAppState();
   
-  const isRegistered = registrations.some(r => r.activityId === activity._id || r.activityId === activity.id);
+  const registration = registrations.find(r => r.activityId === activity._id || r.activityId === activity.id);
+  const isRegistered = !!registration;
+  const isPendingPayment = isRegistered && registration.paymentStatus === "pending";
 
   const isFull =
     activity.seat_capacity > 0 &&
     activity.enrolled_count >= activity.seat_capacity;
   const isClosed = !activity.is_registration_open;
-  const isDisabled = isClosed || isFull || isRegistered;
+  const isDisabled = isClosed || isFull || (isRegistered && !isPendingPayment);
 
   let buttonText = activity.price > 0 ? `ลงทะเบียนเข้าร่วม (฿${activity.price})` : "ลงทะเบียนเข้าร่วม (ฟรี)";
-  if (isRegistered) {
+  if (isPendingPayment) {
+    buttonText = "ชำระเงินเพื่อทำรายการให้สมบูรณ์";
+  } else if (isRegistered) {
     buttonText = "✅ ลงทะเบียนแล้ว";
   } else if (isClosed) {
     buttonText = "ปิดรับสมัครแล้ว";
@@ -726,21 +757,25 @@ export function ActivityRegisterSection({
           aria-expanded={open}
           aria-haspopup="dialog"
           className={`w-full rounded-xl py-3.5 text-center text-base font-semibold shadow-sm transition sm:text-lg ${
-            isRegistered
-              ? "bg-emerald-100 text-emerald-800 cursor-default border border-emerald-200"
-              : isDisabled
-                ? "bg-stone-300 text-stone-500 cursor-not-allowed"
-                : "bg-red-800 text-white hover:bg-red-900"
+            isPendingPayment
+              ? "bg-primary-yellow text-base-black hover:bg-yellow-500"
+              : isRegistered
+                ? "bg-emerald-100 text-emerald-800 cursor-default border border-emerald-200"
+                : isDisabled
+                  ? "bg-stone-300 text-stone-500 cursor-not-allowed"
+                  : "bg-red-800 text-white hover:bg-red-900"
           }`}
         >
           {buttonText}
         </button>
       </div>
-      {open && !isDisabled ? (
+      {open && (!isDisabled || isPendingPayment) ? (
         <RegisterModal
           key={activity._id}
           activity={activity}
           onClose={() => setOpen(false)}
+          initialStep={isPendingPayment ? "payment" : "info"}
+          existingRegistrationId={isPendingPayment ? registration.id : undefined}
         />
       ) : null}
     </>
