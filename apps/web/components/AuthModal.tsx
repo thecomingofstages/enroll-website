@@ -455,9 +455,10 @@ export default function AuthModal() {
                       className={inputClass(Boolean(errors.gender))}
                     >
                       <option value="">เลือกเพศ</option>
-                      <option value="ชาย">ชาย</option>
-                      <option value="หญิง">หญิง</option>
-                      <option value="ไม่ระบุ">ไม่ระบุ</option>
+                      <option value="Male">ชาย (Male)</option>
+                      <option value="Female">หญิง (Female)</option>
+                      <option value="LGBTQ+">LGBTQ+</option>
+                      <option value="Unspecified">ไม่ระบุ (Unspecified)</option>
                     </select>
                     <FieldError message={errors.gender} />
                   </div>
