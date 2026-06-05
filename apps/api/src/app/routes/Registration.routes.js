@@ -9,6 +9,9 @@ const PaymentController      = require('../controllers/Payment.controller');
 // optionalAuth: existing users send Bearer token, new users send new_user payload without token
 router.post('/', AuthMiddleware.optionalAuth, RegistrationController.create);
 
+// GET  /registrations/mine — user's own registrations (for payment retry flow)
+router.get('/mine', AuthMiddleware.requireAuth, RegistrationController.getMyRegistrations);
+
 // GET  /registrations/:id
 router.get('/:id', AuthMiddleware.requireAuth, RegistrationController.getById);
 

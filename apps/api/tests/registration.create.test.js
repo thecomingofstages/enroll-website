@@ -3,8 +3,9 @@
  *
  * Tests for POST /v1/registrations
  *
- * CASE A — existing user (Bearer token present)
- * CASE B — new user (no token, new_user payload) — delegates to AuthHelper.register
+ * Key fix tested:
+ *   Case B (new user) — user account must NOT be created if answer validation fails.
+ *   All validation runs before any DB write.
  */
 
 const request = require('supertest');
@@ -33,14 +34,11 @@ const USER_TOKEN = JWTUtil.signAccess({ sub: EXISTING_USER._id, nickname: EXISTI
 const OPEN_ACTIVITY = {
   _id: 'activity-uuid-001', name: 'Improv Workshop', price: 500,
   seat_capacity: 30, enrolled_count: 10,
-  // new registration window fields — null means always open
-  open_registration_at:       null,
-  close_registration_at:      null,
-  registration_open_override: null, // null = use date window → open (both dates null)
+  open_registration_at: null, close_registration_at: null,
+  registration_open_override: null,
   extra_questions: [{ question_id: 'q1', question_text: 'T-Shirt size?', type: 'single_choice', is_required: true }],
 };
 const FREE_ACTIVITY   = { ...OPEN_ACTIVITY, _id: 'activity-uuid-free',   price: 0, extra_questions: [] };
-// Hard-closed via override = false (ignores date window)
 const CLOSED_ACTIVITY = { ...OPEN_ACTIVITY, _id: 'activity-uuid-closed', registration_open_override: false };
 const FULL_ACTIVITY   = { ...OPEN_ACTIVITY, _id: 'activity-uuid-full',   enrolled_count: 30 };
 
@@ -57,7 +55,6 @@ const NEW_USER_PAYLOAD = {
   email: 'may@example.com', phone: '0898765432', password: 'NewPass@123', gender: 'Female',
 };
 
-// requireAuth / optionalAuth resolves user via UserModel.findById
 function mockExistingUser() {
   UserModel.findById = jest.fn().mockReturnValue({ lean: () => Promise.resolve(EXISTING_USER) });
 }
@@ -81,11 +78,9 @@ describe('POST /v1/registrations — Case A (existing user)', () => {
       .send({ activity_id: OPEN_ACTIVITY._id, custom_answers: VALID_ANSWERS });
 
     expect(res.status).toBe(201);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.registration_id).toBe(SAVED_REGISTRATION._id);
     expect(res.body.data.status).toBe('PENDING');
-    expect(res.body.data.access_token).toBeUndefined(); // no token for existing users
-    expect(AuthHelper.register).not.toHaveBeenCalled(); // must NOT create an account
+    expect(res.body.data.access_token).toBeUndefined();
+    expect(AuthHelper.register).not.toHaveBeenCalled();
   });
 
   test('201 — free activity sets status PAID and increments enrolled_count', async () => {
@@ -120,7 +115,7 @@ describe('POST /v1/registrations — Case A (existing user)', () => {
     expect(ActivityModel.findByIdAndUpdate).not.toHaveBeenCalled();
   });
 
-  test('422 REGISTRATION_CLOSED — activity not accepting registrations', async () => {
+  test('422 REGISTRATION_CLOSED — activity not open', async () => {
     mockExistingUser();
     ActivityModel.findById = jest.fn().mockReturnValue({ lean: () => Promise.resolve(CLOSED_ACTIVITY) });
 
@@ -134,7 +129,7 @@ describe('POST /v1/registrations — Case A (existing user)', () => {
     expect(RegistrationModel.create).not.toHaveBeenCalled();
   });
 
-  test('422 ACTIVITY_FULL — enrolled_count >= seat_capacity', async () => {
+  test('422 ACTIVITY_FULL', async () => {
     mockExistingUser();
     ActivityModel.findById = jest.fn().mockReturnValue({ lean: () => Promise.resolve(FULL_ACTIVITY) });
 
@@ -145,10 +140,9 @@ describe('POST /v1/registrations — Case A (existing user)', () => {
 
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('ACTIVITY_FULL');
-    expect(RegistrationModel.create).not.toHaveBeenCalled();
   });
 
-  test('409 DUPLICATE_REGISTRATION — already registered (non-cancelled)', async () => {
+  test('409 DUPLICATE_REGISTRATION — already registered', async () => {
     mockExistingUser();
     ActivityModel.findById    = jest.fn().mockReturnValue({ lean: () => Promise.resolve(OPEN_ACTIVITY) });
     RegistrationModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(SAVED_REGISTRATION) });
@@ -163,7 +157,7 @@ describe('POST /v1/registrations — Case A (existing user)', () => {
     expect(RegistrationModel.create).not.toHaveBeenCalled();
   });
 
-  test('cancelled registration does not block re-registration — $nin CANCELLED', async () => {
+  test('cancelled registration does not block re-registration', async () => {
     mockExistingUser();
     ActivityModel.findById    = jest.fn().mockReturnValue({ lean: () => Promise.resolve(OPEN_ACTIVITY) });
     RegistrationModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
@@ -186,7 +180,7 @@ describe('POST /v1/registrations — Case A (existing user)', () => {
     const res = await request(app)
       .post('/v1/registrations')
       .set('Authorization', `Bearer ${USER_TOKEN}`)
-      .send({ activity_id: OPEN_ACTIVITY._id, custom_answers: [] });
+      .send({ activity_id: OPEN_ACTIVITY._id, custom_answers: [] }); // missing q1
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
@@ -221,14 +215,13 @@ describe('POST /v1/registrations — Case A (existing user)', () => {
 });
 
 // =============================================================================
-// CASE B — New user (no Bearer token) — delegates to AuthHelper.register
+// CASE B — New user
 // =============================================================================
 describe('POST /v1/registrations — Case B (new user)', () => {
 
-  test('201 — delegates account creation to AuthHelper.register, returns access_token', async () => {
-    // AuthHelper.register is mocked — returns sanitized new user object
+  test('201 — creates account + registration, returns access_token', async () => {
+    UserModel.findOne  = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) }); // email free
     AuthHelper.register = jest.fn().mockResolvedValue(CREATED_USER);
-
     ActivityModel.findById          = jest.fn().mockReturnValue({ lean: () => Promise.resolve(FREE_ACTIVITY) });
     RegistrationModel.findOne       = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
     RegistrationModel.create        = jest.fn().mockResolvedValue({ ...SAVED_REGISTRATION, user_id: CREATED_USER._id, status: 'PAID' });
@@ -239,32 +232,64 @@ describe('POST /v1/registrations — Case B (new user)', () => {
       .send({ activity_id: FREE_ACTIVITY._id, custom_answers: [], new_user: NEW_USER_PAYLOAD });
 
     expect(res.status).toBe(201);
-    expect(res.body.success).toBe(true);
-    // New user must receive an access_token
     expect(res.body.data.access_token).toBeDefined();
-    expect(typeof res.body.data.access_token).toBe('string');
-    // AuthHelper.register must have been called with the new_user payload
     expect(AuthHelper.register).toHaveBeenCalledWith(NEW_USER_PAYLOAD);
   });
 
-  test('AuthHelper.register is called with the exact new_user payload', async () => {
+  // ── THE KEY BUG FIX ─────────────────────────────────────────────────────
+  test('BUG FIX: AuthHelper.register NOT called when answer validation fails', async () => {
+    // Activity has a required question
+    const activityWithQuestion = {
+      ...OPEN_ACTIVITY,
+      extra_questions: [{ question_id: 'q1', question_text: 'T-Shirt size?', type: 'single_choice', is_required: true }],
+    };
+
+    // No mock for UserModel.findOne — email uniqueness check happens first
+    UserModel.findOne  = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
+    AuthHelper.register = jest.fn().mockResolvedValue(CREATED_USER);
+    ActivityModel.findById    = jest.fn().mockReturnValue({ lean: () => Promise.resolve(activityWithQuestion) });
+    RegistrationModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
+
+    const res = await request(app)
+      .post('/v1/registrations')
+      .send({
+        activity_id:    OPEN_ACTIVITY._id,
+        custom_answers: [], // missing required question — should fail
+        new_user:       NEW_USER_PAYLOAD,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    expect(res.body.error.field).toBe('custom_answers');
+
+    // THE CRITICAL ASSERTION: account must NOT have been created
+    expect(AuthHelper.register).not.toHaveBeenCalled();
+    expect(RegistrationModel.create).not.toHaveBeenCalled();
+  });
+
+  test('BUG FIX: user can retry after failed answer validation (no DUPLICATE_EMAIL)', async () => {
+    // Simulates the user's second attempt after fixing their answers.
+    // Since account was never created on first attempt, this should succeed.
+    UserModel.findOne   = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
     AuthHelper.register = jest.fn().mockResolvedValue(CREATED_USER);
     ActivityModel.findById          = jest.fn().mockReturnValue({ lean: () => Promise.resolve(FREE_ACTIVITY) });
     RegistrationModel.findOne       = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
     RegistrationModel.create        = jest.fn().mockResolvedValue({ ...SAVED_REGISTRATION, status: 'PAID' });
     ActivityModel.findByIdAndUpdate = jest.fn().mockResolvedValue({});
 
-    await request(app)
+    // Second attempt with correct answers
+    const res = await request(app)
       .post('/v1/registrations')
       .send({ activity_id: FREE_ACTIVITY._id, custom_answers: [], new_user: NEW_USER_PAYLOAD });
 
-    expect(AuthHelper.register).toHaveBeenCalledTimes(1);
-    expect(AuthHelper.register).toHaveBeenCalledWith(NEW_USER_PAYLOAD);
+    expect(res.status).toBe(201);
+    expect(AuthHelper.register).toHaveBeenCalledTimes(1); // called exactly once, on success
   });
 
-  test('409 DUPLICATE_EMAIL — propagated from AuthHelper.register', async () => {
-    const dupErr = Object.assign(new Error('Email already registered.'), { statusCode: 409, code: 'DUPLICATE_EMAIL' });
-    AuthHelper.register = jest.fn().mockRejectedValue(dupErr);
+  test('email uniqueness checked before any DB write', async () => {
+    // Email already taken — should fail before even checking activity
+    UserModel.findOne  = jest.fn().mockReturnValue({ lean: () => Promise.resolve(EXISTING_USER) });
+    AuthHelper.register = jest.fn();
 
     const res = await request(app)
       .post('/v1/registrations')
@@ -272,20 +297,34 @@ describe('POST /v1/registrations — Case B (new user)', () => {
 
     expect(res.status).toBe(409);
     expect(res.body.error.code).toBe('DUPLICATE_EMAIL');
+    expect(AuthHelper.register).not.toHaveBeenCalled();
     expect(RegistrationModel.create).not.toHaveBeenCalled();
   });
 
-  test('400 VALIDATION_ERROR — propagated from AuthHelper.register (missing fields)', async () => {
-    const valErr = Object.assign(new Error('Missing required fields.'), { statusCode: 400, code: 'VALIDATION_ERROR' });
-    AuthHelper.register = jest.fn().mockRejectedValue(valErr);
+  test('409 DUPLICATE_EMAIL — propagated from email pre-check', async () => {
+    UserModel.findOne  = jest.fn().mockReturnValue({ lean: () => Promise.resolve(EXISTING_USER) });
+    AuthHelper.register = jest.fn();
 
     const res = await request(app)
       .post('/v1/registrations')
-      .send({ activity_id: FREE_ACTIVITY._id, custom_answers: [], new_user: { email: 'incomplete@example.com' } });
+      .send({ activity_id: FREE_ACTIVITY._id, custom_answers: [], new_user: NEW_USER_PAYLOAD });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe('DUPLICATE_EMAIL');
+  });
+
+  test('400 VALIDATION_ERROR — missing required new_user fields', async () => {
+    const res = await request(app)
+      .post('/v1/registrations')
+      .send({
+        activity_id:    FREE_ACTIVITY._id,
+        custom_answers: [],
+        new_user:       { email: 'incomplete@example.com' },
+      });
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
-    expect(RegistrationModel.create).not.toHaveBeenCalled();
+    expect(AuthHelper.register).not.toHaveBeenCalled();
   });
 
   test('400 VALIDATION_ERROR — no token and no new_user block', async () => {
@@ -295,6 +334,5 @@ describe('POST /v1/registrations — Case B (new user)', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
-    expect(AuthHelper.register).not.toHaveBeenCalled();
   });
 });

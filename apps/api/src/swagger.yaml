@@ -592,6 +592,48 @@ paths:
         '403': { description: "FORBIDDEN — not the registration owner" }
         '404': { description: "NOT_FOUND" }
 
+  /registrations/mine:
+    get:
+      tags: [Registrations]
+      summary: Get current user's own registrations
+      description: |
+        Returns all registrations belonging to the authenticated user.
+        Primarily used to find an existing PENDING registration ID so the
+        user can resubmit a slip via `POST /registrations/:id/payment`
+        without re-registering.
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [PENDING, PAID, JOINED, CANCELLED] }
+          description: Filter by registration status
+      responses:
+        '200':
+          description: List of user's registrations with embedded activity snapshot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/Registration'
+                        - type: object
+                          properties:
+                            activity:
+                              type: object
+                              properties:
+                                name:           { type: string }
+                                hero_image_url: { type: string }
+                                price:          { type: number }
+                                schedule:       { type: array, items: { $ref: '#/components/schemas/ScheduleItem' } }
+                                enrolled_count: { type: integer }
+                                seat_capacity:  { type: integer }
+        '401': { description: TOKEN_MISSING or TOKEN_EXPIRED }
+        
   /registrations/{id}/payment:
     post:
       tags: [Payments]
