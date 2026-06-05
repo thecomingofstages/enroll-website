@@ -54,7 +54,7 @@ interface AppContextType {
   openCheckinModal: () => void;
   openAccountModal: () => void;
   closeModals: () => void;
-  login: (name: string, email: string, phone: string, preferences: string[]) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   loginWithToken: (user: TCOSAccount, token: string) => void;
   signup: (profile: SignupProfile) => Promise<void>;
   updateProfile: (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => void;
@@ -211,22 +211,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRegisterTargetActivity(null);
   };
 
-  const login = async (name: string, email: string, phone: string, preferences: string[]) => {
+  const login = async (email: string, password: string) => {
+    const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+    if (!base) throw new Error("API URL is not configured");
+
+    const res = await fetch(`${base}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    
+    if (!res.ok || !data.success) {
+      throw new Error(data.error?.message || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+    }
+
+    const { user: userData, access_token } = data.data;
+
+    // Use Backend user data or fallback mock mapping
     const newAccount: TCOSAccount = {
-      id: generateUUIDv7(),
-      name,
-      email,
-      phone,
-      preferences
+      id: userData.id || userData._id || "user-123",
+      name: userData.first_name ? `${userData.first_name} ${userData.last_name}` : (userData.name || email.split("@")[0]),
+      email: userData.email || email,
+      phone: userData.phone || "-",
+      preferences: userData.preferences || [],
+      avatarUrl: userData.avatar_url || undefined,
     };
+
     setUser(newAccount);
     localStorage.setItem("tcos_user", JSON.stringify(newAccount));
-    // Set a mock token for existing functionality to pass "Bearer" auth
-    localStorage.setItem("tcos_access_token", `mock_token_${Date.now()}`);
+    localStorage.setItem("tcos_access_token", access_token);
     
-    // Initial blank registrations for new users
-    setRegistrations([]);
-    localStorage.setItem("tcos_registrations", JSON.stringify([]));
     closeModals();
   };
 

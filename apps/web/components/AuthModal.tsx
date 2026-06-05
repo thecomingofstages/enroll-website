@@ -85,7 +85,7 @@ export default function AuthModal() {
     setIsSubmitting(true);
 
     try {
-      await login(email.split("@")[0] || "User", email, "08X-XXX-XXXX", []);
+      await login(email, password);
       resetState();
     } catch {
       setError("การเข้าสู่ระบบล้มเหลว");
