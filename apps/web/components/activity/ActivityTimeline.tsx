@@ -5,6 +5,7 @@ interface ActivityTimelineProps {
   currentDayIndex: number;
   hasMultipleDays: boolean;
   onPrev: () => void;
+  onNext: () => void;
   totalDays: number;
 }
 

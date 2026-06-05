@@ -154,7 +154,7 @@ export default function RegistrationModal() {
       if (res.ok) {
         // If it's a guest registration, we should also log them in locally after success.
         if (!user) {
-          await login(name, email, phone, []);
+          await login(email, password);
         }
         
         setTicketDetails({ ticketCode: res.registration_id });

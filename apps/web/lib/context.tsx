@@ -38,7 +38,7 @@ export interface UserRegistration {
   checkedIn: boolean;
   additionalAnswers: Record<string, string>;
   ticketCode: string; // Dynamic code simulation
-  paymentStatus: "free" | "paid_verified";
+  paymentStatus: "free" | "paid_verified" | "pending";
   amountPaid: number;
 }
 

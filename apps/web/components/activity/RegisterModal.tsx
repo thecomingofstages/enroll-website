@@ -83,8 +83,6 @@ export function RegisterModal({
     steps.push({ id: "questions", label: "คำถาม" });
   }
 
-  }
-
   const defaultStepIndex = initialStep ? Math.max(0, steps.findIndex(s => s.id === initialStep)) : 0;
   const [currentStepIndex, setCurrentStepIndex] = useState(defaultStepIndex);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -726,7 +724,7 @@ export function ActivityRegisterSection({
   const [open, setOpen] = useState(false);
   const { registrations } = useAppState();
   
-  const registration = registrations.find(r => r.activityId === activity._id || r.activityId === activity.id);
+  const registration = registrations.find(r => r.activityId === activity._id || r.activityId === (activity as any).id);
   const isRegistered = !!registration;
   const isPendingPayment = isRegistered && registration.paymentStatus === "pending";
 
