@@ -2,11 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Kanit, Prompt, Playfair_Display, Sarabun, Taviraj, Trirong } from "next/font/google";
 import "./globals.css";
 import { siteMetadataBase } from "@/lib/site-url";
-import { AppProvider } from "@/lib/context";
-import AccountModal from "@/components/AccountModal";
-import AuthModal from "@/components/AuthModal";
-import QRCheckinModal from "@/components/QRCheckinModal";
-import RegistrationModal from "@/components/RegistrationModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -82,13 +77,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${prompt.variable} ${playfair.variable} ${sarabun.variable} ${trirong.variable} ${taviraj.variable} ${kanit.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-zinc-50">
-        <AppProvider>
-          {children}
-          <AccountModal />
-          <AuthModal />
-          <QRCheckinModal />
-          <RegistrationModal />
-        </AppProvider>
+        {children}
       </body>
     </html>
   );

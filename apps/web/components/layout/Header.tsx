@@ -1,11 +1,7 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useAppState } from "@/lib/context";
 
 export function Header() {
-  const { user, openAccountModal, openLoginModal, openCheckinModal } = useAppState();
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#111111] backdrop-blur supports-[backdrop-filter]:bg-[#111111]/80">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -42,8 +38,8 @@ export function Header() {
             </svg>
             <span className="hidden sm:inline">Home</span>
           </Link>
-          <button
-            onClick={user ? openCheckinModal : openLoginModal}
+          <Link
+            href="/qr-code"
             className="group flex items-center gap-2 text-sm font-semibold text-stone-300 transition-colors hover:text-white"
           >
             <svg
@@ -72,9 +68,9 @@ export function Header() {
               <path d="M12 21v-1" />
             </svg>
             <span className="hidden sm:inline">QR Code</span>
-          </button>
-          <button
-            onClick={user ? openAccountModal : openLoginModal}
+          </Link>
+          <Link
+            href="/account"
             className="group flex items-center gap-2 text-sm font-semibold text-stone-300 transition-colors hover:text-white"
           >
             <svg
@@ -93,7 +89,7 @@ export function Header() {
               <circle cx="12" cy="7" r="4" />
             </svg>
             <span className="hidden sm:inline">Account</span>
-          </button>
+          </Link>
         </nav>
       </div>
     </header>
