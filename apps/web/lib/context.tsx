@@ -190,7 +190,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (data && data.length > 0) {
           const mapped = data.map((d: any) => ({
             id: d.id || d._id,
-            activityId: d.activity_id,
+            activityId: d.activity_id?._id || d.activity_id?.id || d.activity_id,
             enrolledAt: d.created_at || new Date().toISOString(),
             status: d.status,
             paymentStatus: d.payment?.status || "pending",
@@ -271,7 +271,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (data && data.length > 0) {
         const mapped = data.map((d: any) => ({
           id: d.id || d._id,
-          activityId: d.activity_id,
+          activityId: d.activity_id?._id || d.activity_id?.id || d.activity_id,
           enrolledAt: d.created_at || new Date().toISOString(),
           status: d.status,
           paymentStatus: d.payment?.status || "pending",
@@ -297,7 +297,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (data && data.length > 0) {
         const mapped = data.map((d: any) => ({
           id: d.id || d._id,
-          activityId: d.activity_id,
+          activityId: d.activity_id?._id || d.activity_id?.id || d.activity_id,
           enrolledAt: d.created_at || new Date().toISOString(),
           status: d.status,
           paymentStatus: d.payment?.status || "pending",
