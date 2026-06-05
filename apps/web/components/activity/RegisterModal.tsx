@@ -740,19 +740,17 @@ export function ActivityRegisterSection({
   
   const registration = registrations.find(r => r.activityId === activity._id || r.activityId === (activity as any).id);
   const isRegistered = !!registration;
-  const isPendingPayment = isRegistered && registration.paymentStatus === "pending";
+  const isPendingPayment = isRegistered && registration.paymentStatus === 'pending';
 
   const isFull =
     activity.seat_capacity > 0 &&
     activity.enrolled_count >= activity.seat_capacity;
   const isClosed = !activity.is_registration_open;
-  const isDisabled = isClosed || isFull || (isRegistered && !isPendingPayment);
+  const isDisabled = isClosed || isFull || isRegistered;
 
   let buttonText = activity.price > 0 ? `ลงทะเบียนเข้าร่วม (฿${activity.price})` : "ลงทะเบียนเข้าร่วม (ฟรี)";
-  if (isPendingPayment) {
-    buttonText = "ชำระเงินเพื่อทำรายการให้สมบูรณ์";
-  } else if (isRegistered) {
-    buttonText = "✅ ลงทะเบียนแล้ว";
+  if (isRegistered) {
+    buttonText = "ลงทะเบียนแล้ว";
   } else if (isClosed) {
     buttonText = "ปิดรับสมัครแล้ว";
   } else if (isFull) {
@@ -769,9 +767,9 @@ export function ActivityRegisterSection({
           aria-expanded={open}
           aria-haspopup="dialog"
           className={`w-full rounded-xl py-3.5 text-center text-base font-semibold shadow-sm transition sm:text-lg ${
-            isPendingPayment
-              ? "bg-primary-yellow text-base-black hover:bg-yellow-500"
-              : isRegistered
+            //isPendingPayment
+              //</div>? "bg-primary-yellow text-base-black hover:bg-yellow-500"
+              isRegistered
                 ? "bg-emerald-100 text-emerald-800 cursor-default border border-emerald-200"
                 : isDisabled
                   ? "bg-stone-300 text-stone-500 cursor-not-allowed"
