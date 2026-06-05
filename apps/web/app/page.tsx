@@ -52,10 +52,6 @@ function MainContent() {
           </div>
         </section>
       )}
-      <AccountModal />
-      <AuthModal />
-      <QRCheckinModal />
-      <RegistrationModal />
       <SiteFooter />
       <StickyFooter />
     </>
@@ -63,9 +59,5 @@ function MainContent() {
 }
 
 export default function Home() {
-  return (
-    <AppProvider>
-      <MainContent />
-    </AppProvider>
-  );
+  return <MainContent />;
 }

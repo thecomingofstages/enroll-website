@@ -212,9 +212,17 @@ export default function AccountModal() {
 
 
   return (
-    <div className="flex flex-1 items-start justify-center px-4 py-10">
-      <div className="w-full max-w-5xl overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 text-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-muted-charcoal px-5 py-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-sm">
+      <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 text-white shadow-2xl">
+        <button 
+          onClick={closeModals} 
+          className="absolute right-4 top-4 z-10 rounded-full p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <div className="flex items-center justify-between border-b border-muted-charcoal px-5 py-4 pr-14">
           <h3 className="font-playfair text-xl font-black text-primary-yellow">Account</h3>
         </div>
 
