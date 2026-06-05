@@ -4,9 +4,12 @@
 :root {
   --background: #131311;
   --foreground: #ededed;
-  --gold: #D4AF37;
-  --gold-hover: #E5B83B;
+  --gold: #D8B85A;
+  --gold-hover: #e5b83b;
   --card-bg: #1a1a1a;
+  --red: ##FFB4AB;
+  --green: #acd8a7;
+
 }
 
 @theme inline {
@@ -15,12 +18,14 @@
   --color-gold: var(--gold);
   --color-gold-hover: var(--gold-hover);
   --color-card: var(--card-bg);
+  --color-red: var(--red);
+  --color-green: var(--green);
   --font-sans: var(--font-geist-sans);
   --font-inter: var(--font-inter);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-serif);
   --font-prompt: var(--font-prompt);
-  --font-playfair: var(--font-serif);
+  --font-playfair: var(--font-playfair);
   --font-sarabun: var(--font-sarabun);
   --font-trirong: var(--font-trirong);
   --font-taviraj: var(--font-taviraj);

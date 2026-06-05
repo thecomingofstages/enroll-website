@@ -53,7 +53,7 @@ const activeItemClass = "text-[#d8b85a]";
 const activeUnderlineClass =
   "after:absolute after:bottom-0 after:left-2 after:right-2 after:h-[2px] after:rounded-full after:bg-[#d8b85a]";
 
-const labelClass = "text-[11px] font-semibold tracking-wide md:text-xs";
+const labelClass = "text-[14px] font-playfair tracking-wide md:text-xs";
 
 export default function StickyFooter() {
   const {
