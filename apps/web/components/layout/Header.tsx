@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useAppState } from "@/lib/context";
 
 export function Header() {
-  const { user, openAccountModal, openLoginModal, openCheckinModal } = useAppState();
+  const { user, openAccountModal, openLoginModal, openCheckinModal, openSignupModal, logout } = useAppState();
+  const firstName = user?.name.split(" ")[0] ?? "";
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#111111] backdrop-blur supports-[backdrop-filter]:bg-[#111111]/80">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -95,6 +96,40 @@ export function Header() {
             <span className="hidden sm:inline">Account</span>
           </button>
         </nav>
+        <div className="hidden sm:flex shrink-0 flex-nowrap items-center gap-2 sm:gap-3">
+          {user ? (
+            <div className="flex flex-col items-end gap-1">
+              <span className="whitespace-nowrap text-xs font-semibold text-white sm:text-sm">
+                สวัสดี{" "}
+                <span className="font-bold text-white">{firstName}</span>
+              </span>
+              <button
+                type="button"
+                onClick={logout}
+                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4"
+              >
+                ออกจากระบบ
+              </button>
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={openLoginModal}
+                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4"
+              >
+                เข้าสู่ระบบ
+              </button>
+              <button
+                type="button"
+                onClick={openSignupModal}
+                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4"
+              >
+                สมัครสมาชิก
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

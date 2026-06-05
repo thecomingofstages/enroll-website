@@ -102,4 +102,6 @@ export interface ActivityRegistrationResult {
   status?: string
   activity_id?: string
   registered_at?: string
+  access_token?: string
+  user_data?: any
 }

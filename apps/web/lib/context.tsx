@@ -55,6 +55,7 @@ interface AppContextType {
   openAccountModal: () => void;
   closeModals: () => void;
   login: (name: string, email: string, phone: string, preferences: string[]) => Promise<void>;
+  loginWithToken: (user: TCOSAccount, token: string) => void;
   signup: (profile: SignupProfile) => Promise<void>;
   updateProfile: (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => void;
   logout: () => void;
@@ -220,11 +221,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     setUser(newAccount);
     localStorage.setItem("tcos_user", JSON.stringify(newAccount));
+    // Set a mock token for existing functionality to pass "Bearer" auth
+    localStorage.setItem("tcos_access_token", `mock_token_${Date.now()}`);
     
     // Initial blank registrations for new users
     setRegistrations([]);
     localStorage.setItem("tcos_registrations", JSON.stringify([]));
     closeModals();
+  };
+
+  const loginWithToken = (newUser: TCOSAccount, token: string) => {
+    setUser(newUser);
+    localStorage.setItem("tcos_user", JSON.stringify(newUser));
+    localStorage.setItem("tcos_access_token", token);
   };
 
   const signup = async (profile: SignupProfile) => {
@@ -243,6 +252,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     setUser(newAccount);
     localStorage.setItem("tcos_user", JSON.stringify(newAccount));
+    localStorage.setItem("tcos_access_token", `mock_token_${Date.now()}`);
     setRegistrations([]);
     localStorage.setItem("tcos_registrations", JSON.stringify([]));
     closeModals();
@@ -263,6 +273,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Remove to simulate fresh guest view
     localStorage.setItem("tcos_user", "null");
     localStorage.setItem("tcos_registrations", "[]");
+    localStorage.removeItem("tcos_access_token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("token");
     closeModals();
   };
 
@@ -398,6 +411,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         openAccountModal,
         closeModals,
         login,
+        loginWithToken,
         signup,
         updateProfile,
         logout,

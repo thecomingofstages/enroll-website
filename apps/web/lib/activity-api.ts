@@ -166,7 +166,9 @@ export async function postActivityRegistration(
       return { 
         ok: true,
         registration_id: registrationId, 
-        message: "ลงทะเบียนและตรวจสอบสลิปสำเร็จ"
+        message: "ลงทะเบียนและตรวจสอบสลิปสำเร็จ",
+        access_token: regData.data?.access_token,
+        user_data: regData.data?.user
       };
     } catch (e) {
       return {
