@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAppState } from "@/lib/context";
 
 const baseNavLinkClass = "relative inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-base font-playfair text-[18px] transition-colors group";
@@ -11,18 +11,50 @@ const activeNavClass = "text-[#d8b85a]";
 const activeUnderlineClass = "after:absolute after:bottom-1 after:left-4 after:right-4 after:h-[2px] after:rounded-full after:bg-[#d8b85a]";
 
 export function Header() {
-  const { user, openLoginModal, openCheckinModal, openSignupModal, logout, openAccountModal, activeModal } = useAppState();
+  const { user, openLoginModal, openCheckinModal, openSignupModal, logout, openAccountModal, closeModals, activeModal } = useAppState();
   const firstName = user?.name.split(" ")[0] ?? "";
   
   const pathname = usePathname();
-  //const isHomeActive = (pathname === "/" || pathname.startsWith("/activity")) && !activeModal;
+  const router = useRouter();
+
+  const handleHomeClick = () => {
+    if (activeModal) {
+      closeModals();
+    } else if (pathname !== "/") {
+      router.push("/");
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleQrClick = () => {
+    if (!user) { openLoginModal(); return; }
+    if (pathname !== "/") {
+      router.push("/");
+      setTimeout(openCheckinModal, 100);
+    } else {
+      openCheckinModal();
+    }
+  };
+
+  const handleAccountClick = () => {
+    if (!user) { openLoginModal(); return; }
+    if (pathname !== "/") {
+      router.push("/");
+      setTimeout(openAccountModal, 100);
+    } else {
+      openAccountModal();
+    }
+  };
+
+  // Only highlight Home when on "/" and no modal is open that belongs to another tab.
+  // On /activity/... nothing is highlighted.
   const isHomeActive =
-    (pathname === "/" || pathname.startsWith("/activity")) &&
-    (!activeModal || (activeModal !== "checkin" && activeModal !== "account"));
+    pathname === "/" &&
+    activeModal !== "checkin" &&
+    activeModal !== "account";
   const isQrActive = activeModal === "checkin";
   const isAccountActive = activeModal === "account";
-
-  console.log(activeModal)
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#111111] backdrop-blur supports-[backdrop-filter]:bg-[#111111]/80">
@@ -41,8 +73,8 @@ export function Header() {
           </Link>
         </div>
         <nav className="absolute left-1/2 top-1/2 hidden md:flex -translate-x-1/2 -translate-y-1/2 items-center gap-6 sm:gap-10">
-          <Link
-            href="/"
+          <button
+            onClick={handleHomeClick}
             className={`${baseNavLinkClass} ${isHomeActive ? activeNavClass : inactiveNavClass} ${isHomeActive ? activeUnderlineClass : ""}`}
           >
             <svg
@@ -61,10 +93,10 @@ export function Header() {
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
             <span className="hidden sm:inline">Home</span>
-          </Link>
+          </button>
         
           <button
-            onClick={user ? openCheckinModal : openLoginModal}
+            onClick={handleQrClick}
             className={`${baseNavLinkClass} ${isQrActive ? activeNavClass : inactiveNavClass} ${isQrActive ? activeUnderlineClass : ""}`}
           >
             <svg
@@ -96,7 +128,7 @@ export function Header() {
           </button>
 
           <button
-            onClick={user ? openAccountModal : openLoginModal}
+            onClick={handleAccountClick}
             className={`${baseNavLinkClass} ${isAccountActive ? activeNavClass : inactiveNavClass} ${isAccountActive ? activeUnderlineClass : ""}`}
           >
             <svg
@@ -121,16 +153,16 @@ export function Header() {
         <div className="flex flex-1 justify-end shrink-0 flex-nowrap items-center gap-2 sm:gap-3">
           {user ? (
             <div className="flex flex-col items-end gap-1">
-              <span className="whitespace-nowrap text-sm font-semibold text-white sm:text-base">
-                สวัสดี{" "}
-                <span className="font-bold text-white">{firstName}</span>
+              <span className="whitespace-nowrap text-sm font-semibold font-playfair text-white sm:text-base">
+                Hello, {" "}
+                <span className="font-bold text-white font-trirong">{firstName}</span>
               </span>
               <button
                 type="button"
                 onClick={logout}
-                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4 sm:text-sm"
+                className="font-playfair shrink-0 whitespace-nowrap rounded-xs border border-white/25 bg-transparent py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4 sm:text-sm"
               >
-                ออกจากระบบ
+                Logout{" ⍈"}
               </button>
             </div>
           ) : (

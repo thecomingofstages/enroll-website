@@ -99,32 +99,12 @@ function ActivityCard({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "PAID":
-        return (
-          <span className="shrink-0 rounded bg-yellow-200 px-2 py-1 text-[12px] font-black uppercase text-yellow-700">
-            registered
-          </span>
-        );
-      case "JOINED":
-        return (
-          <span className="shrink-0 rounded bg-green px-2 py-1 text-[12px] font-black uppercase text-green-700">
-            joined
-          </span>
-        );
-      case "ERROR":
-        return (
-          <span className="shrink-0 rounded bg-red-200 px-2 py-1 text-[12px] font-black uppercase text-red-700">
-            payment error
-          </span>
-        );
-      case "MISSED":
-        return (
-          <span className="shrink-0 rounded bg-gray-500 px-2 py-1 text-[12px] font-black uppercase text-gray-800">
-            Missed
-          </span>
-        );
-      default:
-        return null;
+      case "PENDING": return (<p className="text-m font-semibold text-foreground mt-1 text-red-300">WAITING FOR PAYMENT</p>);
+      case "PAID": return (<p className="text-m font-semibold text-foreground mt-1 text-gold">REGISTERED</p>);
+      case "JOINED": return (<p className="text-m font-semibold text-foreground mt-1 text-green">JOINED</p>);
+      case "CANCELLED": return (<p className="text-m font-semibold text-foreground mt-1 text-gray-500">CANCELLED/MISSED</p>);
+      
+      default: return (<p className="text-m font-semibold text-foreground mt-1 text-foreground">N/A</p>);;
     }
   };
 
@@ -135,7 +115,7 @@ function ActivityCard({
         <div className="mt-2 text-left grid grid-cols-3 gap-4">
     <div>
       <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">status</p>
-      <p className="text-m font-semibold text-foreground mt-1">{getStatusBadge(activity.status)}</p>
+      {getStatusBadge(activity.status)}
     </div>
     <div>
       <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">registered at</p>
@@ -143,7 +123,9 @@ function ActivityCard({
     </div>
     <div>
       <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">group name</p>
-      <p className="text-m font-semibold text-foreground mt-1">{activity.group_name ?? "-"}</p>
+      {activity.group_name ? 
+      <p className="text-m font-semibold text-foreground mt-1 text-gold">{activity.group_name}</p> :
+    <p className="text-m font-semibold text-foreground mt-1">-</p>}
     </div>
               </div>
         <a href={`activity/${activity.activity._id}`}
@@ -155,7 +137,7 @@ function ActivityCard({
   );
 }
 
-type ActivityTab = "all" | "upcoming" | "past";
+type ActivityTab = "all";
 
 export default function AccountProfile({isOpen}: {isOpen: boolean}) {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -488,8 +470,8 @@ export default function AccountProfile({isOpen}: {isOpen: boolean}) {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-4 pb-3">
-              {(["all", "upcoming", "past"] as const).map((tab) => (
+            <div className="flex gap-4 pb-3 hidden">
+              {(["all"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}

@@ -79,9 +79,32 @@ export default function StickyFooter() {
     }
   };
 
+  const handleQrClick = () => {
+    if (!user) { openLoginModal(); return; }
+    if (pathname !== "/") {
+      router.push("/");
+      setTimeout(openCheckinModal, 100);
+    } else {
+      openCheckinModal();
+    }
+  };
+
+  const handleAccountClick = () => {
+    if (!user) { openLoginModal(); return; }
+    if (pathname !== "/") {
+      router.push("/");
+      setTimeout(openAccountModal, 100);
+    } else {
+      openAccountModal();
+    }
+  };
+
+  // Only highlight Home when on "/" and no modal is open that belongs to another tab.
+  // On /activity/... nothing is highlighted.
   const isHomeActive =
-    (pathname === "/" || pathname.startsWith("/activity")) &&
-    (!activeModal || (activeModal !== "checkin" && activeModal !== "account"));
+    pathname === "/" &&
+    activeModal !== "checkin" &&
+    activeModal !== "account";
   const isQrActive = activeModal === "checkin";
   const isAccountActive = activeModal === "account";
 
@@ -102,7 +125,7 @@ export default function StickyFooter() {
 
           <button
             type="button"
-            onClick={user ? openCheckinModal : openLoginModal}
+            onClick={handleQrClick}
             className={`relative ${baseItemClass} ${
               isQrActive ? activeItemClass : inactiveItemClass
             } ${isQrActive ? activeUnderlineClass : ""}`}
@@ -118,7 +141,7 @@ export default function StickyFooter() {
 
           <button
             type="button"
-            onClick={user ? openAccountModal : openLoginModal}
+            onClick={handleAccountClick}
             className={`${baseItemClass} ${
               isAccountActive ? activeItemClass : inactiveItemClass
             } ${isAccountActive ? activeUnderlineClass : ""}`}
