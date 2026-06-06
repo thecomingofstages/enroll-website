@@ -270,27 +270,26 @@ export default function QRCheckinModal() {
                     </p>
                   </div>
 
-                  {/* Contact Info Grid */}
-                  <div className="grid grid-cols-2 gap-4 mt-10">
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">
-                        Phone
-                      </p>
-                      <p className="text-m font-semibold text-foreground mt-1">
-                        {user.phone}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Email */}
-                  <div className="mt-6">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">
-                      EMAIL
-                    </p>
-                    <p className="text-foreground font-semibold text-m mt-1">
-                      {user.email}
-                    </p>
-                  </div>
+                  <div className="grid grid-cols-1 @sm:grid-cols-2 gap-4 mt-5 border-t border-gold/30">
+  <div className="mt-5 text-left space-x-2">
+    <div>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">Phone</p>
+      <p className="text-m font-semibold text-foreground mt-1">{user.phone}</p>
+    </div>
+    <div>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-5">Email</p>
+      <p className="text-m font-semibold text-foreground mt-1">{user.email}</p>
+    </div>
+    <div>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-5">Education Level</p>
+      <p className="text-m font-semibold text-foreground mt-1">{user.education_level ?? "-"}</p>
+    </div>
+    <div>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-5">Institution</p>
+      <p className="text-m font-semibold text-foreground mt-1">{user.institution ?? "-"}</p>
+    </div>
+  </div>
+              </div>
                 </div>
               </div>
             </div>

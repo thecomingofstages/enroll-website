@@ -11,13 +11,16 @@ const activeNavClass = "text-[#d8b85a]";
 const activeUnderlineClass = "after:absolute after:bottom-1 after:left-4 after:right-4 after:h-[2px] after:rounded-full after:bg-[#d8b85a]";
 
 export function Header() {
-  const { user, openAccountModal, openLoginModal, openCheckinModal, openSignupModal, logout, activeModal } = useAppState();
+  const { user, openLoginModal, openCheckinModal, openSignupModal, logout, openAccountModal, activeModal } = useAppState();
   const firstName = user?.name.split(" ")[0] ?? "";
   
   const pathname = usePathname();
-  const isHomeActive = (pathname === "/" || pathname.startsWith("/activity")) && !activeModal;
+  //const isHomeActive = (pathname === "/" || pathname.startsWith("/activity")) && !activeModal;
+  const isHomeActive = activeModal === null;
   const isQrActive = activeModal === "checkin";
   const isAccountActive = activeModal === "account";
+
+  console.log(activeModal)
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#111111] backdrop-blur supports-[backdrop-filter]:bg-[#111111]/80">
@@ -88,27 +91,29 @@ export function Header() {
             </svg>
             <span className="hidden sm:inline">QR Code</span>
           </button>
+
           <button
             onClick={user ? openAccountModal : openLoginModal}
             className={`${baseNavLinkClass} ${isAccountActive ? activeNavClass : inactiveNavClass} ${isAccountActive ? activeUnderlineClass : ""}`}
           >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="opacity-80 group-hover:opacity-100"
-            >
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <span className="hidden sm:inline">Account</span>
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="opacity-80 group-hover:opacity-100"
+              >
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span className="hidden sm:inline">Account</span>
           </button>
+          
         </nav>
         <div className="flex flex-1 justify-end shrink-0 flex-nowrap items-center gap-2 sm:gap-3">
           {user ? (

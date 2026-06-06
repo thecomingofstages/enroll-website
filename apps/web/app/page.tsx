@@ -8,6 +8,7 @@ import SiteFooter from "@/components/SiteFooter";
 import StickyFooter from "@/components/StickyFooter";
 import { useAppState } from "@/lib/context";
 import { Activity, INITIAL_ACTIVITIES } from "@/lib/mockData";
+import AccountProfile from "@/components/AccountProfile";
 
 function MainContent() {
   const { activeModal } = useAppState();
@@ -58,6 +59,8 @@ function MainContent() {
 
   const showHome = activeModal !== "account" && activeModal !== "checkin";
 
+  const showAccount = activeModal === "account";
+
   return (
     <>
       <Header />
@@ -105,6 +108,10 @@ function MainContent() {
         </section>
       )}
       <QRCheckinModal />
+      {showAccount && (
+      <AccountProfile />
+
+      )}
       <SiteFooter />
       <StickyFooter />
     </>
