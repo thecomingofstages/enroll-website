@@ -110,7 +110,7 @@ export default function ActivityCard({
         </div>
 
         <div className="flex flex-1 flex-col gap-2 p-3 pb-2">
-          <h3 className="m-1 line-clamp-2 font-taviraj text-xl font-semibold leading-tight text-zinc-100">
+          <h3 className="m-1 line-clamp-2 font-trirong text-xl font-semibold leading-tight text-zinc-100">
             {activity.name}
           </h3>
           <div className="space-y-1 text-base font-medium text-zinc-500">

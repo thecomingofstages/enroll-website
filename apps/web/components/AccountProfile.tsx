@@ -213,10 +213,10 @@ export default function AccountProfile({isOpen}: {isOpen: boolean}) {
         email: email.trim(),
         phone: phone.trim(),
         avatar_url: avatarUrl,
-        preferences: preferencesText
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
+        education_level: education_level.trim(),
+        institution: institution.trim(),
+        address: address.trim(),
+        preferences: preferencesText.split(",").map((item) => item.trim()).filter(Boolean),
       });
 
       if (result.success && result.data) {
@@ -329,20 +329,6 @@ export default function AccountProfile({isOpen}: {isOpen: boolean}) {
                   onChange={(e) => setLastName(e.target.value)}
                   className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
                   placeholder="รักเวที"
-                />
-                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">phone</p>
-                <input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
-                  placeholder="0999999999"
-                />
-                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">email</p>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
-                  placeholder="tcos@example.com"
                 />
                 <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">education_level</p>
                 <input

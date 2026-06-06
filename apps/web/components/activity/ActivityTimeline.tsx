@@ -38,7 +38,7 @@ export function ActivityTimeline({
   return (
     <section className="rounded-2xl bg-[var(--card-bg)] p-5 shadow-lg border border-zinc-800 sm:p-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-prompt text-2xl font-bold text-[var(--color-gold)]">กำหนดการกิจกรรม</h2>
+        <h2 className=" text-2xl font-bold text-[var(--color-gold)]">กำหนดการกิจกรรม</h2>
         
         {hasMultipleDays && (
           <div className="flex items-center gap-2">
@@ -68,7 +68,7 @@ export function ActivityTimeline({
 
       <div className="mt-4 rounded-xl bg-zinc-900/50 p-4 border border-zinc-800">
         <div className="mb-4 border-b border-zinc-800 pb-3">
-          <h3 className="font-prompt text-lg font-bold text-zinc-100">
+          <h3 className=" text-lg font-bold text-zinc-100">
             {hasMultipleDays ? `วันที่ ${currentDayIndex + 1}` : "วันจัดกิจกรรม"}
             <span className="ml-2 font-sans text-sm font-normal text-zinc-400">
               {formatDisplayDate(currentDate)}
@@ -101,7 +101,7 @@ export function ActivityTimeline({
               </div>
               <div className="min-w-0 flex-1 pt-0.5">
                 <p className="text-xs font-bold text-[var(--color-gold)] tracking-widest">{item.start_time} – {item.end_time}</p>
-                <p className="mt-1 font-prompt text-lg font-medium text-zinc-100">{item.title}</p>
+                <p className="mt-1  text-lg font-medium text-zinc-100">{item.title}</p>
                 <p className="mt-1 text-sm leading-relaxed text-zinc-400">
                   {item.description}
                 </p>

@@ -15,7 +15,8 @@ export default function ActivitiesLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className={`${notoThai.className} min-h-full flex flex-col pb-20 md:pb-0`} lang="th">
+    <div className={`min-h-full flex flex-col pb-20 md:pb-0`} lang="th">
+    {/*<div className={`${notoThai.className} min-h-full flex flex-col pb-20 md:pb-0`} lang="th">*/}
       <Header />
       <div className="flex-1 shrink-0">{children}</div>
       <SiteFooter />
