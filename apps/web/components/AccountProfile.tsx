@@ -80,12 +80,14 @@ function ActivityCard({
   activity: ActivityRegistration;
   onViewTicket: (activity: ActivityRegistration) => void;
 }) {
-  const formatDate = (dateString: string) => {
+  console.log("Activity Data:", activity)
+  
+    const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
       return date.toLocaleDateString("en-US", {
-        month: "short",
         day: "numeric",
+        month: "short",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",
@@ -97,27 +99,27 @@ function ActivityCard({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "confirmed":
+      case "PAID":
         return (
-          <span className="shrink-0 rounded bg-light-green px-2 py-1 text-[9px] font-black uppercase text-light-green-text">
-            Joined
+          <span className="shrink-0 rounded bg-yellow-200 px-2 py-1 text-[12px] font-black uppercase text-yellow-700">
+            registered
           </span>
         );
-      case "completed":
+      case "JOINED":
         return (
-          <span className="shrink-0 rounded bg-zinc-700 px-2 py-1 text-[9px] font-black uppercase text-zinc-300">
-            Used
+          <span className="shrink-0 rounded bg-green px-2 py-1 text-[12px] font-black uppercase text-green-700">
+            joined
           </span>
         );
-      case "pending":
+      case "ERROR":
         return (
-          <span className="shrink-0 rounded bg-yellow-900/40 px-2 py-1 text-[9px] font-black uppercase text-yellow-600">
-            Pending
+          <span className="shrink-0 rounded bg-red-200 px-2 py-1 text-[12px] font-black uppercase text-red-700">
+            payment error
           </span>
         );
-      case "cancelled":
+      case "MISSED":
         return (
-          <span className="shrink-0 rounded bg-red-900/40 px-2 py-1 text-[9px] font-black uppercase text-red-400">
+          <span className="shrink-0 rounded bg-gray-500 px-2 py-1 text-[12px] font-black uppercase text-gray-800">
             Missed
           </span>
         );
@@ -127,42 +129,27 @@ function ActivityCard({
   };
 
   return (
-    <article className="relative overflow-hidden rounded-lg border border-muted-charcoal bg-black">
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: activity.activity_cover_image
-            ? `url(${activity.activity_cover_image})`
-            : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundColor: "rgb(50, 50, 50)",
-        }}
-      />
-      <div className="absolute inset-0 bg-linear-to-t from-base-black via-base-black/80 to-base-black/10" />
-      <div className="relative flex min-h-44 flex-col justify-end gap-3 p-4">
-        <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0">
-            <h4 className="line-clamp-2 font-inter text-xl font-black text-white">
-              {activity.activity_name}
-            </h4>
-            <p className="mt-1 font-sans text-[11px] font-semibold text-zinc-300">
-              {formatDate(activity.activity_date)}
-            </p>
-            <p className="font-sans text-[11px] font-semibold text-zinc-400">
-              {activity.activity_location}
-            </p>
-          </div>
-          {getStatusBadge(activity.status)}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onViewTicket(activity)}
-          className="ml-auto rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:text-[#d8b85a] active:scale-[0.98]"
-        >
-          View Ticket
-        </button>
+    <article className="relative overflow-hidden round-xl border border-gold/30 bg-background">
+      <div className="relative flex min-h-44 flex-col justify-between gap-3 p-4 bg-background">
+        <h4 className="font-trirong text-xl font-black text-white">{activity.activity.name}</h4>
+        <div className="mt-2 text-left grid grid-cols-3 gap-4">
+    <div>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">status</p>
+      <p className="text-m font-semibold text-foreground mt-1">{getStatusBadge(activity.status)}</p>
+    </div>
+    <div>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">registered at</p>
+      <p className="text-m font-semibold text-foreground mt-1">{formatDate(activity.registered_at)}</p>
+    </div>
+    <div>
+      <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">group name</p>
+      <p className="text-m font-semibold text-foreground mt-1">{activity.group_name ?? "-"}</p>
+    </div>
+              </div>
+        <a href={`activity/${activity.activity._id}`}
+           className="ml-auto rounded-xs border border-gold/30 px-4 py-2 text-xs font-semibold text-gold transition-colors hover:text-background hover:bg-gold hover:cursor-pointer active:scale-[0.98]">
+          𝐢 View Details
+        </a>
       </div>
     </article>
   );
@@ -170,7 +157,7 @@ function ActivityCard({
 
 type ActivityTab = "all" | "upcoming" | "past";
 
-export default function AccountProfile() {
+export default function AccountProfile({isOpen}: {isOpen: boolean}) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [activities, setActivities] = useState<ActivityRegistration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -184,11 +171,15 @@ export default function AccountProfile() {
   const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [education_level, setEducationLevel] = useState("");
+  const [institution, setInstitution] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [address, setAddress] = useState("");
   const [preferencesText, setPreferencesText] = useState("");
 
   // Load user profile and activities
   useEffect(() => {
+    if (!isOpen) return;
     const loadData = async () => {
       setIsLoading(true);
       setError(null);
@@ -205,6 +196,9 @@ export default function AccountProfile() {
           setNickname(userProfile.nickname);
           setEmail(userProfile.email);
           setPhone(userProfile.phone);
+          setEducationLevel(userProfile.education_level || "");
+          setInstitution(userProfile.institution || "");
+          setAddress(userProfile.address || "");
           setAvatarUrl(userProfile.avatar_url || "");
           setPreferencesText(
             Array.isArray(userProfile.preferences)
@@ -225,7 +219,7 @@ export default function AccountProfile() {
     };
 
     loadData();
-  }, []);
+  }, [isOpen]);
 
   const handleSaveProfile = async () => {
     setError(null);
@@ -263,6 +257,10 @@ export default function AccountProfile() {
       setEmail(user.email);
       setPhone(user.phone);
       setAvatarUrl(user.avatar_url || "");
+      setEducationLevel(user.education_level || "");
+      setInstitution(user.institution || "");
+      setAddress(user.address || "")
+      
       setPreferencesText(
         Array.isArray(user.preferences) ? user.preferences.join(", ") : ""
       );
@@ -273,7 +271,7 @@ export default function AccountProfile() {
   const filteredActivities = activities.filter((activity) => {
     if (activeTab === "all") return true;
 
-    const activityDate = new Date(activity.activity_date);
+    const activityDate = new Date(activity.activity.date ?? "");
     const now = new Date();
 
     if (activeTab === "upcoming") {
@@ -304,7 +302,7 @@ export default function AccountProfile() {
     return (
       <main className="min-h-screen bg-background py-10 px-4">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-lg border border-muted-charcoal bg-dark-grey p-8 text-center">
+          <div className="rounded-lg p-8 text-center">
             <p className="text-primary-yellow font-bold">กรุณาเข้าสู่ระบบเพื่อดูข้อมูลโปรไฟล์</p>
           </div>
         </div>
@@ -318,9 +316,9 @@ export default function AccountProfile() {
   return (
     <main className="min-h-screen bg-background py-10 px-4">
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg-8">
-        <div className="grid gap-5 md:grid-cols-[320px_1fr] md:p-0 p-4">
+        <div className="grid gap-10 md:grid-cols-[320px_1fr] md:p-0 p-4">
           {/* Sidebar */}
-          <aside className="@container rounded-xs border border-gold/30 border-muted-charcoal p-5 bg-background">
+          <aside className="@container rounded-xs border border-gold/30 border-muted-charcoal p-5 bg-card">
             <ProfileAvatar
               user={user}
               isEditing={isEditing}
@@ -329,42 +327,71 @@ export default function AccountProfile() {
 
             {isEditing ? (
               <div className="mt-5 space-y-3">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">nickname</p>
                 <input
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
-                  className="w-full rounded-md border border-muted-charcoal bg-base-black px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
-                  placeholder="ชื่อเล่น (Nickname)"
+                  className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
+                  placeholder="ทีคอส"
                 />
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">first name</p>
                 <input
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full rounded-md border border-muted-charcoal bg-base-black px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
-                  placeholder="ชื่อจริง (First Name)"
+                  className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
+                  placeholder="ไทย"
                 />
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">last name</p>
                 <input
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full rounded-md border border-muted-charcoal bg-base-black px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
-                  placeholder="นามสกุล (Last Name)"
+                  className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
+                  placeholder="รักเวที"
                 />
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-md border border-muted-charcoal bg-base-black px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
-                  placeholder="อีเมล (Email)"
-                />
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">phone</p>
                 <input
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full rounded-md border border-muted-charcoal bg-base-black px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
-                  placeholder="เบอร์โทร (Phone)"
+                  className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
+                  placeholder="0999999999"
                 />
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">email</p>
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
+                  placeholder="tcos@example.com"
+                />
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">education_level</p>
+                <input
+                  value={education_level}
+                  onChange={(e) => setEducationLevel(e.target.value)}
+                  className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
+                  placeholder="M.6"
+                />
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">institution</p>
+                <input
+                  value={institution}
+                  onChange={(e) => setInstitution(e.target.value)}
+                  className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
+                  placeholder="TCOS Acting School"
+                />
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">address</p>
+                <input
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full rounded-xs bg-background bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
+                  placeholder="Address"
+                />
+                {/* 
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-0">interests</p>
                 <input
                   value={preferencesText}
                   onChange={(e) => setPreferencesText(e.target.value)}
-                  className="w-full rounded-md border border-muted-charcoal bg-base-black px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
+                  className="w-full rounded-xs bg-card bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
                   placeholder="ความสนใจ, คั่นด้วยเครื่องหมายจุลภาค"
                 />
+                */}
               </div>
             ) : (
               <div className="mt-5 text-center">
@@ -425,16 +452,16 @@ export default function AccountProfile() {
                   <button
                     type="button"
                     onClick={handleSaveProfile}
-                    className="rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:text-[#d8b85a] active:scale-[0.98]"
+                    className="rounded-xs border border-gold/30 px-4 py-2 text-xs font-semibold text-gold transition-colors hover:text-background hover:bg-gold hover:cursor-pointer active:scale-[0.98]"
                   >
-                    บันทึก (Save)
+                    ⎙ Save
                   </button>
                   <button
                     type="button"
                     onClick={handleCancelEdit}
-                    className="rounded-md border border-muted-charcoal px-4 py-2 text-xs font-bold text-zinc-200 transition-colors hover:text-[#d8b85a] active:scale-[0.98]"
+                    className="rounded-xs border border-gold/30 px-4 py-2 text-xs font-semibold text-gold transition-colors hover:text-background hover:bg-gold hover:cursor-pointer active:scale-[0.98]"
                   >
-                    ยกเลิก (Cancel)
+                    ⨯ Cancel
                   </button>
                 </>
               ) : (
@@ -454,27 +481,27 @@ export default function AccountProfile() {
 
           {/* Main Content */}
           <section className="space-y-4">
-            <div className="mb-4 flex flex-col gap-3 border-b border-muted-charcoal pb-3 md:flex-row md:items-center md:justify-between">
-              <h3 className="font-playfair text-2xl md:text-3xl font-black text-white">
+            <div className="mb-5 flex flex-col gap-3 border-b border-gold/30 pb-3 md:flex-row md:items-center md:justify-between">
+              <h3 className="font-playfair font-bold text-2xl md:text-3xl text-foreground" >
                 My Activities
               </h3>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-4 border-b border-muted-charcoal pb-3">
+            <div className="flex gap-4 pb-3">
               {(["all", "upcoming", "past"] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`text-sm font-bold transition-colors pb-1 ${
+                  className={`text-sm font-semibold font-playfair transition-colors pb-1 ${
                     activeTab === tab
-                      ? "text-primary-yellow border-b-2 border-primary-yellow"
+                      ? "text-primary-yellow border-b-1 border-primary-yellow"
                       : "text-zinc-400 hover:text-zinc-200"
                   }`}
                 >
-                  {tab === "all" && "ทั้งหมด (All)"}
-                  {tab === "upcoming" && "กำลังมา (Upcoming)"}
-                  {tab === "past" && "ที่ผ่านมา (Past)"}
+                  {tab === "all" && "All"}
+                  {tab === "upcoming" && "Upcoming"}
+                  {tab === "past" && "Past"}
                 </button>
               ))}
             </div>
@@ -487,7 +514,7 @@ export default function AccountProfile() {
 
             {/* Activities Grid */}
             {filteredActivities.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-1">
                 {filteredActivities.map((activity) => (
                   <ActivityCard
                     key={activity._id}

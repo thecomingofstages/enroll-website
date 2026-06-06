@@ -16,7 +16,9 @@ export function Header() {
   
   const pathname = usePathname();
   //const isHomeActive = (pathname === "/" || pathname.startsWith("/activity")) && !activeModal;
-  const isHomeActive = activeModal === null;
+  const isHomeActive =
+    (pathname === "/" || pathname.startsWith("/activity")) &&
+    (!activeModal || (activeModal !== "checkin" && activeModal !== "account"));
   const isQrActive = activeModal === "checkin";
   const isAccountActive = activeModal === "account";
 
@@ -60,6 +62,7 @@ export function Header() {
             </svg>
             <span className="hidden sm:inline">Home</span>
           </Link>
+        
           <button
             onClick={user ? openCheckinModal : openLoginModal}
             className={`${baseNavLinkClass} ${isQrActive ? activeNavClass : inactiveNavClass} ${isQrActive ? activeUnderlineClass : ""}`}

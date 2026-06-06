@@ -30,6 +30,22 @@ export interface UserProfile {
 }
 
 export interface ActivityRegistration {
+  registration_id: string;
+  status: string;
+  registered_at: string;
+  group_name: string | null;
+  activity: {
+    _id: string;
+    name: string;
+    hero_image_url?: string;
+    date?: string;
+    location?: string;
+    // add more fields once you see the full activity object
+  };
+}
+
+/*
+export interface ActivityRegistration {
   _id: string;
   user_id: string;
   activity_id: string;
@@ -41,6 +57,7 @@ export interface ActivityRegistration {
   registered_at: string;
   payment_status?: string;
 }
+  */
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -132,9 +149,7 @@ export async function fetchUserActivities(): Promise<ActivityRegistration[]> {
   const base = apiBase();
   const token = getAuthToken();
 
-  if (!base || !token) {
-    return [];
-  }
+  if (!base || !token) return [];
 
   try {
     const res = await fetch(`${base}/users/me/activities`, {
@@ -144,15 +159,16 @@ export async function fetchUserActivities(): Promise<ActivityRegistration[]> {
       },
     });
 
-    if (!res.ok) {
-      return [];
+    const text = await res.text();
+    if (!res.ok || !text) return [];
+
+    const raw = JSON.parse(text);
+    if (raw.success && Array.isArray(raw.data)) {
+        return raw.data as ActivityRegistration[];
     }
 
-    const data = (await res.json()) as ApiResponse<ActivityRegistration[]>;
-    if (data.success && Array.isArray(data.data)) {
-      return data.data;
-    }
-    return [];
+return [];
+
   } catch (e) {
     console.error("Failed to fetch user activities:", e);
     return [];

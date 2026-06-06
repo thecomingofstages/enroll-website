@@ -109,7 +109,7 @@ function MainContent() {
       )}
       <QRCheckinModal />
       {showAccount && (
-      <AccountProfile />
+      <AccountProfile isOpen={showAccount}/>
 
       )}
       <SiteFooter />
