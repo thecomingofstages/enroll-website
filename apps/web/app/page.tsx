@@ -66,8 +66,8 @@ function MainContent() {
       <Header />
       {showHome && activities.length > 0 && (
         <ActivityCard
-          key={activities[0]._id}
-          activity={activities[0]}
+          key={(activities[0] as any)._id}
+          activity={(activities[0] as any)}
           variant="recommended"
           onRegister={handleRegister}
         />
