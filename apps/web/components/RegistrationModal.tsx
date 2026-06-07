@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAppState } from "../lib/context";
-import { Activity } from "../lib/mockData";
+import type { Activity } from "@enroll-website/types";
 import { postActivityRegistration } from "../lib/activity-api";
 
 export default function RegistrationModal() {

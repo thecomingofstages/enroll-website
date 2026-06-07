@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Activity, formatActivityDate } from "../lib/mockData";
+import type { Activity } from "@enroll-website/types";
+import { formatActivityDate } from "../lib/mockData";
 import { useAppState } from "../lib/context";
 
 // type ActivityTab = "all" | "upcoming" | "past";
