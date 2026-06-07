@@ -89,11 +89,6 @@ function ActivityTicket({
     <article className="relative overflow-hidden rounded-lg border border-muted-charcoal bg-dark-grey">
       <div
         className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `url(${activity.coverImage})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-base-black via-base-black/80 to-base-black/10" />
       <div className="relative flex min-h-44 flex-col justify-end gap-3 p-4">
