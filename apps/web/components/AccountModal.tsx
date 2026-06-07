@@ -152,9 +152,9 @@ export default function AccountModal() {
     registrations.forEach((reg) => {
       if (!uniqueIds.has(reg.activityId)) {
         uniqueIds.add(reg.activityId);
-        const activity = activities.find((a) => a.id === reg.activityId);
+        const activity = activities.find((a) => a._id === reg.activityId);
         if (activity) {
-          options.push({ id: activity.id, name: activity.name });
+          options.push({ id: activity._id, name: activity.name });
         }
       }
     });

@@ -1,5 +1,5 @@
 export interface Activity {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   longDescription: string;
@@ -53,7 +53,7 @@ export interface Sponsor {
 
 export const INITIAL_ACTIVITIES: Activity[] = [
   {
-    id: "act-001",
+    _id: "act-001",
     name: "ละครเวที ทางผ่าน",
     description: "มิติใหม่แห่งการเล่าเรื่องราวชีวิต ละครเวทีฟอร์มยักษ์ที่จะพาคุณก้าวข้ามผ่านช่วงเวลาสำคัญ",
     longDescription: "ละครเวทีชิ้นพิเศษโดย TCOS นำเสนอแสงเสียงและการแสดงอันสมจริงในทุกองก์การแสดง",
@@ -78,7 +78,7 @@ export const INITIAL_ACTIVITIES: Activity[] = [
     ]
   },
   {
-    id: "act-002",
+    _id: "act-002",
     name: "Costume & Wardrobe",
     description: "การจัดอบรมและปฏิบัติจริงด้านการออกแบบเครื่องแต่งกายละครเวทีและสวมบทบาท",
     longDescription: "เวิร์กช็อปเจาะลึกวิธีการจัดหา พรีเซนต์ และประยุกต์เครื่องแต่งกายในละครเวที",
@@ -95,7 +95,7 @@ export const INITIAL_ACTIVITIES: Activity[] = [
     additionalQuestions: []
   },
   {
-    id: "act-003",
+    _id: "act-003",
     name: "Spoken Word Open Night",
     description: "ค่ำคืนแห่งการร่ายกลอนและสุนทรพจน์ในบรรยากาศแสงสลัวริมแม่น้ำ",
     longDescription: "ปลดปล่อยพลังงานของตัวอักษรและวรรณศิลป์ของคุณร่วมกับกวีสายเขียนมากมาย",
@@ -112,7 +112,7 @@ export const INITIAL_ACTIVITIES: Activity[] = [
     additionalQuestions: []
   },
   {
-    id: "act-004",
+    _id: "act-004",
     name: "Directing Masterclass",
     description: "เรียนรู้มุมมอง ทักษะ และการนำทางเวทีโดยผู้กำกับระดับแนวหน้าของประเทศ",
     longDescription: "เวิร์กช็อปที่จะเปลี่ยนความคิดการเล่าเรื่องและการบล็อกการแสดงบนเวทีอย่างมีทิศทาง",
@@ -129,7 +129,7 @@ export const INITIAL_ACTIVITIES: Activity[] = [
     additionalQuestions: []
   },
   {
-    id: "act-005",
+    _id: "act-005",
     name: "Workshop เขียนบทละคร: โครงสร้างการเล่าเรื่อง",
     description: "เข้าใจหลักการเขียนบทละคร การสร้างคาแรกเตอร์ตัวละคร และปมขัดแย้งของเรื่อง",
     longDescription: "คอร์สสัมมนาและเขียนบทจริงสำหรับเยาวชนและสายเขียนที่สนใจทำบทละครเวที",
@@ -146,7 +146,7 @@ export const INITIAL_ACTIVITIES: Activity[] = [
     additionalQuestions: []
   },
   {
-    id: "act-006",
+    _id: "act-006",
     name: "บทกวีบนเวที: Spoken Word Masterclass",
     description: "เทคนิคการประพันธ์บทกวีร่วมสมัยและการแสดงบนเวทีอย่างสะกดสายตาผู้ชม",
     longDescription: "พัฒนาทักษะการเปล่งเสียง การจัดระเบียบร่างกาย และการถ่ายทอดอารมณ์ความรู้สึกสะกดอารมณ์คนดู",

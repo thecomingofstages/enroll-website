@@ -83,7 +83,7 @@ export default function ActivityCard({
   onRegister,
 }: ActivityCardProps) {
   const { registrations, openCheckinModal } = useAppState();
-  const isRegistered = registrations.some(r => r.activityId === activity.id || r.activityId === (activity as any)._id);
+  const isRegistered = registrations.some(r => r.activityId === activity._id || r.activityId === (activity as any)._id);
   
   const dateLabel = activity.date;
   const isRecommended = variant === "recommended";
@@ -94,7 +94,7 @@ export default function ActivityCard({
     "bg-primary-yellow",
     "bg-light-green",
   ];
-  const colorIndex = activity.id
+  const colorIndex = activity._id
     .split("")
     .reduce((total: number, char: string) => total + char.charCodeAt(0), 0) % cardColors.length;
   const isLightCard = cardColors[colorIndex] === "bg-primary-yellow" || cardColors[colorIndex] === "bg-light-green";
@@ -126,8 +126,8 @@ export default function ActivityCard({
 
           <a
             type="button"
-            href={`activity/${activity.id}`}
-            className="tracking-wider mt-1 mb-1 w-full text-xs rounded-xs bg-gold px-3 py-2 text-md font-semibold text-background transitions:opacity hover:opacity-60 text-center"
+            href={`activity/${activity._id}`}
+            className="tracking-wider mt-1 mb-1 w-full text-xs rounded-xs bg-gold px-3 py-2 text-md font-semibold text-background transition:opacity hover:opacity-60 text-center"
           >
             {isRegistered ? "✓ ENROLLED" : "🗊 REGISTER"}
           </a>
@@ -171,7 +171,7 @@ export default function ActivityCard({
         <div className="mt-10 mb-20 flex items-center gap-2.5">
           <a
             type="button"
-            href={`activity/${activity.id}`}
+            href={`activity/${activity._id}`}
             className={`bg-gold tracking-wider mr-10 rounded-xs px-10 py-2 text-2xl font-semibold text-background transition-colors hover:opacity-60 text-center`}
           >
             {isRegistered ? "✓ ENROLLED" : "🗊 REGISTER"}

@@ -7,7 +7,7 @@ import QRCheckinModal from "@/components/QRCheckinModal";
 import SiteFooter from "@/components/SiteFooter";
 import StickyFooter from "@/components/StickyFooter";
 import { useAppState } from "@/lib/context";
-import type { Activity } from "@enroll-website/types";
+import type { Activity } from "../lib/mockData";
 import { INITIAL_ACTIVITIES } from "@/lib/mockData";
 import AccountProfile from "@/components/AccountProfile";
 
