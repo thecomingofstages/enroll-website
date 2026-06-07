@@ -1,8 +1,0 @@
-name = "enroll"
-compatibility_date = "2026-06-07"
-compatibility_flags = ["nodejs_compat"]
-
-pages_build_output_dir = ".next"
-
-[vars]
-NEXT_PUBLIC_API_URL = "https://enroll-api-1onw.onrender.com/v1"

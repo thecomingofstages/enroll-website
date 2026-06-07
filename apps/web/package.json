@@ -6,28 +6,26 @@
     "dev": "next dev",
     "build": "next build --no-turbo",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy": "npx @opennextjs/cloudflare build"
   },
   "dependencies": {
     "@enroll-website/types": "*",
-    "next": "16.2.6",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "next": "15.2.6",
+    "react": "^19",
+    "react-dom": "^19",
     "react-markdown": "^10.1.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "1.19.11",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.6",
+    "eslint-config-next": "15.2.6",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "scripts": {
-  "build": "next build",
-  "deploy": "npx @cloudflare/next-on-pages && wrangler pages deploy .vercel/output/static"
   }
 }
