@@ -2,4 +2,4 @@ name = "enroll-website"
 compatibility_date = "2025-09-01"
 compatibility_flags = ["nodejs_compat"]
 
-pages_build_output_dir = ".open-next"
+pages_build_output_dir = "apps/web/.open-next"
