@@ -31,7 +31,7 @@ function MainContent() {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
         if (!apiUrl) {
           // Fallback to mock data if API URL is not configured
-          setActivities(INITIAL_ACTIVITIES);
+          // setActivities(INITIAL_ACTIVITIES);
           setLoading(false);
           return;
         }
@@ -49,7 +49,7 @@ function MainContent() {
         const message = err instanceof Error ? err.message : "Failed to fetch activities";
         setError(message);
         // Fallback to mock data on error
-        setActivities(INITIAL_ACTIVITIES);
+        // setActivities(INITIAL_ACTIVITIES);
       } finally {
         setLoading(false);
       }
