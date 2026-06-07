@@ -9,7 +9,7 @@ export function ActivityLocation({ day }: { day?: ActivityScheduleItem }) {
 
   return (
     <section className="rounded-2xl bg-[var(--card-bg)] p-5 shadow-lg border border-zinc-800 sm:p-6">
-      <h2 className="font-prompt text-2xl font-bold text-[var(--color-gold)]">สถานที่</h2>
+      <h2 className=" text-2xl font-bold text-[var(--color-gold)]">สถานที่</h2>
       {firstPic ? (
         <div className="relative mt-4 aspect-[16/9] w-full overflow-hidden rounded-xl bg-zinc-900 border border-zinc-800">
           <Image
@@ -23,7 +23,7 @@ export function ActivityLocation({ day }: { day?: ActivityScheduleItem }) {
       ) : null}
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="font-prompt text-lg font-bold text-zinc-100">{day.venue}</p>
+          <p className=" text-lg font-bold text-zinc-100">{day.venue}</p>
           {day.additional_location_info?.map((line) => (
             <p key={line} className="text-sm text-zinc-400">
               {line}

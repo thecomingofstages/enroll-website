@@ -5,7 +5,6 @@ import { siteMetadataBase } from "@/lib/site-url";
 import { AppProvider } from "@/lib/context";
 import AccountModal from "@/components/AccountModal";
 import AuthModal from "@/components/AuthModal";
-import QRCheckinModal from "@/components/QRCheckinModal";
 import RegistrationModal from "@/components/RegistrationModal";
 
 const geistSans = Geist({
@@ -24,7 +23,7 @@ const inter = Inter({
 });
 
 const playfair = Playfair_Display({
-  variable: "--font-serif",
+  variable: "--font-playfair",
   subsets: ["latin"],
 });
 
@@ -86,7 +85,6 @@ export default function RootLayout({
           {children}
           <AccountModal />
           <AuthModal />
-          <QRCheckinModal />
           <RegistrationModal />
         </AppProvider>
       </body>

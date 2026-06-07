@@ -327,14 +327,6 @@ export function RegisterModal({
 
                       <h3 className="font-playfair text-2xl font-black text-stone-900 tracking-tight">{user.name}</h3>
                       <p className="text-sm font-medium text-stone-500 mt-1">{user.email}</p>
-                      
-                      <button 
-                        type="button" 
-                        onClick={openAccountModal}
-                        className="mt-6 rounded-full border border-stone-200 bg-white/80 px-5 py-2 text-xs font-bold text-stone-600 shadow-sm transition-all hover:border-[#d8b85a] hover:text-[#d8b85a] hover:bg-white"
-                      >
-                        แก้ไขข้อมูลส่วนตัว
-                      </button>
 
                       <div className="mt-8 w-full border-t border-stone-200/60 pt-6 text-center">
                         <p className="text-sm font-bold text-[#1b1b19]">✓ ยืนยันตัวตนเรียบร้อย</p>

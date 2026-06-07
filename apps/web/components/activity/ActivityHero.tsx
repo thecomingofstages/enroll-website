@@ -29,7 +29,7 @@ export function ActivityHero({ activity }: { activity: ActivityDetail }) {
             </div>
           )}
         </div>
-        <h1 className="text-balance text-4xl font-serif leading-tight text-white drop-shadow-md sm:text-5xl">
+        <h1 className="text-balance text-4xl font-taviraj leading-tight text-white drop-shadow-md sm:text-5xl">
           {activity.name}
         </h1>
       </div>
