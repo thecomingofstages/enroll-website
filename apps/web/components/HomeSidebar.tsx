@@ -74,7 +74,7 @@ export default function HomeSidebar() {
             <p className="text-xs text-zinc-500">ยังไม่มีกิจกรรมที่ลงทะเบียน</p>
           ) : (
             registrations.map((reg) => {
-              const act = activities.find((a) => a.id === reg.activityId);
+              const act = activities.find((a) => a._id === reg.activityId);
               if (!act) return null;
 
               const statusColors =

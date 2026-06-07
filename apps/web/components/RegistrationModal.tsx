@@ -131,7 +131,7 @@ export default function RegistrationModal() {
     setIsRegistering(true);
     try {
       const payload: any = {
-        activity_id: activity.id,
+        activity_id: activity._id,
         answers,
       };
 
@@ -146,7 +146,7 @@ export default function RegistrationModal() {
       }
 
       const res = await postActivityRegistration(
-        activity.id,
+        activity._id,
         payload,
         isPaid ? slipFile : null
       );
