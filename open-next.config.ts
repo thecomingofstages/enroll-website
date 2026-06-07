@@ -2,7 +2,6 @@ import type { OpenNextConfig } from "@opennextjs/cloudflare";
 
 const config: OpenNextConfig = {
   default: {
-    root: "apps/web",
     override: {
       wrapper: "cloudflare-node",
       converter: "edge",
