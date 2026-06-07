@@ -97,12 +97,7 @@ function ActivityTicket({
             <h4 className="line-clamp-2 font-inter text-xl font-black text-white">
               {activity.name}
             </h4>
-            <p className="mt-1 font-sans text-[11px] font-semibold text-zinc-300">
-              {formatActivityDate(activity.date)}
-            </p>
-            <p className="font-sans text-[11px] font-semibold text-zinc-400">
-              {activity.location}
-            </p>
+            
           </div>
           <span className="shrink-0 rounded bg-light-green px-2 py-1 text-[9px] font-black uppercase text-light-green-text">
             Joined
@@ -166,6 +161,8 @@ export default function AccountModal() {
     return options;
   }, [registrations, activities]);
 
+  {/* 
+
   const registeredActivities = useMemo(() => {
     return registrations
       .map((registration) => {
@@ -179,7 +176,10 @@ export default function AccountModal() {
         return true;
       }) as { registration: (typeof registrations)[number]; activity: Activity }[];
   }, [selectedActivityId, activities, registrations]);
+*/}
+  // Temporary Fix
 
+  const registeredActivities = ""
   if (activeModal !== "account" || !user) return null;
 
   const saveProfile = () => {
@@ -329,7 +329,7 @@ export default function AccountModal() {
                 </select>
               )}
             </div>
-
+            {/* 
             {registeredActivities.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
                 {registeredActivities.map(({ registration, activity }) => (
@@ -348,6 +348,7 @@ export default function AccountModal() {
                 </p>
               </div>
             )}
+              */}
           </section>
         </div>
       </div>
