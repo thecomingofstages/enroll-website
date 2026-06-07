@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { Activity } from "enroll-website/types";
+import type { Activity } from "../lib/mockData";
 import { formatActivityDate } from "../lib/mockData";
 
 import { useAppState } from "../lib/context";
@@ -94,9 +94,9 @@ export default function ActivityCard({
     "bg-primary-yellow",
     "bg-light-green",
   ];
-  const colorIndex = activity._id
+  const colorIndex = activity.id
     .split("")
-    .reduce((total, char) => total + char.charCodeAt(0), 0) % cardColors.length;
+    .reduce((total: number, char: string) => total + char.charCodeAt(0), 0) % cardColors.length;
   const isLightCard = cardColors[colorIndex] === "bg-primary-yellow" || cardColors[colorIndex] === "bg-light-green";
 
   if (!isRecommended) {
@@ -126,7 +126,7 @@ export default function ActivityCard({
 
           <a
             type="button"
-            href={`activity/${activity._id}`}
+            href={`activity/${activity.id}`}
             className="tracking-wider mt-1 mb-1 w-full text-xs rounded-xs bg-gold px-3 py-2 text-md font-semibold text-background transitions:opacity hover:opacity-60 text-center"
           >
             {isRegistered ? "✓ ENROLLED" : "🗊 REGISTER"}
@@ -171,7 +171,7 @@ export default function ActivityCard({
         <div className="mt-10 mb-20 flex items-center gap-2.5">
           <a
             type="button"
-            href={`activity/${activity._id}`}
+            href={`activity/${activity.id}`}
             className={`bg-gold tracking-wider mr-10 rounded-xs px-10 py-2 text-2xl font-semibold text-background transition-colors hover:opacity-60 text-center`}
           >
             {isRegistered ? "✓ ENROLLED" : "🗊 REGISTER"}
