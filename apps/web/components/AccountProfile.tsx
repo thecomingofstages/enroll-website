@@ -132,7 +132,7 @@ function ActivityCard({ activity }: { activity: ActivityRegistration }) {
           {activity.activity.name}
         </h4>
 
-        <div className="mt-2 text-left grid grid-cols-3 gap-4">
+        <div className="mt-2 text-left grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div>
             <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">status</p>
             {statusBadge(activity.status)}

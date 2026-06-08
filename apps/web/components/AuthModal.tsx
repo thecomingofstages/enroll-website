@@ -405,11 +405,11 @@ export default function AuthModal() {
               </div>
 
               <p className="text-center text-[11px] leading-relaxed text-zinc-600">
-                รหัสผ่านนี้ใช้สร้าง QR Code เพื่อสแกนเข้างาน
+                สร้างบัญชีเพื่อลงทะเบียนและเช็คชื่อเข้าร่วมงาน
               </p>
 
               <button type="submit" disabled={isSubmitting} className={btnPrimary}>
-                {isSubmitting ? "กำลังสมัครสมาชิก..." : "Create Account"}
+                {isSubmitting ? "Creating Account..." : "Create Account"}
               </button>
 
               <Divider label="มีบัญชีอยู่แล้ว?" />

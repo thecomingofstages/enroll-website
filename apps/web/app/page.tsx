@@ -92,7 +92,7 @@ function MainContent() {
                 <p>No activities found</p>
               </div>
             ) : (
-              <div className="mt-4 mb-15 grid gap-6 sm:grid-cols-1 lg:grid-cols-3">
+              <div className="mt-4 mb-15 gap-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 {activities.map((activity) => (
                   <ActivityCard
                     key={`all-${activity._id}`}

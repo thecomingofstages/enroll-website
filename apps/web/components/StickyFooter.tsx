@@ -47,7 +47,7 @@ const baseItemClass =
   "relative flex min-w-0 flex-col items-center gap-1.5 rounded-lg px-3 py-2 transition-colors";
 
 const inactiveItemClass =
-  "text-zinc-200 hover:bg-white/10 hover:text-[#d8b85a] active:bg-white/10 active:text-[#d8b85a]";
+  "text-zinc-200 hover:cursor-pointer hover:bg-white/10 hover:cursor-pointer hover:text-[#d8b85a] active:bg-white/10 active:text-[#d8b85a]";
 
 const activeItemClass = "text-[#d8b85a]";
 const activeUnderlineClass =
@@ -109,7 +109,7 @@ export default function StickyFooter() {
   const isAccountActive = activeModal === "account";
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#2a2a27] bg-[#1b1b19]/98 px-4 py-3 shadow-2xl backdrop-blur-md md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[#2a2a27] bg-[#1b1b19]/98 px-4 py-3 shadow-2xl backdrop-blur-md md:hidden">
       <div className="mx-auto w-full max-w-3xl">
         <nav className="grid grid-cols-3 items-center gap-2">
           <button

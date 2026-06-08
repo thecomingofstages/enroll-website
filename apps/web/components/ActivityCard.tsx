@@ -34,7 +34,7 @@ function ActivityRegistrants({
     return (
       <div className="min-w-0 max-w-[32rem] flex-1">
   <div className="flex items-center justify-between gap-3">
-    <p className="text-base font-semibold uppercase tracking-widest text-zinc-500 mt-0">Availability</p>
+    <p className=" font-semibold uppercase tracking-widest text-zinc-500 text-xs lg:text-xl mt-0">Availability</p>
     <span className={`text-base font-semibold text-${count/capacity !== 1 ? "gold" : "red-300"} sm:text-lg`}>
       {count}/{capacity}
     </span>
@@ -85,6 +85,12 @@ export default function ActivityCard({
   const { registrations, openCheckinModal } = useAppState();
   const isRegistered = registrations.some(r => r.activityId === activity._id || r.activityId === (activity as any)._id);
   
+  const isFull =
+    activity.seat_capacity > 0 &&
+    activity.enrolled_count >= activity.seat_capacity;
+  // const isClosed = !activity.is_registration_open;
+  // const isDisabled = isClosed || isFull || isRegistered;
+
   const dateLabel = activity.date;
   const isRecommended = variant === "recommended";
   const cardColors = [
@@ -127,9 +133,14 @@ export default function ActivityCard({
           <a
             type="button"
             href={`activity/${activity._id}`}
-            className="tracking-wider mt-1 mb-1 w-full text-xs rounded-xs bg-gold px-3 py-2 text-md font-semibold text-background transition:opacity hover:opacity-60 text-center"
+            className={`${
+              isRegistered ? "bg-green ":
+              isFull ? "bg-red " :
+              "bg-gold " 
+            }tracking-wider mt-1 mb-1 w-full text-md rounded-xs px-3 py-2 text-md font-semibold text-background transition:opacity hover:opacity-60 text-center`}
           >
-            {isRegistered ? "✓ ENROLLED" : "🗊 REGISTER"}
+            {isRegistered ? "Registered" :
+            isFull ? "Seats Full" : "Register"}
           </a>
         </div>
       </article>
@@ -154,8 +165,8 @@ export default function ActivityCard({
         <div className="absolute inset-0 bg-black/85" />
       </div>
       <div className={`mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-10 absolute inset-x-0 bottom-0 space-y-1.5 p-4 ${isLightCard ? "text-base-black" : "text-white"}`}>
-        <p className="text-xl font-bold uppercase tracking-widest text-zinc-500 mb-1">Featured Activity</p>
-        <h1 className="text-6xl font-playfair font-extrabold leading-tight">
+        <p className="text-md lg:text-xl font-bold uppercase tracking-widest text-zinc-500 mb-1">Featured Activity</p>
+        <h1 className="text-4xl lg:text-6xl font-trirong font-extrabold leading-tight">
           {activity.name}
         </h1>
 
@@ -172,9 +183,14 @@ export default function ActivityCard({
           <a
             type="button"
             href={`activity/${activity._id}`}
-            className={`bg-gold tracking-wider mr-10 rounded-xs px-10 py-2 text-2xl font-semibold text-background transition-colors hover:opacity-60 text-center`}
+            className={`${
+              isRegistered ? "bg-green":
+              isFull ? "bg-red" :
+              "bg-gold" 
+            } tracking-wider mr-5 lg:mr-10 rounded-xs px-5 lg:px-10 py-2 text-md lg:text-2xl font-semibold text-background transition-colors hover:opacity-60 transitions-opacity text-center`}
           >
-            {isRegistered ? "✓ ENROLLED" : "🗊 REGISTER"}
+            {isRegistered ? "Registered" :
+            isFull ? "Seats Full" : "Register"}
           </a>
           <ActivityRegistrants
             registeredCount={activity.enrolled_count}

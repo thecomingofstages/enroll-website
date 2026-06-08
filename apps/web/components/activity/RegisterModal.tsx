@@ -227,7 +227,7 @@ export function RegisterModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-center-safe justify-center bg-black/75 p-0 sm:items-center sm:p-"
       role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && !submitting) onClose();
@@ -237,17 +237,17 @@ export function RegisterModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex max-h-[min(92vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-[#f4f0ea] shadow-2xl sm:rounded-2xl"
+        className="flex h-92vh w-full max-w-lg flex-col overflow-hidden rounded-md bg-zinc-950 shadow-2xl backdrop-blur-sm border border-zinc-800"
       >
-        <div className="flex items-center justify-between border-b border-stone-200/80 px-4 py-3 sm:px-5">
-          <h2 id={titleId} className="text-lg font-semibold text-stone-900">
-            ลงทะเบียนเข้าร่วม
+        <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3 sm:px-5">
+          <h2 id={titleId} className="text-2xl font-playfair font-bold text-foreground">
+            Register Activity
           </h2>
           <button
             type="button"
             onClick={onClose}
             disabled={submitting && !isSuccess}
-            className="rounded-lg p-2 text-stone-500 hover:bg-stone-200/60 hover:text-stone-800 disabled:pointer-events-none disabled:opacity-40"
+            className="rounded-xs p-2 text-stone-500 disabled:pointer-events-none disabled:opacity-60 transition-opacity hover:cursor-pointer"
             aria-label="ปิด"
           >
             ✕
@@ -255,42 +255,42 @@ export function RegisterModal({
         </div>
 
         {isSuccess ? (
-          <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-[350px]">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <div className="flex flex-1 flex-col items-center justify-center p-8 text-center min-h-87.5">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green text-background">
               <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-stone-900">ลงทะเบียนสำเร็จ!</h3>
-            <p className="mt-3 text-sm text-stone-600">
+            <h3 className="text-xl font-playfair font-bold text-green mb-5">Activity Registered</h3>
+            <p className="mt-3 text-md text-foreground font-trirong">
               ข้อมูลของคุณถูกบันทึกเรียบร้อยแล้ว<br />
-              คุณสามารถตรวจสอบสถานะและดูตั๋วเข้างานได้ที่หน้าโปรไฟล์ของคุณ
+              คุณสามารถตรวจสอบรายละเอียดการลงทะเบียนได้ที่หน้าโปรไฟล์ของคุณ
             </p>
             <button
               type="button"
               onClick={onClose}
-              className="mt-8 w-full max-w-[200px] rounded-xl bg-stone-900 px-4 py-3 text-sm font-semibold text-white hover:bg-stone-800"
+              className="mt-8 w-full max-w-30 rounded-xs bg-gold px-4 py-3 text-sm font-semibold text-background hover:opacity-60 transition-opacity hover:cursor-pointer"
             >
-              กลับสู่หน้ากิจกรรม
+              Close
             </button>
           </div>
         ) : (
           <>
-            <div className="flex shrink-0 gap-1 border-b border-stone-200/60 px-2 py-3 sm:gap-2 sm:px-5">
+            <div className="flex shrink-0 gap-1 border-b border-zinc-800 px-2 py-3 sm:gap-2 sm:px-5">
               {steps.map((s, idx) => (
                 <div key={s.id} className="flex flex-1 flex-col items-center justify-center gap-1 sm:flex-row sm:justify-start sm:gap-2">
                   <span
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
                       currentStepIndex === idx
-                        ? "bg-red-800 text-white"
+                        ? "bg-gold text-background"
                         : currentStepIndex > idx
-                          ? "bg-red-200 text-red-900"
-                          : "bg-stone-200 text-stone-600"
+                          ? "bg-card text-gold border border-gold"
+                          : "bg-card text-foreground"
                     }`}
                   >
                     {idx + 1}
                   </span>
-                  <span className="text-center text-[10px] font-medium text-stone-600 sm:text-left sm:text-xs">
+                  <span className="text-center text-[10px] font-medium font-trirong text-foreground sm:text-left sm:text-xs">
                     {s.label}
                   </span>
                 </div>
@@ -304,7 +304,7 @@ export function RegisterModal({
                     {/* Background Glow */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#d8b85a]/20 blur-[80px] rounded-full pointer-events-none" />
                     
-                    <div className="relative z-10 flex flex-col items-center w-full max-w-sm rounded-3xl bg-white/60 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] backdrop-blur-xl border border-white/60">
+                    <div className="relative z-10 flex flex-col items-center w-full max-w-sm rounded-3xl bg-zinc-900/60 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] backdrop-blur-xl border border-white/60">
                       
                       {/* Avatar with rings */}
                       <div className="relative mb-6">
@@ -318,27 +318,26 @@ export function RegisterModal({
                           )}
                         </div>
                         {/* Verified Badge */}
-                        <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-[#1b1b19] text-white ring-4 ring-white shadow-md">
+                        <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-[#1b1b19] text-background ring-4 ring-white shadow-md">
                           <svg className="h-4 w-4 text-[#d8b85a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
                       </div>
 
-                      <h3 className="font-playfair text-2xl font-black text-stone-900 tracking-tight">{user.name}</h3>
-                      <p className="text-sm font-medium text-stone-500 mt-1">{user.email}</p>
+                      <h3 className="font-trirong text-2xl font-black text-gold tracking-tight">{user.name}</h3>
+                      <p className="text-sm font-medium text-foreground mt-1">{user.email}</p>
 
-                      <div className="mt-8 w-full border-t border-stone-200/60 pt-6 text-center">
-                        <p className="text-sm font-bold text-[#1b1b19]">✓ ยืนยันตัวตนเรียบร้อย</p>
-                        <p className="mt-2 text-xs font-medium text-stone-500 leading-relaxed">
-                          ระบบพบข้อมูลโปรไฟล์ของคุณแล้ว<br/>กด <strong className="text-stone-800">&quot;ถัดไป&quot;</strong> เพื่อดำเนินการต่อได้เลย
+                      <div className="mt-8 w-full border-t border-zinc-700 focus:border-gold/60 /60 pt-6 text-center">
+                        <p className="mt-2 text-md font-trirong text-foreground leading-relaxed">
+                          ระบบพบข้อมูลโปรไฟล์ของคุณแล้ว<br/>กด <strong className="text-gold">&quot;Next&quot;</strong> เพื่อดำเนินการต่อได้เลย
                         </p>
                       </div>
                     </div>
                   </div>
                 ) : (
                 <>
-                  <p className="rounded-lg bg-sky-100 px-3 py-2 text-sm text-sky-900">
+                  <p className="rounded-xs bg-sky-100 px-3 py-2 text-sm text-sky-900">
                     {activity.extra_questions && activity.extra_questions.length > 0
                       ? "กรอกข้อมูลผู้เข้าร่วม ขั้นตอนถัดไปคือตอบคำถามเพิ่มเติม"
                       : activity.price > 0 
@@ -347,62 +346,62 @@ export function RegisterModal({
                   </p>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-stone-700">
-                        ชื่อ <span className="text-red-500">*</span>
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                        ชื่อ <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           firstNameError
-                            ? "border-red-400 bg-red-50"
-                            : "border-stone-200 bg-white"
+                            ? "border-red-300 bg-red-900"
+                            : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
                         }`}
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
                         autoComplete="given-name"
                       />
                       {firstNameError && (
-                        <p className="mt-1 text-xs text-red-600">
+                        <p className="mt-1 text-xs text-red-400 font-trirong">
                           {firstNameError}
                         </p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-stone-700">
-                        นามสกุล <span className="text-red-500">*</span>
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                        นามสกุล <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           lastNameError
-                            ? "border-red-400 bg-red-50"
-                            : "border-stone-200 bg-white"
+                            ? "border-red-400 bg-red-900"
+                            : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
                         }`}
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
                         autoComplete="family-name"
                       />
                       {lastNameError && (
-                        <p className="mt-1 text-xs text-red-600">{lastNameError}</p>
+                        <p className="mt-1 text-xs text-red-400 font-trirong">{lastNameError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-stone-700">
-                        ชื่อเล่น <span className="text-red-500">*</span>
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                        ชื่อเล่น <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                        className="mt-1 w-full rounded-xs border font-trirong border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
                         value={nickname}
                         onChange={(e) => setNickname(e.target.value)}
                       />
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-stone-700">
-                        เบอร์โทร <span className="text-red-500">*</span>
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                        เบอร์โทร <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           phoneError
-                            ? "border-red-400 bg-red-50"
-                            : "border-stone-200 bg-white"
+                            ? "border-red-400 bg-red-900"
+                            : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
                         }`}
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
@@ -410,36 +409,36 @@ export function RegisterModal({
                         autoComplete="tel"
                       />
                       {phoneError && (
-                        <p className="mt-1 text-xs text-red-600">{phoneError}</p>
+                        <p className="mt-1 text-xs text-red-400 font-trirong">{phoneError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-2">
-                      <span className="text-sm font-medium text-stone-700">
-                        อีเมล <span className="text-red-500">*</span>
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                        อีเมล <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           emailError
-                            ? "border-red-400 bg-red-50"
-                            : "border-stone-200 bg-white"
+                            ? "border-red-400 bg-red-900"
+                            : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
                         }`}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         type="email"
                       />
                       {emailError && (
-                        <p className="mt-1 text-xs text-red-600">{emailError}</p>
+                        <p className="mt-1 text-xs text-red-400 font-trirong">{emailError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-stone-700">
-                        รหัสผ่าน <span className="text-red-500">*</span>
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                        รหัสผ่าน <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           passwordError
-                            ? "border-red-400 bg-red-50"
-                            : "border-stone-200 bg-white"
+                            ? "border-red-400 bg-red-900"
+                            : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
                         }`}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -447,18 +446,18 @@ export function RegisterModal({
                         placeholder="อย่างน้อย 8 ตัวอักษร"
                       />
                       {passwordError && (
-                        <p className="mt-1 text-xs text-red-600">{passwordError}</p>
+                        <p className="mt-1 text-xs text-red-400 font-trirong">{passwordError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-stone-700">
-                        ยืนยันรหัสผ่าน <span className="text-red-500">*</span>
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                        ยืนยันรหัสผ่าน <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-lg border px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           confirmPasswordError
-                            ? "border-red-400 bg-red-50"
-                            : "border-stone-200 bg-white"
+                            ? "border-red-400 bg-red-900"
+                            : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
                         }`}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
@@ -466,15 +465,15 @@ export function RegisterModal({
                         placeholder="พิมพ์รหัสผ่านอีกครั้ง"
                       />
                       {confirmPasswordError && (
-                        <p className="mt-1 text-xs text-red-600">{confirmPasswordError}</p>
+                        <p className="mt-1 text-xs text-red-400 font-trirong">{confirmPasswordError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-stone-700">
-                        เพศ <span className="text-red-500">*</span>
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                        เพศ <span className="text-red-300">*</span>
                       </span>
                       <select
-                        className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                        className="mt-1 w-full rounded-xs border font-trirong border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
                       >
@@ -488,33 +487,33 @@ export function RegisterModal({
                       </select>
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-stone-700">
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
                         ระดับชั้น
                       </span>
                       <input
-                        className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                        className="mt-1 w-full rounded-xs border font-trirong border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
                         value={educationLevel}
                         onChange={(e) => setEducationLevel(e.target.value)}
                         placeholder="เช่น ม.4, ปี 1"
                       />
                     </label>
                     <label className="block sm:col-span-2">
-                      <span className="text-sm font-medium text-stone-700">
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
                         สถาบันการศึกษา
                       </span>
                       <input
-                        className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                        className="mt-1 w-full rounded-xs border font-trirong border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
                         value={institution}
                         onChange={(e) => setInstitution(e.target.value)}
                         placeholder="เช่น ชื่อโรงเรียน หรือ มหาวิทยาลัย"
                       />
                     </label>
                     <label className="block sm:col-span-2">
-                      <span className="text-sm font-medium text-stone-700">
+                      <span className="text-sm font-medium text-zinc-400 font-trirong">
                         ที่อยู่
                       </span>
                       <textarea
-                        className="mt-1 min-h-[80px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                        className="mt-1 min-h-[80px] w-full rounded-xs border border-zinc-700 focus:border-gold/60 font-trirong  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         placeholder="รายละเอียดที่อยู่"
@@ -527,10 +526,9 @@ export function RegisterModal({
 
               {currentStep.id === "payment" ? (
                 <div className="space-y-4">
-                  <p className="text-sm font-medium text-stone-800">
-                    ชำระเงินผ่าน PromptPay (฿{activity.price})
+                  <p className="text-sm font-medium font-trirong text-foreground">
+                    ชำระเงินผ่าน PromptPay <span className="text-gold">(฿{activity.price})</span>
                   </p>
-                  <p className="text-sm text-stone-600">สแกน QR เพื่อโอน</p>
                   <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-xl bg-white ring-1 ring-stone-200 overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -539,14 +537,17 @@ export function RegisterModal({
                       className="h-full w-full object-contain p-2"
                     />
                   </div>
-                  <p className="text-center text-xs text-stone-500">
-                    PromptPay: {process.env.NEXT_PUBLIC_PROMPTPAY_NUMBER || "062-345-6789"} (TCOS)
+                  <p className="text-center text-xs text-stone-300 mb-1">
+                    PromptPay: {process.env.NEXT_PUBLIC_PROMPTPAY_NUMBER || "062-345-6789"}
+                  </p>
+                  <p className="text-center text-xs text-stone-300">
+                    {process.env.NEXT_PUBLIC_PROMPTPAY_NAME || "somename"}
                   </p>
                   <div>
-                    <span className="text-sm font-medium text-stone-700">
-                      อัปโหลดสลิปการโอน <span className="text-red-500">*</span>
+                    <span className="text-sm font-semibold font-trirong text-zinc-300">
+                      อัปโหลดสลิปการโอน <span className="text-red-300">*</span>
                     </span>
-                    <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-stone-300 bg-white px-4 py-8 text-center text-sm text-stone-500 transition hover:border-red-400 hover:bg-red-50/30">
+                    <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-xs border border-dashed border-stone-500 bg-zinc-900 px-4 py-8 text-center text-sm text-stone-500 transition hover:border-red-400 hover:bg-red-900/30">
                       <input
                         type="file"
                         accept={slipAccept}
@@ -579,13 +580,13 @@ export function RegisterModal({
                         }}
                       />
                       {slip ? (
-                        <span className="font-medium text-stone-800">
+                        <span className="font-medium font-trirong text-stone-800">
                           {slip.name}
                         </span>
                       ) : (
                         <>
-                          <span>คลิกหรือลากไฟล์สลิปมาวาง</span>
-                          <span className="mt-1 text-xs">
+                          <span className="font-trirong" >คลิกหรือลากไฟล์สลิปมาวาง</span>
+                          <span className="mt-1 text-xs font-trirong">
                             PNG, JPG — ไม่เกิน 5MB
                           </span>
                         </>
@@ -593,7 +594,7 @@ export function RegisterModal({
                     </label>
                   </div>
                   {slipError ? (
-                    <p className="text-sm font-medium text-red-700">{slipError}</p>
+                    <p className="text-sm font-medium text-red-400">{slipError}</p>
                   ) : null}
                 </div>
               ) : null}
@@ -601,15 +602,15 @@ export function RegisterModal({
               {currentStep.id === "questions" ? (
                 <div className="space-y-4">
                   {activity.extra_questions.length === 0 ? (
-                    <p className="text-sm text-stone-600">
+                    <p className="text-sm text-foreground">
                       ไม่มีคำถามเพิ่มเติมสำหรับกิจกรรมนี้
                     </p>
                   ) : (
                     activity.extra_questions.map((q) => (
                       <div key={q.question_id} className="block">
-                        <span className="text-sm font-medium text-stone-800">
+                        <span className="text-sm font-medium font-trirong text-foreground">
                           {q.question_text}
-                          {q.is_required && <span className="text-red-500 ml-1">*</span>}
+                          {q.is_required && <span className="text-red-300 ml-1">*</span>}
                         </span>
                         {q.type === "single_choice" && q.options ? (
                           <div className="mt-3 flex flex-col gap-2.5 pl-1">
@@ -623,13 +624,13 @@ export function RegisterModal({
                                   onChange={(e) => setAnswer(q.question_id, e.target.value)}
                                   className="h-4 w-4 border-stone-300 text-red-800 focus:ring-red-800/30"
                                 />
-                                <span className="text-sm text-stone-700 group-hover:text-stone-900">{opt}</span>
+                                <span className="text-sm font-trirong text-zinc-300 group-hover:text-zinc-400">{opt}</span>
                               </label>
                             ))}
                           </div>
                         ) : (
                           <textarea
-                            className="mt-2 min-h-[100px] w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-red-800/30 focus:ring-2"
+                            className="mt-2 min-h-[100px] w-full font-trirong rounded-xs border border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-sm text-foreground outline-none ring-red-800/30 focus:ring-2"
                             placeholder={q.placeholder ?? "กรอกคำตอบ..."}
                             value={extraAnswers[q.question_id] ?? ""}
                             onChange={(e) => setAnswer(q.question_id, e.target.value)}
@@ -643,10 +644,10 @@ export function RegisterModal({
 
               {feedback ? (
                 <div
-                  className={`mt-4 rounded-lg px-3 py-2 text-sm flex flex-col gap-2 ${
+                  className={`mt-4 rounded-xs px-3 py-2 text-sm flex flex-col gap-2 ${
                     feedback.variant === "success"
-                      ? "bg-emerald-100 text-emerald-900"
-                      : "bg-red-100 text-red-900"
+                      ? "border border-green"
+                      : "border border-red-400"
                   }`}
                 >
                   <p>{feedback.message}</p>
@@ -657,24 +658,23 @@ export function RegisterModal({
                         onClose();
                         openLoginModal();
                       }}
-                      className="mt-1 self-start rounded-md bg-red-800 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-red-900 transition-colors"
+                      className="mt-1 self-start rounded-md bg-gold px-4 py-2 text-xs font-bold text-background shadow-sm hover:opacity-60 transition-opacity"
                     >
                       เข้าสู่ระบบทันที
                     </button>
                   )}
                 </div>
               ) : null}
-            </div>
 
-            <div className="flex shrink-0 gap-2 border-t border-stone-200/80 bg-[#f4f0ea] p-4 sm:p-5">
+              <div className="flex shrink-0 gap-2 mt-5">
               {!isFirstStep ? (
                 <button
                   type="button"
-                  className="rounded-xl border border-stone-300 px-4 py-3 text-sm font-medium text-stone-800 hover:bg-stone-100"
+                  className="rounded-xs border border-zinc-500 px-4 py-2.5 text-sm font-medium text-zinc-500 hover:border-zinc-200 hover:cursor-pointer"
                   onClick={() => setCurrentStepIndex((prev) => Math.max(0, prev - 1))}
                   disabled={submitting}
                 >
-                  ย้อนกลับ
+                  Previous
                 </button>
               ) : (
                 <span />
@@ -682,7 +682,7 @@ export function RegisterModal({
               {!isLastStep ? (
                 <button
                   type="button"
-                  className="ml-auto min-w-[120px] rounded-xl bg-red-800 px-4 py-3 text-sm font-semibold text-white hover:bg-red-900 disabled:opacity-40"
+                  className="ml-auto min-w-[120px] rounded-xs bg-gold px-4 py-2.5 text-sm font-semibold text-background hover:opacity-60 transition-opacity hover:cursor-pointer"
                   disabled={
                     submitting ||
                     (currentStep.id === "info" && !canNextFrom1)
@@ -698,23 +698,26 @@ export function RegisterModal({
                     setCurrentStepIndex((prev) => Math.min(steps.length - 1, prev + 1));
                   }}
                 >
-                  ถัดไป
+                  Next
                 </button>
               ) : (
                 <button
                   type="button"
-                  className="ml-auto min-w-[160px] rounded-xl bg-red-800 px-4 py-3 text-sm font-semibold text-white hover:bg-red-900 disabled:opacity-40"
+                  className="ml-auto min-w-[160px] rounded-xs bg-gold px-4 py-2.5 text-sm font-semibold text-background hover:opacity-60 transition-opacity hover:cursor-pointer disabled:opacity-60 transition-opacity"
                   disabled={submitting}
                   onClick={handleSubmit}
                 >
                   {submitting
-                    ? "กำลังส่ง..."
+                    ? "Registering..."
                     : activity.price > 0
-                      ? `ยืนยันการลงทะเบียน (฿${activity.price})`
-                      : "ยืนยันการลงทะเบียน (ฟรี)"}
+                      ? `Register (฿${activity.price})`
+                      : "Register (FREE)"}
                 </button>
               )}
             </div>
+            </div>
+
+            
           </>
         )}
       </div>
@@ -740,13 +743,13 @@ export function ActivityRegisterSection({
   const isClosed = !activity.is_registration_open;
   const isDisabled = isClosed || isFull || isRegistered;
 
-  let buttonText = activity.price > 0 ? `ลงทะเบียนเข้าร่วม (฿${activity.price})` : "ลงทะเบียนเข้าร่วม (ฟรี)";
+  let buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)";
   if (isRegistered) {
-    buttonText = "ลงทะเบียนแล้ว";
+    buttonText = "Registered ✓";
   } else if (isClosed) {
-    buttonText = "ปิดรับสมัครแล้ว";
+    buttonText = "Registration Closed ⤬";
   } else if (isFull) {
-    buttonText = "ที่นั่งเต็มแล้ว";
+    buttonText = "Seat Full ⤬";
   }
 
   return (
@@ -758,14 +761,14 @@ export function ActivityRegisterSection({
           disabled={isDisabled}
           aria-expanded={open}
           aria-haspopup="dialog"
-          className={`w-full rounded-xl py-3.5 text-center text-base font-semibold shadow-sm transition sm:text-lg ${
+          className={`w-full rounded-md py-3.5 text-center text-background font-bold shadow-sm transition sm:text-lg ${
             //isPendingPayment
               //</div>? "bg-primary-yellow text-base-black hover:bg-yellow-500"
               isRegistered
-                ? "bg-emerald-100 text-emerald-800 cursor-default border border-emerald-200"
+                ? "bg-green cursor-default"
                 : isDisabled
-                  ? "bg-stone-300 text-stone-500 cursor-not-allowed"
-                  : "bg-red-800 text-white hover:bg-red-900"
+                  ? "bg-[#FFB4AB] cursor-not-allowed"
+                  : "bg-gold hover:cursor-pointer hover:opacity-60 transition-opacity"
           }`}
         >
           {buttonText}
