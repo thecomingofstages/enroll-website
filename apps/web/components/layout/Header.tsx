@@ -6,9 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAppState } from "@/lib/context";
 
 const baseNavLinkClass = "relative inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-base font-playfair text-[18px] transition-colors group";
-const inactiveNavClass = "text-stone-300 hover:bg-white/10 hover:text-[#d8b85a]";
-const activeNavClass = "text-[#d8b85a]";
-const activeUnderlineClass = "after:absolute after:bottom-1 after:left-4 after:right-4 after:h-[2px] after:rounded-full after:bg-[#d8b85a]";
+const inactiveNavClass = "text-stone-300 hover:cursor-pointer hover:bg-white/10 hover:cursor-pointer hover:text-gold";
+const activeNavClass = "text-gold";
+const activeUnderlineClass = "after:absolute after:bottom-1 after:left-4 after:right-4 after:h-[2px] after:rounded-full after:bg-gold";
 
 export function Header() {
   const { user, openLoginModal, openCheckinModal, openSignupModal, logout, openAccountModal, closeModals, activeModal } = useAppState();
@@ -87,7 +87,7 @@ export function Header() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="opacity-80 group-hover:opacity-100"
+              className="opacity-80 group-hover:cursor-pointer hover:opacity-100"
             >
               <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               <polyline points="9 22 9 12 15 12 15 22" />
@@ -109,7 +109,7 @@ export function Header() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="opacity-80 group-hover:opacity-100"
+              className="opacity-80 group-hover:cursor-pointer hover:opacity-100"
             >
               <rect width="5" height="5" x="3" y="3" rx="1" />
               <rect width="5" height="5" x="16" y="3" rx="1" />
@@ -141,7 +141,7 @@ export function Header() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="opacity-80 group-hover:opacity-100"
+                className="opacity-80 group-hover:cursor-pointer hover:opacity-100"
               >
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
@@ -160,7 +160,7 @@ export function Header() {
               <button
                 type="button"
                 onClick={logout}
-                className="font-playfair shrink-0 whitespace-nowrap rounded-xs border border-white/25 bg-transparent py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4 sm:text-sm"
+                className="font-playfair shrink-0 whitespace-nowrap rounded-xs border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:cursor-pointer hover:bg-white/10 hover:cursor-pointer hover:text-gold active:scale-[0.98] sm:px-4 sm:text-sm"
               >
                 Logout{" ⍈"}
               </button>
@@ -170,16 +170,17 @@ export function Header() {
               <button
                 type="button"
                 onClick={openLoginModal}
-                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4 sm:text-sm"
+                className="font-playfair shrink-0 whitespace-nowrap text-md font-semibold text-foreground shadow-sm transition-colors hover:cursor-pointer hover:text-gold active:scale-[0.98]"
               >
-                เข้าสู่ระบบ
+                Login
               </button>
+              |
               <button
                 type="button"
                 onClick={openSignupModal}
-                className="shrink-0 whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-white/10 hover:text-[#d8b85a] active:scale-[0.98] sm:px-4 sm:text-sm"
+                className="font-playfair shrink-0 whitespace-nowrap text-md font-semibold text-foreground shadow-sm transition-colors hover:cursor-pointer hover:text-gold active:scale-[0.98]"
               >
-                สมัครสมาชิก
+                Signup
               </button>
             </>
           )}

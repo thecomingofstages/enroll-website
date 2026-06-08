@@ -47,7 +47,7 @@ const baseItemClass =
   "relative flex min-w-0 flex-col items-center gap-1.5 rounded-lg px-3 py-2 transition-colors";
 
 const inactiveItemClass =
-  "text-zinc-200 hover:bg-white/10 hover:text-[#d8b85a] active:bg-white/10 active:text-[#d8b85a]";
+  "text-zinc-200 hover:cursor-pointer hover:bg-white/10 hover:cursor-pointer hover:text-[#d8b85a] active:bg-white/10 active:text-[#d8b85a]";
 
 const activeItemClass = "text-[#d8b85a]";
 const activeUnderlineClass =
