@@ -36,9 +36,9 @@ export function ActivityTimeline({
   };
 
   return (
-    <section className="rounded-2xl bg-[var(--card-bg)] p-5 shadow-lg border border-zinc-800 sm:p-6">
+    <section className="rounded-md bg-[var(--card-bg)] p-5 shadow-lg border border-zinc-800 sm:p-6">
       <div className="flex items-center justify-between">
-        <h2 className=" text-2xl font-bold text-[var(--color-gold)]">กำหนดการกิจกรรม</h2>
+        <h2 className=" text-3xl font-bold font-playfair text-[var(--color-gold)]">Schedule</h2>
         
         {hasMultipleDays && (
           <div className="flex items-center gap-2">
@@ -66,21 +66,21 @@ export function ActivityTimeline({
         )}
       </div>
 
-      <div className="mt-4 rounded-xl bg-zinc-900/50 p-4 border border-zinc-800">
+      <div className="mt-4 rounded-md bg-zinc-900/50 p-4 border border-zinc-800">
         <div className="mb-4 border-b border-zinc-800 pb-3">
-          <h3 className=" text-lg font-bold text-zinc-100">
-            {hasMultipleDays ? `วันที่ ${currentDayIndex + 1}` : "วันจัดกิจกรรม"}
-            <span className="ml-2 font-sans text-sm font-normal text-zinc-400">
+          <h3 className=" text-lg font-bold text-zinc-100 font-playfair">
+            {hasMultipleDays ? `Day ${currentDayIndex + 1}` : "Activity Day"}
+            <span className="ml-2 text-sm font-trirong text-zinc-400">
               {formatDisplayDate(currentDate)}
             </span>
           </h3>
           {currentVenue && (
-            <p className="mt-1 flex items-center text-sm font-medium text-[var(--color-gold)]">
+            <p className="mt-1 flex items-center text-sm font-medium text-[var(--color-gold)] font-trirong">
               <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.243-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              สถานที่: {currentVenue}
+              {currentVenue}
             </p>
           )}
         </div>
@@ -101,8 +101,8 @@ export function ActivityTimeline({
               </div>
               <div className="min-w-0 flex-1 pt-0.5">
                 <p className="text-xs font-bold text-[var(--color-gold)] tracking-widest">{item.start_time} – {item.end_time}</p>
-                <p className="mt-1  text-lg font-medium text-zinc-100">{item.title}</p>
-                <p className="mt-1 text-sm leading-relaxed text-zinc-400">
+                <p className="mt-1  text-lg font-medium font-trirong text-zinc-100">{item.title}</p>
+                <p className="mt-1 text-sm leading-relaxed font-trirong text-zinc-400">
                   {item.description}
                 </p>
               </div>

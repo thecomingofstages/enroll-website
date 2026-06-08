@@ -743,13 +743,13 @@ export function ActivityRegisterSection({
   const isClosed = !activity.is_registration_open;
   const isDisabled = isClosed || isFull || isRegistered;
 
-  let buttonText = activity.price > 0 ? `ลงทะเบียนเข้าร่วม (฿${activity.price})` : "ลงทะเบียนเข้าร่วม (ฟรี)";
+  let buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)";
   if (isRegistered) {
     buttonText = "Registered ✓";
   } else if (isClosed) {
-    buttonText = "ปิดรับสมัครแล้ว ⤬";
+    buttonText = "Registration Closed ⤬";
   } else if (isFull) {
-    buttonText = "ที่นั่งเต็มแล้ว ⤬";
+    buttonText = "Seat Full ⤬";
   }
 
   return (
@@ -761,14 +761,14 @@ export function ActivityRegisterSection({
           disabled={isDisabled}
           aria-expanded={open}
           aria-haspopup="dialog"
-          className={`w-full rounded-xs py-3.5 text-center text-background font-semibold shadow-sm transition sm:text-lg ${
+          className={`w-full rounded-md py-3.5 text-center text-background font-bold shadow-sm transition sm:text-lg ${
             //isPendingPayment
               //</div>? "bg-primary-yellow text-base-black hover:bg-yellow-500"
               isRegistered
                 ? "bg-green cursor-default"
                 : isDisabled
                   ? "bg-[#FFB4AB] cursor-not-allowed"
-                  : "bg-gold"
+                  : "bg-gold hover:cursor-pointer hover:opacity-60 transition-opacity"
           }`}
         >
           {buttonText}
