@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { act, useEffect, useId, useState } from "react";
 import type { ActivityDetail } from "@enroll-website/types";
 import { postActivityRegistration, postPaymentSlip } from "@/lib/activity-api";
 import { useAppState } from "@/lib/context";
@@ -740,17 +740,31 @@ export function ActivityRegisterSection({
   const isFull =
     activity.seat_capacity > 0 &&
     activity.enrolled_count >= activity.seat_capacity;
-  const isClosed = !activity.is_registration_open;
-  const isDisabled = isClosed || isFull || isRegistered;
+  const isNotStarted = new Date(activity.open_registration_at?? "2026-01-01T00:00:00") > new Date();
+  const isEnded = new Date(activity.close_registration_at?? "2099-12-31T00:00:00") < new Date(); 
+  let isDisabled = isFull || isRegistered;
 
-  let buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)";
-  if (isRegistered) {
-    buttonText = "Registered ✓";
-  } else if (isClosed) {
+  let buttonText;
+  if (isRegistered) { buttonText = "Registered ✓"; } 
+  else if (activity.registration_open_override === false) { 
     buttonText = "Registration Closed ⤬";
-  } else if (isFull) {
-    buttonText = "Seat Full ⤬";
+    isDisabled = true;
   }
+  else if (activity.registration_open_override === true) { buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)"; }
+  else {
+    if (isFull) { buttonText = "Seats Full ⤬"; }
+    else if (isEnded) { 
+      buttonText = "Registration Ended ⤬";
+      isDisabled = true;
+    } 
+    else if (isNotStarted) { 
+      buttonText = "Registration Opens Soon ..."; 
+      isDisabled = true;
+    }
+    else { buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)"; }
+  }
+  
+  
 
   return (
     <>
@@ -761,14 +775,13 @@ export function ActivityRegisterSection({
           disabled={isDisabled}
           aria-expanded={open}
           aria-haspopup="dialog"
-          className={`w-full rounded-md py-3.5 text-center text-background font-bold shadow-sm transition sm:text-lg ${
+          className={`w-full rounded-md py-3.5 text-center font-bold shadow-sm transition sm:text-lg ${
             //isPendingPayment
               //</div>? "bg-primary-yellow text-base-black hover:bg-yellow-500"
-              isRegistered
-                ? "bg-green cursor-default"
-                : isDisabled
-                  ? "bg-[#FFB4AB] cursor-not-allowed"
-                  : "bg-gold hover:cursor-pointer hover:opacity-60 transition-opacity"
+              isRegistered ? "bg-green text-background cursor-default"
+            : isNotStarted ? "bg-zinc-700 text-foreground cursor-not-allowed" 
+            : isDisabled ? "bg-red-300 text-background cursor-not-allowed"
+            : "bg-gold text-background hover:cursor-pointer hover:opacity-60 transition-opacity"
           }`}
         >
           {buttonText}
