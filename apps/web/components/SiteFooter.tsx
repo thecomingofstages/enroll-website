@@ -29,6 +29,8 @@ export default function SiteFooter() {
         <p className="text-[14px] leading-relaxed text-zinc-500 sm:text-xs">
           © {new Date().getFullYear()} The Coming of Stages • Youth Power of Thai Theatre
         </p>
+
+        <a href="https://forms.gle/SpMdF8Nc9VptYxrV9" className="text-[14px] leading-relaxed text-zinc-500 sm:text-xs"><u>Report Issue</u></a>
       </div>
     </footer>
   );
