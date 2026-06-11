@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useAppState } from "../lib/context";
-import { formatActivityDate } from "../lib/mockData";
+// import { formatActivityDate } from "../lib/mockData";
 
 export default function HomeSidebar() {
   const { user, activities, registrations, openCheckinModal } = useAppState();
@@ -101,7 +101,7 @@ export default function HomeSidebar() {
                       {act.name}
                     </h5>
                     <span className="mt-1 text-[10px] text-zinc-500">
-                      {formatActivityDate(act.date)} •{" "}
+                      {/*{formatActivityDate(act.date)} •{" "}*/}
                       {act.location.split(",")[0]}
                     </span>
                   </div>
