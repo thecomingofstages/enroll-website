@@ -90,7 +90,7 @@ export default function ActivityCard({
     activity.enrolled_count >= activity.seat_capacity;
   const isNotStarted = new Date(activity.open_registration_at?? "2026-01-01T00:00:00") > new Date();
   const isEnded = new Date(activity.close_registration_at?? "2099-12-31T00:00:00") < new Date(); 
-  let isDisabled = isFull || isRegistered;
+  let isDisabled = isRegistered;
 
   let buttonText;
   if (isRegistered) { buttonText = "Registered ✓"; } 
@@ -101,15 +101,10 @@ export default function ActivityCard({
   else if (activity.registration_open_override === true) { buttonText = "Register"; }
   else {
     if (isFull) { buttonText = "Seats Full ⤬"; }
-    else if (isEnded) { 
-      buttonText = "Registration Ended ⤬";
-      isDisabled = true;
-    } 
-    else if (isNotStarted) { 
-      buttonText = "Registration Opens Soon ..."; 
-      isDisabled = true;
-    }
-    else { buttonText = "Register"; }
+    else if (isEnded) { buttonText = "Registration Ended ⤬"; } 
+    else if (isNotStarted) { buttonText = "Registration Opens Soon ..."; }
+    else { buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)"; }
+    isDisabled = isFull || isEnded || isNotStarted;
   } 
 
   const dateLabel = activity.date;
