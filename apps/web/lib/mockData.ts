@@ -4,6 +4,9 @@ export interface Activity {
   description: string;
   longDescription: string;
   date: string;
+  open_registration_at: string;
+  close_registration_at: string;
+  registration_open_override: boolean;
   location: string;
   seat_capacity: number;
   enrolled_count: number;
@@ -51,7 +54,8 @@ export interface Sponsor {
   logoText: string;
 }
 
-export const INITIAL_ACTIVITIES: Activity[] = [
+export const INITIAL_ACTIVITIES: Activity[] = []
+/*
   {
     _id: "act-001",
     name: "ละครเวที ทางผ่าน",
@@ -220,4 +224,6 @@ export function formatActivityDate(dateIso: string) {
     month: "short",
     year: "numeric",
   });
+  
 }
+*/
