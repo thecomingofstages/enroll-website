@@ -40,7 +40,7 @@ function ProfileAvatar({
 
   return (
     <div className="relative mx-auto h-24 w-24 md:h-28 md:w-28">
-      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-primary-yellow bg-muted-charcoal font-playfair text-3xl font-black text-primary-yellow shadow-xl">
+      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-primary-yellow bg-muted-charcoal font-sans text-3xl font-black text-primary-yellow shadow-xl">
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -219,7 +219,7 @@ export default function AccountModal() {
           </svg>
         </button>
         <div className="flex items-center justify-between border-b border-muted-charcoal px-5 py-4 pr-14">
-          <h3 className="font-playfair text-xl font-black text-primary-yellow">Account</h3>
+          <h3 className="font-sans text-xl font-black text-primary-yellow">Account</h3>
         </div>
 
         <div className="grid gap-5 p-5 md:grid-cols-[320px_1fr] md:p-6">
@@ -248,7 +248,7 @@ export default function AccountModal() {
               </div>
             ) : (
               <div className="mt-5 text-center">
-                <h4 className="font-playfair text-2xl font-black text-primary-yellow">
+                <h4 className="font-sans text-2xl font-black text-primary-yellow">
                   {user.name}
                 </h4>
                 <p className="text-xs text-zinc-400">@{user.id}</p>
@@ -311,7 +311,7 @@ export default function AccountModal() {
 
           <section className="space-y-4">
             <div className="mb-4 flex flex-col gap-3 border-b border-muted-charcoal pb-3 md:flex-row md:items-center md:justify-between">
-              <h3 className="font-playfair text-2xl font-black text-white md:text-3xl">
+              <h3 className="font-sans text-2xl font-black text-white md:text-3xl">
                 My Activities
               </h3>
               {registeredActivityOptions.length > 0 && (

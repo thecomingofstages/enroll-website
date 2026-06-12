@@ -508,7 +508,7 @@ export default function RegistrationModal() {
               </div>
 
               <div>
-                <h4 className="text-lg font-playfair font-black text-primary-yellow tracking-widest uppercase">
+                <h4 className="text-lg font-sans font-black text-primary-yellow tracking-widest uppercase">
                   ลงทะเบียนสำเร็จ!
                 </h4>
                 <p className="text-xs text-zinc-400 mt-1">

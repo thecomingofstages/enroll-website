@@ -133,7 +133,7 @@ export default function ActivityCard({
         </div>
 
         <div className="flex flex-1 flex-col gap-2 p-3 pb-2">
-          <h3 className="m-1 line-clamp-2 font-trirong text-xl font-semibold leading-tight text-zinc-100">
+          <h3 className="m-1 line-clamp-2 font-prompt text-xl font-semibold leading-tight text-zinc-100">
             {activity.name}
           </h3>
           <div className="space-y-1 text-base font-medium text-zinc-500">
@@ -182,7 +182,7 @@ export default function ActivityCard({
       </div>
       <div className={`mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-10 absolute inset-x-0 bottom-0 space-y-1.5 p-4 ${isLightCard ? "text-base-black" : "text-white"}`}>
         <p className="text-md lg:text-xl font-bold uppercase tracking-widest text-zinc-500 mb-1">Featured Activity</p>
-        <h1 className="text-4xl lg:text-6xl font-trirong font-extrabold leading-tight">
+        <h1 className="text-4xl lg:text-6xl font-prompt font-extrabold leading-tight">
           {activity.name}
         </h1>
 

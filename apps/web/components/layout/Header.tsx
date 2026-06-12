@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppState } from "@/lib/context";
 
-const baseNavLinkClass = "relative inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-base font-playfair text-[18px] transition-colors group";
+const baseNavLinkClass = "relative inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-base font-sans text-[18px] transition-colors group";
 const inactiveNavClass = "text-stone-300 hover:cursor-pointer hover:bg-white/10 hover:cursor-pointer hover:text-gold";
 const activeNavClass = "text-gold";
 const activeUnderlineClass = "after:absolute after:bottom-1 after:left-4 after:right-4 after:h-[2px] after:rounded-full after:bg-gold";
@@ -153,14 +153,14 @@ export function Header() {
         <div className="flex flex-1 justify-end shrink-0 flex-nowrap items-center gap-2 sm:gap-3">
           {user ? (
             <div className="flex flex-col items-end gap-1">
-              <span className="whitespace-nowrap text-sm font-semibold font-playfair text-white sm:text-base">
+              <span className="whitespace-nowrap text-sm font-semibold font-sans text-white sm:text-base">
                 Hello, {" "}
-                <span className="font-bold text-white font-trirong">{firstName}</span>
+                <span className="font-bold text-white font-prompt">{firstName}</span>
               </span>
               <button
                 type="button"
                 onClick={logout}
-                className="font-playfair shrink-0 whitespace-nowrap rounded-xs border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:cursor-pointer hover:bg-white/10 hover:cursor-pointer hover:text-gold active:scale-[0.98] sm:px-4 sm:text-sm"
+                className="font-sans shrink-0 whitespace-nowrap rounded-xs border border-white/25 bg-transparent px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:cursor-pointer hover:bg-white/10 hover:cursor-pointer hover:text-gold active:scale-[0.98] sm:px-4 sm:text-sm"
               >
                 Logout{" ⍈"}
               </button>
@@ -170,7 +170,7 @@ export function Header() {
               <button
                 type="button"
                 onClick={openLoginModal}
-                className="font-playfair shrink-0 whitespace-nowrap text-md font-semibold text-foreground shadow-sm transition-colors hover:cursor-pointer hover:text-gold active:scale-[0.98]"
+                className="font-sans shrink-0 whitespace-nowrap text-md font-semibold text-foreground shadow-sm transition-colors hover:cursor-pointer hover:text-gold active:scale-[0.98]"
               >
                 Login
               </button>
@@ -178,7 +178,7 @@ export function Header() {
               <button
                 type="button"
                 onClick={openSignupModal}
-                className="font-playfair shrink-0 whitespace-nowrap text-md font-semibold text-foreground shadow-sm transition-colors hover:cursor-pointer hover:text-gold active:scale-[0.98]"
+                className="font-sans shrink-0 whitespace-nowrap text-md font-semibold text-foreground shadow-sm transition-colors hover:cursor-pointer hover:text-gold active:scale-[0.98]"
               >
                 Signup
               </button>

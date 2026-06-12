@@ -52,7 +52,7 @@ function ProfileAvatar({
 
   return (
     <div className="relative mx-auto h-28 w-28">
-      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-gold/30 font-playfair text-4xl font-black text-primary-yellow">
+      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-gold/30 font-sans text-4xl font-black text-primary-yellow">
         {user?.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -128,7 +128,7 @@ function ActivityCard({ activity }: { activity: ActivityRegistration }) {
   return (
     <article className="relative overflow-hidden rounded-xs border border-gold/30 bg-card">
       <div className="relative flex min-h-44 flex-col justify-between gap-3 p-4">
-        <h4 className="font-trirong text-xl font-black text-white">
+        <h4 className="font-prompt text-xl font-black text-white">
           {activity.activity.name}
         </h4>
 
@@ -341,7 +341,7 @@ export default function AccountProfile({ isOpen }: { isOpen: boolean }) {
                     <input
                       value={value}
                       onChange={(e) => setter(e.target.value)}
-                      className="w-full rounded-xs bg-base-black font-trirong px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
+                      className="w-full rounded-xs bg-base-black font-prompt px-3 py-2 text-sm outline-none focus:border-primary-yellow text-white"
                       placeholder={placeholder}
                     />
                   </React.Fragment>
@@ -350,10 +350,10 @@ export default function AccountProfile({ isOpen }: { isOpen: boolean }) {
             ) : (
               /* Display view */
               <div className="mt-5 text-center">
-                <h4 className="font-playfair text-2xl font-trirong font-bold text-gold">
+                <h4 className="text-2xl font-prompt font-bold text-gold">
                   {displayFullName}
                 </h4>
-                <p className="text-[14px] text-foreground font-trirong">{user.nickname}</p>
+                <p className="text-[14px] text-foreground font-prompt">{user.nickname}</p>
 
                 <div className="grid grid-cols-1 @sm:grid-cols-2 gap-4 mt-5 border-t border-gold/30">
                   <div className="mt-5 text-left space-y-4">
@@ -435,7 +435,7 @@ export default function AccountProfile({ isOpen }: { isOpen: boolean }) {
           ---------------------------------------------------------------- */}
           <section className="space-y-4">
             <div className="mb-5 flex flex-col gap-3 border-b border-gold/30 pb-3 md:flex-row md:items-center md:justify-between">
-              <h3 className="font-playfair font-bold text-2xl md:text-3xl text-foreground">
+              <h3 className="font-sans font-bold text-2xl md:text-3xl text-foreground">
                 My Activities
               </h3>
             </div>

@@ -76,7 +76,7 @@ function MainContent() {
       {showHome && (
         <section className="bg-[#131311] mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-10">
           <div className="mx-auto w-full max-w-7xl">
-            <h2 className="font-playfair font-bold text-3xl md:text-3xl mb-7 text-foreground">Activities</h2>
+            <h2 className="font-sans font-bold text-3xl md:text-3xl mb-7 text-foreground">Activities</h2>
 
             {loading ? (
               <div className="mt-4 text-center text-zinc-400">
