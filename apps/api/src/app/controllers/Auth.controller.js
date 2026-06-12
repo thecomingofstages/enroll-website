@@ -71,6 +71,18 @@ class AuthController {
       next(err);
     }
   }
+
+  /** POST /auth/password/reset/recovery */
+  static async resetPasswordWithCode(req, res, next) {
+    try {
+      const { email, code, new_password } = req.body;
+      const result = await AuthHelper.resetPasswordWithCode(email, code, new_password);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      Logger.error(`[AuthController.resetPasswordWithCode] ${err.message}`);
+      next(err);
+    }
+  }
 }
 
 module.exports = AuthController;

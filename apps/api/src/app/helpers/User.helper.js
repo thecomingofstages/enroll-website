@@ -1,8 +1,19 @@
-const UserModel = require('../models/User.model');
+const crypto       = require('node:crypto');
+const bcrypt       = require('bcrypt');
+const UserModel         = require('../models/User.model');
 const RegistrationModel = require('../models/Registration.model');
-const ActivityModel = require('../models/Activity.model');
-const QRUtil = require('../utils/QR.util');
+const ActivityModel     = require('../models/Activity.model');
+const RecoveryCodeModel = require('../models/RecoveryCode.model');
+const QRUtil  = require('../utils/QR.util');
 const AppKeys = require('../config/app.keys');
+
+// How many codes to issue per generation, and how the plaintext looks.
+// 4 groups of 5 chars from a 32-symbol alphabet ≈ 100 bits total entropy
+// per code, which is well above the 80-bit floor NIST recommends.
+const RECOVERY_CODE_COUNT  = 10;
+const RECOVERY_CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no I/O/0/1 — readable when printed
+const RECOVERY_CODE_GROUPS  = 4;
+const RECOVERY_CODE_GROUP_LEN = 5;
 
 class UserHelper {
   /** GET /users/me */
@@ -97,6 +108,63 @@ class UserHelper {
     const expires_in = AppKeys.QR_TTL_SECONDS;
     const expires_at = new Date((Math.floor(Date.now() / 1000) + expires_in) * 1000).toISOString();
     return { qr_token, expires_at, expires_in };
+  }
+
+  // ── POST /users/me/recovery-codes ─────────────────────────────
+  /**
+   * Generate a fresh set of one-time recovery codes for the user.
+   * Any previous codes for this user are deleted — a set is single-use:
+   * generating a new set invalidates all earlier ones.
+   *
+   * Returns the plaintext codes for the client to display once. The server
+   * stores only bcrypt hashes. If the user loses these they must log in
+   * (or use another recovery path) to generate a new set.
+   */
+  static async generateRecoveryCodes(userId) {
+    // Wipe any existing codes for this user before issuing new ones.
+    // This matches the "consume a code regenerates the set" pattern.
+    await RecoveryCodeModel.deleteMany({ user_id: userId });
+
+    const codes = [];
+    const docs  = [];
+    for (let i = 0; i < RECOVERY_CODE_COUNT; i++) {
+      const plaintext = UserHelper._mintRecoveryCode();
+      const code_hash = await bcrypt.hash(plaintext, AppKeys.BCRYPT_ROUNDS);
+      codes.push(plaintext);
+      docs.push({ user_id: userId, code_hash });
+    }
+
+    if (docs.length > 0) {
+      await RecoveryCodeModel.insertMany(docs);
+    }
+
+    return { codes, remaining: codes.length };
+  }
+
+  // ── GET /users/me/recovery-codes/count ────────────────────────
+  /** How many unused recovery codes the user has left. */
+  static async countRecoveryCodes(userId) {
+    const remaining = await RecoveryCodeModel.countDocuments({
+      user_id: userId,
+      used:    false,
+    });
+    return { remaining };
+  }
+
+  // ── internal ──────────────────────────────────────────────────
+  /** Build a single human-readable recovery code (e.g. "ABCDE-FGHJK-LMNOP-QRSTU"). */
+  static _mintRecoveryCode() {
+    const groups = [];
+    const bytes  = crypto.randomBytes(RECOVERY_CODE_GROUPS * RECOVERY_CODE_GROUP_LEN);
+    let cursor   = 0;
+    for (let g = 0; g < RECOVERY_CODE_GROUPS; g++) {
+      let group = '';
+      for (let i = 0; i < RECOVERY_CODE_GROUP_LEN; i++) {
+        group += RECOVERY_CODE_CHARSET[bytes[cursor++] % RECOVERY_CODE_CHARSET.length];
+      }
+      groups.push(group);
+    }
+    return groups.join('-');
   }
 }
 

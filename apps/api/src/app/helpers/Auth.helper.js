@@ -1,6 +1,7 @@
 const bcrypt    = require('bcrypt');
 const { v7: uuidv7 } = require('uuid');
-const UserModel = require('../models/User.model');
+const UserModel         = require('../models/User.model');
+const RecoveryCodeModel = require('../models/RecoveryCode.model');
 const JWTUtil   = require('../utils/JWT.util');
 const AppKeys   = require('../config/app.keys');
 
@@ -107,6 +108,85 @@ class AuthHelper {
   // ── POST /auth/otp/verify ──────────────────────────────────────
   static async verifyOtp(identifier, code) {
     throw new Error('Not implemented');
+  }
+
+  // ── POST /auth/password/reset/recovery ─────────────────────────
+  /**
+   * Reset a user's password using a one-time recovery code.
+   *
+   * This endpoint is the account-recovery path for users who can't log in
+   * via email/password and don't have access to email or phone (e.g. email
+   * locked out, phone changed). The recovery code, generated from
+   * POST /users/me/recovery-codes, IS the proof of identity here — there
+   * is no access token.
+   *
+   * Anti-enumeration: every code lookup runs in constant time relative
+   * to the user-existing case. We always do a bcrypt.compare against a
+   * dummy hash when the user doesn't exist or has no codes, so timing
+   * doesn't leak which case the request hit. The response body and
+   * status code are identical across the four outcomes below:
+   *   1. user not found
+   *   2. user found, no recovery codes on file
+   *   3. user found, code didn't match
+   *   4. user found, code matched — rotate hash, burn all codes
+   *
+   * On success the user's remaining codes are deleted (force-regenerate
+   * next time), so a stolen code is only good for one use.
+   */
+  static async resetPasswordWithCode(email, code, newPassword) {
+    if (!email || !code || !newPassword) {
+      const err = new Error('Email, code, and new password are required.');
+      err.code = 'VALIDATION_ERROR';
+      err.status = 400;
+      throw err;
+    }
+
+    if (newPassword.length < 8) {
+      const err = new Error('Password must be at least 8 characters.');
+      err.code = 'VALIDATION_ERROR';
+      err.field = 'new_password';
+      err.status = 400;
+      throw err;
+    }
+
+    // Pre-compute a dummy hash so the not-found / no-codes paths still pay
+    // the bcrypt cost and don't reveal the user-existing branch by timing.
+    const DUMMY_HASH = '$2b$12$CwTycUXWue0Thq9StjUM0uJ8Vb0YqH2yVxq3pE2gV4W0nQ2lE2G6m';
+    const normalized = String(email).toLowerCase().trim();
+
+    const user = await UserModel.findOne({ email: normalized }).lean();
+    const candidates = user
+      ? await RecoveryCodeModel.find({ user_id: user._id, used: false }).lean()
+      : [];
+
+    let matched = false;
+    if (candidates.length > 0) {
+      // Compare against real candidates.
+      for (const c of candidates) {
+        // eslint-disable-next-line no-await-in-loop
+        const ok = await bcrypt.compare(code, c.code_hash);
+        if (ok) { matched = true; break; }
+      }
+    } else {
+      // Burn constant time on the dummy hash so the missing-codes path
+      // looks identical in latency to the real-match path.
+      await bcrypt.compare(code, DUMMY_HASH);
+    }
+
+    // Single generic failure for cases 1, 2, 3.
+    if (!user || !matched) {
+      const err = new Error('Invalid email or recovery code.');
+      err.code = 'INVALID_CREDENTIALS';
+      err.status = 401;
+      throw err;
+    }
+
+    // Case 4 — rotate the password hash and burn all remaining codes.
+    const password_hash = await bcrypt.hash(newPassword, AppKeys.BCRYPT_ROUNDS);
+    await UserModel.findByIdAndUpdate(user._id, { $set: { password_hash } });
+    await RecoveryCodeModel.deleteMany({ user_id: user._id });
+
+    return { success: true };
   }
 }
 

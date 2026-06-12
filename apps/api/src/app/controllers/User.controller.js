@@ -46,6 +46,28 @@ class UserController {
       next(err);
     }
   }
+
+  /** POST /users/me/recovery-codes */
+  static async generateRecoveryCodes(req, res, next) {
+    try {
+      const data = await UserHelper.generateRecoveryCodes(req.user._id);
+      return res.status(200).json({ success: true, data });
+    } catch (err) {
+      Logger.error(`[UserController.generateRecoveryCodes] ${err.message}`);
+      next(err);
+    }
+  }
+
+  /** GET /users/me/recovery-codes/count */
+  static async countRecoveryCodes(req, res, next) {
+    try {
+      const data = await UserHelper.countRecoveryCodes(req.user._id);
+      return res.status(200).json({ success: true, data });
+    } catch (err) {
+      Logger.error(`[UserController.countRecoveryCodes] ${err.message}`);
+      next(err);
+    }
+  }
 }
 
 module.exports = UserController;
