@@ -39,7 +39,7 @@ function FieldError({ message }: { message?: string }) {
 }
 
 const inputClass = (hasError: boolean) =>
-  `w-full rounded border bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-all duration-150 ${
+  `font-prompt w-full rounded border bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 outline-none transition-all duration-150 ${
     hasError
       ? "border-red-500/70 focus:border-red-400 focus:ring-1 focus:ring-red-400/20"
       : "border-zinc-700 focus:border-gold/60 focus:ring-1 focus:ring-gold/10"
@@ -232,7 +232,7 @@ export default function AuthModal() {
             <p className="text-[11px] font-semibold uppercase tracking-widest text-gold">
               TCOS
             </p>
-            <h2 className="mt-0.5 font-playfair text-xl font-bold text-zinc-100">
+            <h2 className="mt-0.5 font-sans text-xl font-bold text-zinc-100">
               {authMode === "login" ? "Sign In" : "Create Account"}
             </h2>
           </div>
@@ -404,7 +404,7 @@ export default function AuthModal() {
                 </div>
               </div>
 
-              <p className="text-center text-[11px] leading-relaxed text-zinc-600">
+              <p className="text-center text-[11px] leading-relaxed text-zinc-600 font-prompt">
                 สร้างบัญชีเพื่อลงทะเบียนและเช็คชื่อเข้าร่วมงาน
               </p>
 
@@ -412,7 +412,7 @@ export default function AuthModal() {
                 {isSubmitting ? "Creating Account..." : "Create Account"}
               </button>
 
-              <Divider label="มีบัญชีอยู่แล้ว?" />
+              <Divider label="มีบัญชีอยู่แล้ว?"/>
 
               <button type="button" onClick={() => switchMode("login")} className={btnSecondary}>
                 Sign In

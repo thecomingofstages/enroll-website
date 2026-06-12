@@ -262,10 +262,10 @@ export default function QRCheckinModal() {
               <div className="w-full">
                 <div className="space-y-2">
                   <div>
-                    <p className="text-gold font-trirong text-3xl font-black mt-1 text-center">
+                    <p className="text-gold font-prompt text-3xl font-black mt-1 text-center">
                       {attendee?.firstName} {attendee?.lastName}
                     </p>
-                    <p className="text-white font-playfair text-[16px] text-sm mt-3 text-center">
+                    <p className="text-white font-sans text-[16px] text-sm mt-3 text-center">
                       TCOS Participant
                     </p>
                   </div>

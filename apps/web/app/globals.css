@@ -22,12 +22,7 @@
   --font-sans: var(--font-geist-sans);
   --font-inter: var(--font-inter);
   --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-serif);
   --font-prompt: var(--font-prompt);
-  --font-playfair: var(--font-geist-sans);
-  --font-sarabun: var(--font-prompt);
-  --font-trirong: var(--font-prompt);
-  --font-taviraj: var(--font-prompt);
 }
 
 body {

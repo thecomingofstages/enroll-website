@@ -240,7 +240,7 @@ export function RegisterModal({
         className="flex h-92vh w-full max-w-lg flex-col overflow-hidden rounded-md bg-zinc-950 shadow-2xl backdrop-blur-sm border border-zinc-800"
       >
         <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3 sm:px-5">
-          <h2 id={titleId} className="text-2xl font-playfair font-bold text-foreground">
+          <h2 id={titleId} className="text-2xl font-sans font-bold text-foreground">
             Register Activity
           </h2>
           <button
@@ -261,8 +261,8 @@ export function RegisterModal({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-xl font-playfair font-bold text-green mb-5">Activity Registered</h3>
-            <p className="mt-3 text-md text-foreground font-trirong">
+            <h3 className="text-xl font-sans font-bold text-green mb-5">Activity Registered</h3>
+            <p className="mt-3 text-md text-foreground font-prompt">
               ข้อมูลของคุณถูกบันทึกเรียบร้อยแล้ว<br />
               คุณสามารถตรวจสอบรายละเอียดการลงทะเบียนได้ที่หน้าโปรไฟล์ของคุณ
             </p>
@@ -290,7 +290,7 @@ export function RegisterModal({
                   >
                     {idx + 1}
                   </span>
-                  <span className="text-center text-[10px] font-medium font-trirong text-foreground sm:text-left sm:text-xs">
+                  <span className="text-center text-[10px] font-medium font-prompt text-foreground sm:text-left sm:text-xs">
                     {s.label}
                   </span>
                 </div>
@@ -309,7 +309,7 @@ export function RegisterModal({
                       {/* Avatar with rings */}
                       <div className="relative mb-6">
                         <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#d8b85a] to-[#f4f0ea] animate-pulse blur-md opacity-60"></div>
-                        <div className="relative h-24 w-24 rounded-full bg-stone-100 overflow-hidden ring-4 ring-white shadow-xl flex items-center justify-center text-4xl font-playfair font-black text-[#d8b85a]">
+                        <div className="relative h-24 w-24 rounded-full bg-stone-100 overflow-hidden ring-4 ring-white shadow-xl flex items-center justify-center text-4xl font-sans font-black text-[#d8b85a]">
                           {user.avatarUrl ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
@@ -325,11 +325,11 @@ export function RegisterModal({
                         </div>
                       </div>
 
-                      <h3 className="font-trirong text-2xl font-black text-gold tracking-tight">{user.name}</h3>
+                      <h3 className="font-prompt text-2xl font-black text-gold tracking-tight">{user.name}</h3>
                       <p className="text-sm font-medium text-foreground mt-1">{user.email}</p>
 
                       <div className="mt-8 w-full border-t border-zinc-700 focus:border-gold/60 /60 pt-6 text-center">
-                        <p className="mt-2 text-md font-trirong text-foreground leading-relaxed">
+                        <p className="mt-2 text-md font-prompt text-foreground leading-relaxed">
                           ระบบพบข้อมูลโปรไฟล์ของคุณแล้ว<br/>กด <strong className="text-gold">&quot;Next&quot;</strong> เพื่อดำเนินการต่อได้เลย
                         </p>
                       </div>
@@ -346,11 +346,11 @@ export function RegisterModal({
                   </p>
                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         ชื่อ <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-prompt px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           firstNameError
                             ? "border-red-300 bg-red-900"
                             : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
@@ -360,17 +360,17 @@ export function RegisterModal({
                         autoComplete="given-name"
                       />
                       {firstNameError && (
-                        <p className="mt-1 text-xs text-red-400 font-trirong">
+                        <p className="mt-1 text-xs text-red-400 font-prompt">
                           {firstNameError}
                         </p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         นามสกุล <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-prompt px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           lastNameError
                             ? "border-red-400 bg-red-900"
                             : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
@@ -380,25 +380,25 @@ export function RegisterModal({
                         autoComplete="family-name"
                       />
                       {lastNameError && (
-                        <p className="mt-1 text-xs text-red-400 font-trirong">{lastNameError}</p>
+                        <p className="mt-1 text-xs text-red-400 font-prompt">{lastNameError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         ชื่อเล่น <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className="mt-1 w-full rounded-xs border font-trirong border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
+                        className="mt-1 w-full rounded-xs border font-prompt border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
                         value={nickname}
                         onChange={(e) => setNickname(e.target.value)}
                       />
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         เบอร์โทร <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-prompt px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           phoneError
                             ? "border-red-400 bg-red-900"
                             : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
@@ -409,15 +409,15 @@ export function RegisterModal({
                         autoComplete="tel"
                       />
                       {phoneError && (
-                        <p className="mt-1 text-xs text-red-400 font-trirong">{phoneError}</p>
+                        <p className="mt-1 text-xs text-red-400 font-prompt">{phoneError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-2">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         อีเมล <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-prompt px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           emailError
                             ? "border-red-400 bg-red-900"
                             : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
@@ -427,15 +427,15 @@ export function RegisterModal({
                         type="email"
                       />
                       {emailError && (
-                        <p className="mt-1 text-xs text-red-400 font-trirong">{emailError}</p>
+                        <p className="mt-1 text-xs text-red-400 font-prompt">{emailError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         รหัสผ่าน <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-prompt px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           passwordError
                             ? "border-red-400 bg-red-900"
                             : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
@@ -446,15 +446,15 @@ export function RegisterModal({
                         placeholder="อย่างน้อย 8 ตัวอักษร"
                       />
                       {passwordError && (
-                        <p className="mt-1 text-xs text-red-400 font-trirong">{passwordError}</p>
+                        <p className="mt-1 text-xs text-red-400 font-prompt">{passwordError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         ยืนยันรหัสผ่าน <span className="text-red-300">*</span>
                       </span>
                       <input
-                        className={`mt-1 w-full rounded-xs border font-trirong px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
+                        className={`mt-1 w-full rounded-xs border font-prompt px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2 ${
                           confirmPasswordError
                             ? "border-red-400 bg-red-900"
                             : "border-zinc-700 focus:border-gold/60  bg-zinc-900"
@@ -465,15 +465,15 @@ export function RegisterModal({
                         placeholder="พิมพ์รหัสผ่านอีกครั้ง"
                       />
                       {confirmPasswordError && (
-                        <p className="mt-1 text-xs text-red-400 font-trirong">{confirmPasswordError}</p>
+                        <p className="mt-1 text-xs text-red-400 font-prompt">{confirmPasswordError}</p>
                       )}
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         เพศ <span className="text-red-300">*</span>
                       </span>
                       <select
-                        className="mt-1 w-full rounded-xs border font-trirong border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
+                        className="mt-1 w-full rounded-xs border font-prompt border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
                         value={gender}
                         onChange={(e) => setGender(e.target.value)}
                       >
@@ -487,33 +487,33 @@ export function RegisterModal({
                       </select>
                     </label>
                     <label className="block sm:col-span-1">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         ระดับชั้น
                       </span>
                       <input
-                        className="mt-1 w-full rounded-xs border font-trirong border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
+                        className="mt-1 w-full rounded-xs border font-prompt border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
                         value={educationLevel}
                         onChange={(e) => setEducationLevel(e.target.value)}
                         placeholder="เช่น ม.4, ปี 1"
                       />
                     </label>
                     <label className="block sm:col-span-2">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         สถาบันการศึกษา
                       </span>
                       <input
-                        className="mt-1 w-full rounded-xs border font-trirong border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
+                        className="mt-1 w-full rounded-xs border font-prompt border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
                         value={institution}
                         onChange={(e) => setInstitution(e.target.value)}
                         placeholder="เช่น ชื่อโรงเรียน หรือ มหาวิทยาลัย"
                       />
                     </label>
                     <label className="block sm:col-span-2">
-                      <span className="text-sm font-medium text-zinc-400 font-trirong">
+                      <span className="text-sm font-medium text-zinc-400 font-prompt">
                         ที่อยู่
                       </span>
                       <textarea
-                        className="mt-1 min-h-[80px] w-full rounded-xs border border-zinc-700 focus:border-gold/60 font-trirong  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
+                        className="mt-1 min-h-[80px] w-full rounded-xs border border-zinc-700 focus:border-gold/60 font-prompt  bg-zinc-900 px-3 py-2 text-foreground outline-none ring-red-800/30 focus:ring-2"
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
                         placeholder="รายละเอียดที่อยู่"
@@ -526,7 +526,7 @@ export function RegisterModal({
 
               {currentStep.id === "payment" ? (
                 <div className="space-y-4">
-                  <p className="text-sm font-medium font-trirong text-foreground">
+                  <p className="text-sm font-medium font-prompt text-foreground">
                     ชำระเงินผ่าน PromptPay <span className="text-gold">(฿{activity.price})</span>
                   </p>
                   <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-xl bg-white ring-1 ring-stone-200 overflow-hidden">
@@ -544,7 +544,7 @@ export function RegisterModal({
                     {process.env.NEXT_PUBLIC_PROMPTPAY_NAME || "somename"}
                   </p>
                   <div>
-                    <span className="text-sm font-semibold font-trirong text-zinc-300">
+                    <span className="text-sm font-semibold font-prompt text-zinc-300">
                       อัปโหลดสลิปการโอน <span className="text-red-300">*</span>
                     </span>
                     <label className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-xs border border-dashed border-stone-500 bg-zinc-900 px-4 py-8 text-center text-sm text-stone-500 transition hover:border-red-400 hover:bg-red-900/30">
@@ -580,13 +580,13 @@ export function RegisterModal({
                         }}
                       />
                       {slip ? (
-                        <span className="font-medium font-trirong text-stone-800">
+                        <span className="font-medium font-prompt text-stone-800">
                           {slip.name}
                         </span>
                       ) : (
                         <>
-                          <span className="font-trirong" >คลิกหรือลากไฟล์สลิปมาวาง</span>
-                          <span className="mt-1 text-xs font-trirong">
+                          <span className="font-prompt" >คลิกหรือลากไฟล์สลิปมาวาง</span>
+                          <span className="mt-1 text-xs font-prompt">
                             PNG, JPG — ไม่เกิน 5MB
                           </span>
                         </>
@@ -608,7 +608,7 @@ export function RegisterModal({
                   ) : (
                     activity.extra_questions.map((q) => (
                       <div key={q.question_id} className="block">
-                        <span className="text-sm font-medium font-trirong text-foreground">
+                        <span className="text-sm font-medium font-prompt text-foreground">
                           {q.question_text}
                           {q.is_required && <span className="text-red-300 ml-1">*</span>}
                         </span>
@@ -624,13 +624,13 @@ export function RegisterModal({
                                   onChange={(e) => setAnswer(q.question_id, e.target.value)}
                                   className="h-4 w-4 border-stone-300 text-red-800 focus:ring-red-800/30"
                                 />
-                                <span className="text-sm font-trirong text-zinc-300 group-hover:text-zinc-400">{opt}</span>
+                                <span className="text-sm font-prompt text-zinc-300 group-hover:text-zinc-400">{opt}</span>
                               </label>
                             ))}
                           </div>
                         ) : (
                           <textarea
-                            className="mt-2 min-h-[100px] w-full font-trirong rounded-xs border border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-sm text-foreground outline-none ring-red-800/30 focus:ring-2"
+                            className="mt-2 min-h-[100px] w-full font-prompt rounded-xs border border-zinc-700 focus:border-gold/60  bg-zinc-900 px-3 py-2 text-sm text-foreground outline-none ring-red-800/30 focus:ring-2"
                             placeholder={q.placeholder ?? "กรอกคำตอบ..."}
                             value={extraAnswers[q.question_id] ?? ""}
                             onChange={(e) => setAnswer(q.question_id, e.target.value)}
