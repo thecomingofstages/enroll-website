@@ -116,12 +116,15 @@ class ActivityHelper {
       throw err;
     }
 
-    // Join ข้อมูล Speaker ที่เกี่ยวข้อง
+    // Join ข้อมูล Speaker ที่เกี่ยวข้อง - already use from activity schema
+    /*
     const speakers = await SpeakerModel.find({
       activity_id: activityId,
     }).lean();
-
+    
     activity.speakers = speakers;
+    */
+    
     activity.is_registration_open = computeIsOpen(activity);
 
     return activity;
