@@ -127,7 +127,8 @@ export default function ActivityCard({
         <div className="relative aspect-[16/9] overflow-hidden bg-zinc-800">
           {/*<div className="absolute inset-0 bg-gradient-to-br from-zinc-700/40 via-zinc-800 to-zinc-900" />*/}
           <img src={activity.hero_image_url} className="h-full w-full object-cover" />
-          <div className="absolute right-2 top-2 rounded-md border border-black bg-[#131311] px-3 py-0.5 text-xl font-semibold text-[#d8b85a] shadow-sm">
+          <div className={`absolute right-2 top-2 rounded-md border border-black bg-[#131311] px-3 py-0.5 text-xl font-semibold text-[#d8b85a] shadow-sm
+            ${activity.price === -1 ? "hidden" : ""}`}>
             {activity.price === 0 ? "FREE" : `฿${activity.price}`}
           </div>
         </div>
