@@ -67,8 +67,8 @@ function MainContent() {
       <Header />
       {showHome && activities.length > 0 && (
         <ActivityCard
-          key={(activities[0] as any)._id}
-          activity={(activities[0] as any)}
+          key={(activities.slice().reverse()[0] as any)._id}
+          activity={(activities.slice().reverse()[0] as any)}
           variant="recommended"
           onRegister={handleRegister}
         />
@@ -93,7 +93,7 @@ function MainContent() {
               </div>
             ) : (
               <div className="mt-4 mb-15 gap-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {activities.map((activity) => (
+                {activities.slice().reverse().map((activity) => (
                   <ActivityCard
                     key={`all-${activity._id}`}
                     activity={activity}
