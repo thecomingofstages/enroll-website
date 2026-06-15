@@ -237,7 +237,7 @@ export function RegisterModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="flex h-92vh w-full max-w-lg flex-col overflow-hidden rounded-md bg-zinc-950 shadow-2xl backdrop-blur-sm border border-zinc-800"
+        className="flex h-[92vh] max-h-screen w-full max-w-lg flex-col overflow-hidden rounded-md bg-zinc-950 shadow-2xl backdrop-blur-sm border border-zinc-800"
       >
         <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3 sm:px-5">
           <h2 id={titleId} className="text-2xl font-sans font-bold text-foreground">
