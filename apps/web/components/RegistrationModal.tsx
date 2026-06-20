@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAppState } from "../lib/context";
-import { Activity } from "../lib/mockData";
+import type { Activity } from "@enroll-website/types";
 import { postActivityRegistration } from "../lib/activity-api";
 
 export default function RegistrationModal() {
@@ -131,7 +131,7 @@ export default function RegistrationModal() {
     setIsRegistering(true);
     try {
       const payload: any = {
-        activity_id: activity.id,
+        activity_id: activity._id,
         answers,
       };
 
@@ -146,7 +146,7 @@ export default function RegistrationModal() {
       }
 
       const res = await postActivityRegistration(
-        activity.id,
+        activity._id,
         payload,
         isPaid ? slipFile : null
       );
@@ -508,7 +508,7 @@ export default function RegistrationModal() {
               </div>
 
               <div>
-                <h4 className="text-lg font-playfair font-black text-primary-yellow tracking-widest uppercase">
+                <h4 className="text-lg font-sans font-black text-primary-yellow tracking-widest uppercase">
                   ลงทะเบียนสำเร็จ!
                 </h4>
                 <p className="text-xs text-zinc-400 mt-1">

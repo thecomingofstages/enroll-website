@@ -400,7 +400,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     answers: Record<string, string>,
     paymentDetails?: { slipFile: File | null; slipCode: string }
   ): Promise<UserRegistration> => {
-    const targetActivity = activities.find(a => a.id === activityId);
+    const targetActivity = activities.find(a => a._id === activityId);
     if (!targetActivity) throw new Error("Activity not found");
     
     const regId = generateUUIDv7();
@@ -418,8 +418,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setActivities(prev =>
       prev.map(act =>
-        act.id === activityId
-          ? { ...act, registeredCount: Math.min(act.capacity, act.registeredCount + 1) }
+        act._id === activityId
+          ? { ...act, registeredCount: Math.min(act.seat_capacity, act.enrolled_count + 1) }
           : act
       )
     );
@@ -468,7 +468,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     const headers = ["Registration ID (UUID v7)", "User Name", "User Email", "User Phone", "Activity Name", "Amount Paid", "Date Enrolled", "Ticket Code", "Checked In", "Status"];
     const rows = registrations.map(reg => {
-      const act = activities.find(a => a.id === reg.activityId);
+      const act = activities.find(a => a._id === reg.activityId);
       const userName = user?.name || "Guest";
       const userEmail = user?.email || "N/A";
       const userPhone = user?.phone || "N/A";

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { useAppState, type TCOSAccount } from "../lib/context";
 
-const LOGO_SRC = "/logo-the-coming-of-stages.png";
 const FALLBACK_QR_TTL_SECONDS = 5 * 60;
 
 interface QrTokenPayload {
@@ -18,19 +17,26 @@ function apiBase() {
   return base && base.length > 0 ? base : null;
 }
 
-function readAccessToken(user: unknown) {
-  const userToken =
-    user && typeof user === "object"
-      ? (user as { accessToken?: string; token?: string }).accessToken ??
-        (user as { accessToken?: string; token?: string }).token
-      : null;
-
-  return (
-    userToken ||
-    localStorage.getItem("tcos_access_token") ||
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("token")
-  );
+/**
+ * Single source of truth for reading the bearer token —
+ * mirrors getAuthToken() in user-api.ts exactly so all three
+ * modals (Account, QR, Register) use the same resolution order:
+ *   1. Cookie  "access_token"
+ *   2. localStorage "tcos_access_token"
+ *   3. localStorage "access_token"
+ */
+function getAuthToken(): string | null {
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/(?:^|; )access_token=([^;]*)/);
+    if (match?.[1]) return decodeURIComponent(match[1]);
+  }
+  if (typeof localStorage !== "undefined") {
+    return (
+      localStorage.getItem("tcos_access_token") ||
+      localStorage.getItem("access_token")
+    );
+  }
+  return null;
 }
 
 function normalizeQrPayload(payload: unknown): QrTokenPayload | null {
@@ -54,7 +60,7 @@ function normalizeQrPayload(payload: unknown): QrTokenPayload | null {
   };
 }
 
-function getExpiryTime(payload: QrTokenPayload) {
+function getExpiryTime(payload: QrTokenPayload): number {
   const rawExpiry = payload.expires_at ?? payload.expires_date;
   const parsedExpiry = rawExpiry ? new Date(rawExpiry).getTime() : Number.NaN;
   if (Number.isFinite(parsedExpiry)) return parsedExpiry;
@@ -63,13 +69,13 @@ function getExpiryTime(payload: QrTokenPayload) {
   return Date.now() + ttl * 1000;
 }
 
-async function fetchMemberQrToken(user: unknown): Promise<QrTokenPayload> {
+async function fetchMemberQrToken(): Promise<QrTokenPayload> {
   const base = apiBase();
 
   if (base) {
-    const accessToken = readAccessToken(user);
+    const token = getAuthToken();
     const response = await fetch(`${base}/users/me/qr`, {
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
     const payload = await response.json().catch(() => null);
     const data = normalizeQrPayload(payload);
@@ -85,9 +91,12 @@ async function fetchMemberQrToken(user: unknown): Promise<QrTokenPayload> {
     return data;
   }
 
+  // Dev fallback — no API configured
   return {
     qr_token: `mock.${Date.now()}`,
-    expires_at: new Date(Date.now() + FALLBACK_QR_TTL_SECONDS * 1000).toISOString(),
+    expires_at: new Date(
+      Date.now() + FALLBACK_QR_TTL_SECONDS * 1000
+    ).toISOString(),
     expires_in: FALLBACK_QR_TTL_SECONDS,
   };
 }
@@ -105,19 +114,18 @@ function getAttendeeDisplay(user: TCOSAccount) {
   return {
     firstName: user.firstName?.trim() || fromName.firstName,
     lastName: user.lastName?.trim() || fromName.lastName,
-    nickname: user.nickname?.trim() || "-",
+    nickname: user.nickname?.trim(),
   };
 }
 
 export default function QRCheckinModal() {
-  const { activeModal, user, closeModals } = useAppState();
+  const { activeModal, user } = useAppState();
   const [timeLeft, setTimeLeft] = useState(FALLBACK_QR_TTL_SECONDS);
   const [qrToken, setQrToken] = useState("");
   const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
-  const [brightnessMode, setBrightnessMode] = useState(false);
 
   useEffect(() => {
     if (activeModal !== "checkin" || !user) return;
@@ -129,7 +137,8 @@ export default function QRCheckinModal() {
       setQrError(null);
 
       try {
-        const payload = await fetchMemberQrToken(user);
+        // No longer passes `user` — uses getAuthToken() like user-api.ts does
+        const payload = await fetchMemberQrToken();
         if (cancelled) return;
 
         const expiresAt = getExpiryTime(payload);
@@ -138,20 +147,18 @@ export default function QRCheckinModal() {
         setTimeLeft(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)));
       } catch (error) {
         if (cancelled) return;
-
         setQrToken("");
         setQrExpiresAt(null);
         setTimeLeft(0);
-        setQrError(error instanceof Error ? error.message : "Cannot load QR Code");
+        setQrError(
+          error instanceof Error ? error.message : "Cannot load QR Code"
+        );
       } finally {
-        if (!cancelled) {
-          setQrLoading(false);
-        }
+        if (!cancelled) setQrLoading(false);
       }
     };
 
     void loadQrToken();
-
     return () => {
       cancelled = true;
     };
@@ -167,247 +174,125 @@ export default function QRCheckinModal() {
     return () => window.clearInterval(timer);
   }, [activeModal, qrExpiresAt]);
 
-  useEffect(() => {
-    if (activeModal !== "checkin") {
-      setBrightnessMode(false);
-    }
-  }, [activeModal]);
-
   if (activeModal !== "checkin") return null;
 
   const attendee = user ? getAttendeeDisplay(user) : null;
   const isExpired = timeLeft === 0;
 
-  const refreshQrCode = () => {
-    setRefreshNonce((current) => current + 1);
-  };
-
   const minutesLeft = Math.floor(timeLeft / 60);
   const secondsLeft = String(timeLeft % 60).padStart(2, "0");
 
-  const actionButtonClass = brightnessMode
-    ? "rounded-lg border border-black/20 bg-transparent px-3 py-2 text-xs font-bold text-black transition-all hover:text-[#9a7b2e] active:scale-[0.98]"
-    : "rounded-lg border border-white/25 bg-transparent px-3 py-2 text-xs font-bold text-white transition-all hover:text-[#d8b85a] active:scale-[0.98]";
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-sm">
-      <div
-        className={`relative w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl border shadow-2xl transition-colors ${
-          brightnessMode
-            ? "border-zinc-300 bg-white text-black"
-            : "border-muted-charcoal bg-base-black text-white"
-        }`}
-      >
-        <button 
-          onClick={closeModals} 
-          className={`absolute right-4 top-4 z-10 rounded-full p-2 transition-colors ${
-            brightnessMode ? "text-zinc-400 hover:bg-black/10 hover:text-black" : "text-zinc-400 hover:bg-white/10 hover:text-white"
-          }`}
-        >
-          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+    <div className="w-full h-full py-8 px-4 sm:px-6 lg:px-8 relative z-1 bg-black">
+      {/* Glow */}
+      <div className="pointer-events-none fixed inset-0 flex items-center justify-center overflow-hidden">
         <div
-          className={`flex items-center justify-between border-b px-4 py-3 pr-14 ${
-            brightnessMode ? "border-zinc-200" : "border-muted-charcoal/50"
-          }`}
-        >
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-primary-yellow">
-              My ID
-            </p>
-            <h3 className="font-playfair text-lg font-black">TCOS Member QR</h3>
-          </div>
-        </div>
+          style={{
+            width: "700px",
+            height: "700px",
+            borderRadius: "100%",
+            background:
+              "radial-gradient(circle, rgba(216,184,90,1) 0%, rgba(216,184,90,0.45) 40%, transparent 100%)",
+            filter: "blur(80px)",
+          }}
+        />
+      </div>
 
-        <div className="space-y-4 p-5">
+      {/* Ticket Card */}
+      <div className="w-full max-w-[26rem] mx-auto">
+        <div className="relative rounded-xs border border-gold/30 bg-background text-foreground shadow-2xl overflow-hidden">
           {!user ? (
-            <div className="rounded-xl border border-muted-charcoal bg-dark-grey p-6 text-center">
-              <p className="font-bold text-primary-yellow">กรุณาเข้าสู่ระบบ</p>
-              <p className="mt-2 text-xs text-zinc-400">
+            <div className="p-8 sm:p-12 text-center">
+              <p className="text-lg font-bold text-gold">กรุณาเข้าสู่ระบบ</p>
+              <p className="mt-3 text-sm text-zinc-400">
                 เข้าสู่ระบบก่อนเพื่อดู QR Code ประจำตัวของคุณ
               </p>
             </div>
           ) : (
-            <>
-              <div
-                className={`rounded-2xl border p-4 shadow-xl ${
-                  brightnessMode
-                    ? "border-zinc-300 bg-white"
-                    : "border-primary-yellow/30 bg-dark-grey"
-                }`}
-              >
-                <div
-                  className={`mb-4 flex items-center justify-between gap-3 border-b pb-3 ${
-                    brightnessMode ? "border-zinc-200" : "border-muted-charcoal"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={LOGO_SRC}
-                      alt="The Coming of Stages"
-                      width={58}
-                      height={44}
-                      className="h-10 w-auto object-contain"
-                    />
-                    <div>
-                      <p
-                        className={`font-playfair text-sm font-black ${
-                          brightnessMode ? "text-black" : "text-white"
-                        }`}
-                      >
-                        The Coming of Stages
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <p
-                        className={`text-[9px] font-bold uppercase tracking-widest ${
-                          brightnessMode ? "text-zinc-600" : "text-zinc-500"
-                        }`}
-                      >
-                        ชื่อ
-                      </p>
-                      <p
-                        className={`font-bold ${brightnessMode ? "text-black" : "text-white"}`}
-                      >
-                        {attendee?.firstName}
-                      </p>
-                    </div>
-                    <div>
-                      <p
-                        className={`text-[9px] font-bold uppercase tracking-widest ${
-                          brightnessMode ? "text-zinc-600" : "text-zinc-500"
-                        }`}
-                      >
-                        นามสกุล
-                      </p>
-                      <p
-                        className={`font-bold ${brightnessMode ? "text-black" : "text-white"}`}
-                      >
-                        {attendee?.lastName}
-                      </p>
-                    </div>
-                    <div>
-                      <p
-                        className={`text-[9px] font-bold uppercase tracking-widest ${
-                          brightnessMode ? "text-zinc-600" : "text-zinc-500"
-                        }`}
-                      >
-                        ชื่อเล่น
-                      </p>
-                      <p className="font-bold text-primary-yellow">{attendee?.nickname}</p>
-                    </div>
-                    <div>
-                      <p
-                        className={`text-[9px] font-bold uppercase tracking-widest ${
-                          brightnessMode ? "text-zinc-600" : "text-zinc-500"
-                        }`}
-                      >
-                        เบอร์ติดต่อ
-                      </p>
-                      <p
-                        className={`font-bold ${brightnessMode ? "text-black" : "text-white"}`}
-                      >
-                        {user.phone}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p
-                      className={`text-[9px] font-bold uppercase tracking-widest ${
-                        brightnessMode ? "text-zinc-600" : "text-zinc-500"
+            <div className="flex flex-col items-center gap-8 p-6 sm:p-8">
+              {/* QR Code */}
+              <div className="w-full">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="rounded-xl bg-background p-3">
+                    <button
+                      onClick={() => setRefreshNonce((n) => n + 1)}
+                      disabled={qrLoading}
+                      className={`w-full mt-1 text-center text-[16px] font-semibold mb-7 hover:cursor-pointer hover:opacity-60 transition-opacity ${
+                        isExpired || qrError ? "text-red-300" : "text-gold"
                       }`}
                     >
-                      อีเมล
-                    </p>
-                    <h4 className="font-playfair text-sm font-black leading-tight text-primary-yellow">
-                      {user.email}
-                    </h4>
-                  </div>
+                      {isExpired ? "Expired" : `${minutesLeft}:${secondsLeft}`}
+                      <span> {" • "} Refresh QR Code</span>
+                    </button>
 
-                  <div
-                    className={`flex flex-col items-center rounded-xl border p-4 ${
-                      brightnessMode
-                        ? "border-zinc-300 bg-white"
-                        : "border-muted-charcoal bg-base-black"
-                    }`}
-                  >
-                    <div className="rounded-xl bg-white p-2">
+                    <div className="rounded-xs bg-card border border-gold/30 p-2">
                       {qrLoading || (!qrToken && !qrError) ? (
-                        <div className="flex h-44 w-44 items-center justify-center rounded-lg bg-zinc-100 p-5 text-center">
-                          <span className="text-sm font-black text-base-black">
-                            Loading QR Code...
+                        <div className="flex h-60 w-60 items-center justify-center rounded-lg bg-card p-4 text-center">
+                          <span className="text-xs font-black text-background">
+                            Loading...
                           </span>
                         </div>
                       ) : qrError ? (
-                        <div className="flex h-44 w-44 items-center justify-center rounded-lg border border-red-300 bg-zinc-100 p-5 text-center">
-                          <span className="text-xs font-black text-red-700">
+                        <div className="flex h-60 w-60 items-center justify-center rounded-lg border bg-card p-4 text-center">
+                          <span className="text-[14px] font-black text-red-300">
                             {qrError}
                           </span>
                         </div>
                       ) : isExpired ? (
-                        <div className="flex h-44 w-44 items-center justify-center rounded-lg border border-muted-charcoal bg-zinc-100 p-5 text-center">
-                          <span className="text-sm font-black text-base-black">
-                            QR Code หมดอายุแล้ว
+                        <div className="flex h-60 w-60 items-center justify-center rounded-lg border p-4 text-center">
+                          <span className="text-xs font-black text-zinc-400">
+                            Expired — tap to refresh
                           </span>
                         </div>
                       ) : (
-                        <div className="flex h-44 w-44 items-center justify-center overflow-hidden rounded-lg bg-white">
+                        <div className="flex h-60 w-60 items-center justify-center overflow-hidden rounded-lg">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=176x176&data=${encodeURIComponent(qrToken)}`}
-                            alt="Member check-in QR Code"
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrToken)}&color=113-113-113&bgcolor=1a1a1a`}
                             className="h-full w-full object-contain"
                           />
                         </div>
                       )}
                     </div>
-                    <p
-                      className={`mt-3 font-mono text-[11px] font-bold ${
-                        brightnessMode ? "text-zinc-700" : "text-zinc-300"
-                      }`}
-                    >
-                      {qrToken || user.id}
-                    </p>
-                    <p
-                      className={`mt-1 text-[10px] font-semibold ${
-                        isExpired || qrError ? "text-red-400" : "text-primary-yellow"
-                      }`}
-                    >
-                      {isExpired
-                        ? "QR Code หมดอายุแล้ว กรุณากด Refresh QR Code"
-                        : `หมดอายุใน ${minutesLeft}:${secondsLeft} นาที`}
-                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setBrightnessMode((current) => !current)}
-                  className={actionButtonClass}
-                >
-                  {brightnessMode ? "Normal Mode" : "Maximize Brightness"}
-                </button>
-                <button
-                  type="button"
-                  onClick={refreshQrCode}
-                  disabled={qrLoading}
-                  className={actionButtonClass}
-                >
-                  Refresh QR Code
-                </button>
+              {/* Member Info */}
+              <div className="w-full">
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-gold font-prompt text-3xl font-black mt-1 text-center">
+                      {attendee?.firstName} {attendee?.lastName}
+                    </p>
+                    <p className="text-white font-sans text-[16px] text-sm mt-3 text-center">
+                      TCOS Participant
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 mt-5 border-t border-gold/30">
+                    <div className="mt-5 text-left space-y-4">
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                          Phone
+                        </p>
+                        <p className="text-m font-semibold text-foreground mt-1">
+                          {user.phone ?? "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">
+                          Email
+                        </p>
+                        <p className="text-m font-semibold text-foreground mt-1">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>

@@ -4,8 +4,8 @@ const AuthHelper        = require('./Auth.helper');
 const JWTUtil           = require('../utils/JWT.util');
 
 const VALID_TRANSITIONS = {
-  PENDING:   ['PAID', 'CANCELLED'],
-  PAID:      ['JOINED', 'CANCELLED'],
+  PENDING:   ['PENDING', 'PAID', 'CANCELLED'],
+  PAID:      ['PAID', 'JOINED', 'CANCELLED'],
   JOINED:    [],
   CANCELLED: ['PENDING'],
 };

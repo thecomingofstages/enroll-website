@@ -24,19 +24,19 @@
     "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
-    "uuid": "^14.0.0"
+    "uuid": "^10.0.0"
   },
   "dependencies": {
+    "uuid": "^10.0.0",
     "@aws-sdk/client-s3": "^3.1048.0",
     "@aws-sdk/s3-request-presigner": "^3.1048.0",
-    "@enroll-website/types": "*",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",
     "express": "^4.18.2",
-    "jimp": "^0.22.12",
+    "jimp": "^1.6.1",
     "js-yaml": "^4.1.1",
     "jsonwebtoken": "^9.0.3",
     "jsqr": "^1.4.0",

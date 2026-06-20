@@ -893,8 +893,8 @@ paths:
 
         | From | To |
         |------|----|
-        | PENDING | PAID, CANCELLED |
-        | PAID | JOINED, CANCELLED |
+        | PENDING | PENDING, PAID, CANCELLED |
+        | PAID | PAID, JOINED, CANCELLED |
         | JOINED | (terminal — no transitions) |
         | CANCELLED | PENDING (undo a mistake) |
 

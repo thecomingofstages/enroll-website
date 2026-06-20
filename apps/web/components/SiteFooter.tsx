@@ -10,7 +10,7 @@ const footerLinks = [
 
 export default function SiteFooter() {
   return (
-    <footer className="mt-auto w-full border-t border-muted-charcoal/40 bg-base-black px-6 pb-32 pt-8 text-center text-zinc-100 md:pb-8">
+    <footer className="z-10 mt-auto w-full border-t-[0.5px] border-gray-900 bg-black px-6 pb-32 pt-8 text-center text-zinc-100 md:pb-8">
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-6">
         <div className="flex justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -26,9 +26,11 @@ export default function SiteFooter() {
 
 
 
-        <p className="text-[10px] leading-relaxed text-zinc-500 sm:text-xs">
-          © 2026 The Coming of Stages. Youth Power of Thai Theatre
+        <p className="text-[14px] leading-relaxed text-zinc-500 sm:text-xs">
+          © {new Date().getFullYear()} The Coming of Stages • Youth Power of Thai Theatre
         </p>
+
+        <a href="https://forms.gle/SpMdF8Nc9VptYxrV9" className="text-[14px] leading-relaxed text-zinc-500 sm:text-xs"><u>Report Issue</u></a>
       </div>
     </footer>
   );
