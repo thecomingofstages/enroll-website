@@ -6,14 +6,14 @@ import type { Activity } from "@enroll-website/types";
 import { postActivityRegistration } from "../lib/activity-api";
 
 export default function RegistrationModal() {
-  const { 
-    activeModal, 
-    closeModals, 
-    registerTargetActivity, 
-    user, 
-    login,
-    registerToEvent, 
-    simulateSlipVerification 
+  const {
+    activeModal,
+    closeModals,
+    registerTargetActivity,
+    user,
+    setAuthFromRegistration,
+    registerToEvent,
+    simulateSlipVerification
   } = useAppState();
 
   const [step, setStep] = useState<"account" | "payment" | "questions" | "success">("account");
@@ -152,11 +152,20 @@ export default function RegistrationModal() {
       );
 
       if (res.ok) {
-        // If it's a guest registration, we should also log them in locally after success.
-        if (!user) {
-          await login(email, password);
+        // If it's a guest registration, the backend has just minted an
+        // access_token for the new user. Persist it and update the user
+        // state in one go — no second /auth/login round-trip.
+        if (!user && res.access_token) {
+          setAuthFromRegistration({
+            token: res.access_token,
+            user: {
+              name,
+              email,
+              phone,
+            },
+          });
         }
-        
+
         setTicketDetails({ ticketCode: res.registration_id });
         setStep("success");
       } else {

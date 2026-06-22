@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Activity, INITIAL_ACTIVITIES } from "./mockData";
 import { fetchMyRegistrations } from "./activity-api";
+import { hasAuthToken, persistAuthToken } from "./auth";
 
 export interface TCOSAccount {
   id: string; // UUID v7 simulation
@@ -58,6 +59,10 @@ interface AppContextType {
   closeModals: () => void;
   login: (email: string, password: string) => Promise<void>;
   loginWithToken: (user: TCOSAccount, token: string) => void;
+  setAuthFromRegistration: (params: {
+    token: string;
+    user?: Partial<TCOSAccount> & { id?: string };
+  }) => void;
   signup: (profile: SignupProfile) => Promise<void>;
   updateProfile: (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => void;
   logout: () => void;
@@ -154,19 +159,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [usedSlips, setUsedSlips] = useState<string[]>(["TRX998822110099"]);
 
   // Load session or defaults on mount (client-side only)
+  //
+  // Token-gated rehydrate: only restore `user` state if we can actually
+  // authenticate requests against the API. If `tcos_user` is in localStorage
+  // but no token is anywhere (cookie or localStorage), treat the user as
+  // logged out and clear the stale blob. This keeps the Header's "logged in"
+  // indicator in sync with what QRCheckinModal / AccountProfile can do.
   useEffect(() => {
     const savedUser = localStorage.getItem("tcos_user");
     const savedRegs = localStorage.getItem("tcos_registrations");
-    
-    if (savedUser && savedUser !== "null") {
+
+    if (hasAuthToken() && savedUser && savedUser !== "null") {
       try {
         const parsedUser = JSON.parse(savedUser) as TCOSAccount;
         setUser(parsedUser.id === MOCK_PIM_ACCOUNT.id ? null : parsedUser);
       } catch {
         setUser(null);
+        localStorage.removeItem("tcos_user");
       }
     } else {
+      // No token, or stale user blob without a token — fully logged out.
       setUser(null);
+      if (savedUser && savedUser !== "null") {
+        localStorage.removeItem("tcos_user");
+      }
+      if (!hasAuthToken()) {
+        persistAuthToken(null);
+      }
     }
 
     if (savedRegs && savedRegs !== "[]") {
@@ -178,15 +197,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setRegistrations(hasMockRegistration ? [] : parsedRegs);
       } catch {
         setRegistrations([]);
-        setRegistrations([]);
       }
     } else {
       setRegistrations([]);
     }
-    
+
     // Fetch real registrations from API if logged in
-    const token = localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
-    if (token) {
+    if (hasAuthToken()) {
       fetchMyRegistrations().then(data => {
         if (data && data.length > 0) {
           const mapped = data.map((d: any) => ({
@@ -208,8 +225,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshRegistrations = async () => {
-    const token = localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
-    if (!token) return;
+    if (!hasAuthToken()) return;
     const data = await fetchMyRegistrations();
     if (data && data.length > 0) {
       const mapped = data.map((d: any) => ({
@@ -287,8 +303,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setUser(newAccount);
     localStorage.setItem("tcos_user", JSON.stringify(newAccount));
-    localStorage.setItem("tcos_access_token", access_token);
-    
+    persistAuthToken(access_token);
+
     fetchMyRegistrations().then(data => {
       if (data && data.length > 0) {
         const mapped = data.map((d: any) => ({
@@ -313,7 +329,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const loginWithToken = (newUser: TCOSAccount, token: string) => {
     setUser(newUser);
     localStorage.setItem("tcos_user", JSON.stringify(newUser));
-    localStorage.setItem("tcos_access_token", token);
+    persistAuthToken(token);
 
     fetchMyRegistrations().then(data => {
       if (data && data.length > 0) {
@@ -332,6 +348,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
       }
     });
+  };
+
+  /**
+   * Used after a guest completes registration and the backend returns an
+   * access_token for the newly-created user. Decodes the JWT subject as the
+   * user id and merges any user fields the registration response provided.
+   *
+   * The backend's Registration.helper.create returns `access_token` only when
+   * `new_user` was sent. The auth API call from this helper is the moment the
+   * user becomes "logged in" — same persistence rules as loginWithToken.
+   */
+  const setAuthFromRegistration = (params: {
+    token: string;
+    user?: Partial<TCOSAccount> & { id?: string };
+  }) => {
+    let userId = params.user?.id ?? "user-pending";
+    try {
+      // Decode JWT payload (no signature verification on the client).
+      const payload = JSON.parse(atob(params.token.split(".")[1]));
+      if (payload?.sub) userId = String(payload.sub);
+    } catch {
+      /* keep fallback */
+    }
+
+    const account: TCOSAccount = {
+      id: userId,
+      name: params.user?.name ?? "TCOS Member",
+      email: params.user?.email ?? "",
+      phone: params.user?.phone ?? "-",
+      preferences: params.user?.preferences ?? [],
+      avatarUrl: params.user?.avatarUrl,
+      firstName: params.user?.firstName,
+      lastName: params.user?.lastName,
+      nickname: params.user?.nickname,
+    };
+
+    loginWithToken(account, params.token);
   };
 
   const signup = async (profile: SignupProfile) => {
@@ -379,9 +432,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Remove to simulate fresh guest view
     localStorage.setItem("tcos_user", "null");
     localStorage.setItem("tcos_registrations", "[]");
-    localStorage.removeItem("tcos_access_token");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("token");
+    persistAuthToken(null);
     closeModals();
   };
 
@@ -518,6 +569,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         closeModals,
         login,
         loginWithToken,
+        setAuthFromRegistration,
         signup,
         updateProfile,
         logout,
