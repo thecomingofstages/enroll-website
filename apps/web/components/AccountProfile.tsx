@@ -5,9 +5,11 @@ import {
   fetchUserProfile,
   updateUserProfile,
   fetchUserActivities,
+  setAuthErrorHandler,
 } from "@/lib/user-api";
 import type { UserProfile, ActivityRegistration } from "@/lib/user-api";
 import { hasAuthToken } from "@/lib/auth";
+import { useAppState } from "@/lib/context";
 
 // ---------------------------------------------------------------------------
 // Tiny helpers
@@ -175,6 +177,23 @@ export default function AccountProfile({ isOpen }: { isOpen: boolean }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { logout, openLoginModal } = useAppState();
+
+  // Register a stale-token recovery handler for the lifetime of this page.
+  // When fetchUserProfile / fetchUserActivities detect a 401 they call this,
+  // which clears the local session and prompts re-login. Mirrors the same
+  // recovery pattern in RegistrationModal — single point of recovery for
+  // any authed API call, so the symptom of "header says logged in but modals
+  // can't see the token" never persists across reloads.
+  useEffect(() => {
+    setAuthErrorHandler(() => {
+      alert("เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง");
+      logout();
+      openLoginModal();
+    });
+    return () => setAuthErrorHandler(null);
+  }, [logout, openLoginModal]);
 
   // Form state — mirrors UserProfile fields
   const [firstName, setFirstName] = useState("");
