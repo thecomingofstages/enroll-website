@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Activity, INITIAL_ACTIVITIES } from "./mockData";
 import { fetchMyRegistrations } from "./activity-api";
-import { hasAuthToken, persistAuthToken } from "./auth";
+import { hasAuthToken, persistAuthToken, getAuthToken, decodeJwtExp } from "./auth";
 
 export interface TCOSAccount {
   id: string; // UUID v7 simulation
@@ -168,6 +168,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const savedUser = localStorage.getItem("tcos_user");
     const savedRegs = localStorage.getItem("tcos_registrations");
+
+    // Proactive "Session Expired" check.
+    //
+    // Runs BEFORE the rehydrate so we never briefly set `user` to a
+    // logged-in state and then immediately log them out (a visible
+    // flicker). If the stored JWT's `exp` is already past, treat the
+    // session as dead: clear local state synchronously so the first
+    // paint shows the logged-out UI, then queue the alert + login
+    // modal on the next macrotask so they pop AFTER React has
+    // committed the cleared state.
+    //
+    // This mirrors the in-session recovery flow (alert + logout +
+    // openLoginModal) used by AccountProfile / QRCheckinModal /
+    // RegistrationModal when an authed call 401s. The difference is
+    // timing: we fire it on page open, before any authed call would
+    // have a chance to surface the staleness — which matters because
+    // AccountProfile's handler is only registered once the user clicks
+    // into the account modal, and QRCheckinModal's only after they
+    // open the QR modal. Without this check, a user with a stale
+    // token would see the logged-in header until they tried one of
+    // those flows.
+    //
+    // If the token has no `exp` claim (custom opaque-ish token) or
+    // can't be decoded, we fall through to the normal rehydrate and
+    // rely on the in-session handler to catch it later.
+    if (hasAuthToken()) {
+      const exp = decodeJwtExp(getAuthToken());
+      if (exp !== null && exp * 1000 < Date.now()) {
+        // Synchronous cleanup so the first paint shows logged-out.
+        setUser(null);
+        setRegistrations([]);
+        localStorage.removeItem("tcos_user");
+        localStorage.setItem("tcos_registrations", "[]");
+        persistAuthToken(null);
+        // Deferred alert + login modal — after the cleared-state
+        // re-render commits, so the user sees the alert over the
+        // already-logged-out page, not a stale logged-in one.
+        // We don't call logout() here because we just did its work
+        // synchronously (and logout() also calls closeModals(), which
+        // would close the login modal we then open). openLoginModal
+        // alone is enough.
+        setTimeout(() => {
+          alert("เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง");
+          openLoginModal();
+        }, 0);
+        return;
+      }
+    }
 
     if (hasAuthToken() && savedUser && savedUser !== "null") {
       try {

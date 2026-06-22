@@ -73,3 +73,30 @@ export function persistAuthToken(token: string | null): void {
     // crash; the user simply won't stay logged in across reloads.
   }
 }
+
+/**
+ * Decode the `exp` claim from a JWT, returning the Unix timestamp in
+ * seconds, or null if the token is malformed or has no `exp`.
+ *
+ * No signature verification — this is a UX shortcut so the AppProvider
+ * can short-circuit "definitely expired" cases on page load without a
+ * network round-trip. The server is still the authority on whether a
+ * token is valid; this only answers "does the token *claim* to be past
+ * its expiry?"
+ *
+ * If the backend ever moves to opaque (non-JWT) tokens, this will
+ * return null and the proactive check is skipped — the in-session
+ * handler (setAuthErrorHandler) will still catch 401s from real
+ * authed calls.
+ */
+export function decodeJwtExp(token: string | null): number | null {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = JSON.parse(atob(parts[1]));
+    return typeof payload?.exp === "number" ? payload.exp : null;
+  } catch {
+    return null;
+  }
+}
