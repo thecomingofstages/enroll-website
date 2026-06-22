@@ -6,14 +6,16 @@ import type { Activity } from "@enroll-website/types";
 import { postActivityRegistration } from "../lib/activity-api";
 
 export default function RegistrationModal() {
-  const { 
-    activeModal, 
-    closeModals, 
-    registerTargetActivity, 
-    user, 
-    login,
-    registerToEvent, 
-    simulateSlipVerification 
+  const {
+    activeModal,
+    closeModals,
+    registerTargetActivity,
+    user,
+    setAuthFromRegistration,
+    registerToEvent,
+    simulateSlipVerification,
+    logout,
+    openLoginModal,
   } = useAppState();
 
   const [step, setStep] = useState<"account" | "payment" | "questions" | "success">("account");
@@ -136,11 +138,24 @@ export default function RegistrationModal() {
       };
 
       if (!user) {
+        // Split the single "name" field into first_name / last_name as the
+        // backend's Registration.helper.create requires. The form only
+        // collects a single Thai-style full name, so we approximate by
+        // splitting on whitespace. nickname and gender are NOT collected
+        // by this form, so we synthesize sensible defaults that satisfy
+        // the backend's required-fields check.
+        const trimmed = name.trim();
+        const spaceIdx = trimmed.indexOf(" ");
+        const firstName = spaceIdx > 0 ? trimmed.slice(0, spaceIdx) : trimmed;
+        const lastName = spaceIdx > 0 ? trimmed.slice(spaceIdx + 1).trim() : "-";
         payload.new_user = {
-          name,
+          first_name: firstName,
+          last_name: lastName || "-",
+          nickname: firstName,
           email,
           phone,
           password,
+          gender: "Unspecified",
           preferences: [],
         };
       }
@@ -152,15 +167,53 @@ export default function RegistrationModal() {
       );
 
       if (res.ok) {
-        // If it's a guest registration, we should also log them in locally after success.
-        if (!user) {
-          await login(email, password);
+        // If it's a guest registration, the backend has just minted an
+        // access_token for the new user. Persist it and update the user
+        // state in one go — no second /auth/login round-trip.
+        if (!user && res.access_token) {
+          setAuthFromRegistration({
+            token: res.access_token,
+            user: {
+              name,
+              email,
+              phone,
+            },
+          });
         }
-        
+
         setTicketDetails({ ticketCode: res.registration_id });
         setStep("success");
       } else {
-        alert(res.message);
+        // Stale-token auto-recovery. The backend returns "Provide a Bearer
+        // token..." when it sees a request with no valid Authorization
+        // header and no new_user payload. The frontend only skips the
+        // new_user payload when `user` is truthy in context, so this branch
+        // means: frontend thought we were logged in, but the stored token
+        // is invalid (expired, revoked, or never matched a real account).
+        //
+        // This can persist across page reloads in any browser — the
+        // AppProvider rehydrate puts `user` into state from localStorage
+        // whenever a token is present, even if that token would be rejected
+        // by the backend. Without this handler, the user is stuck: every
+        // retry sends the same bad token, every retry gets the same error.
+        //
+        // Fix: clear local session and prompt re-login. The user re-enters
+        // credentials, gets a fresh token, and can retry registration.
+        const msg = (res.message ?? "").toLowerCase();
+        const looksLikeStaleToken =
+          msg.includes("bearer token") ||
+          msg.includes("provide a bearer") ||
+          // The same symptom surfaces on 401 for token-protected endpoints
+          // if the frontend somehow sent the request without a valid token.
+          (user !== null && (msg.includes("unauthorized") || msg.includes("invalid token")));
+
+        if (looksLikeStaleToken && user) {
+          alert("เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้งเพื่อลงทะเบียนต่อ");
+          logout();
+          openLoginModal();
+        } else {
+          alert(res.message);
+        }
       }
     } catch (err) {
       alert("เกิดข้อผิดพลาดในการลงทะเบียนกิจกรรม");

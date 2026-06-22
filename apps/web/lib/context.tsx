@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Activity, INITIAL_ACTIVITIES } from "./mockData";
 import { fetchMyRegistrations } from "./activity-api";
+import { hasAuthToken, persistAuthToken, getAuthToken, decodeJwtExp } from "./auth";
 
 export interface TCOSAccount {
   id: string; // UUID v7 simulation
@@ -58,6 +59,10 @@ interface AppContextType {
   closeModals: () => void;
   login: (email: string, password: string) => Promise<void>;
   loginWithToken: (user: TCOSAccount, token: string) => void;
+  setAuthFromRegistration: (params: {
+    token: string;
+    user?: Partial<TCOSAccount> & { id?: string };
+  }) => void;
   signup: (profile: SignupProfile) => Promise<void>;
   updateProfile: (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => void;
   logout: () => void;
@@ -154,19 +159,81 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [usedSlips, setUsedSlips] = useState<string[]>(["TRX998822110099"]);
 
   // Load session or defaults on mount (client-side only)
+  //
+  // Token-gated rehydrate: only restore `user` state if we can actually
+  // authenticate requests against the API. If `tcos_user` is in localStorage
+  // but no token is anywhere (cookie or localStorage), treat the user as
+  // logged out and clear the stale blob. This keeps the Header's "logged in"
+  // indicator in sync with what QRCheckinModal / AccountProfile can do.
   useEffect(() => {
     const savedUser = localStorage.getItem("tcos_user");
     const savedRegs = localStorage.getItem("tcos_registrations");
-    
-    if (savedUser && savedUser !== "null") {
+
+    // Proactive "Session Expired" check.
+    //
+    // Runs BEFORE the rehydrate so we never briefly set `user` to a
+    // logged-in state and then immediately log them out (a visible
+    // flicker). If the stored JWT's `exp` is already past, treat the
+    // session as dead: clear local state synchronously so the first
+    // paint shows the logged-out UI, then queue the alert + login
+    // modal on the next macrotask so they pop AFTER React has
+    // committed the cleared state.
+    //
+    // This mirrors the in-session recovery flow (alert + logout +
+    // openLoginModal) used by AccountProfile / QRCheckinModal /
+    // RegistrationModal when an authed call 401s. The difference is
+    // timing: we fire it on page open, before any authed call would
+    // have a chance to surface the staleness — which matters because
+    // AccountProfile's handler is only registered once the user clicks
+    // into the account modal, and QRCheckinModal's only after they
+    // open the QR modal. Without this check, a user with a stale
+    // token would see the logged-in header until they tried one of
+    // those flows.
+    //
+    // If the token has no `exp` claim (custom opaque-ish token) or
+    // can't be decoded, we fall through to the normal rehydrate and
+    // rely on the in-session handler to catch it later.
+    if (hasAuthToken()) {
+      const exp = decodeJwtExp(getAuthToken());
+      if (exp !== null && exp * 1000 < Date.now()) {
+        // Synchronous cleanup so the first paint shows logged-out.
+        setUser(null);
+        setRegistrations([]);
+        localStorage.removeItem("tcos_user");
+        localStorage.setItem("tcos_registrations", "[]");
+        persistAuthToken(null);
+        // Deferred alert + login modal — after the cleared-state
+        // re-render commits, so the user sees the alert over the
+        // already-logged-out page, not a stale logged-in one.
+        // We don't call logout() here because we just did its work
+        // synchronously (and logout() also calls closeModals(), which
+        // would close the login modal we then open). openLoginModal
+        // alone is enough.
+        setTimeout(() => {
+          alert("เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง");
+          openLoginModal();
+        }, 0);
+        return;
+      }
+    }
+
+    if (hasAuthToken() && savedUser && savedUser !== "null") {
       try {
         const parsedUser = JSON.parse(savedUser) as TCOSAccount;
         setUser(parsedUser.id === MOCK_PIM_ACCOUNT.id ? null : parsedUser);
       } catch {
         setUser(null);
+        localStorage.removeItem("tcos_user");
       }
     } else {
+      // No token, or stale user blob without a token — fully logged out.
       setUser(null);
+      if (savedUser && savedUser !== "null") {
+        localStorage.removeItem("tcos_user");
+      }
+      if (!hasAuthToken()) {
+        persistAuthToken(null);
+      }
     }
 
     if (savedRegs && savedRegs !== "[]") {
@@ -178,15 +245,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setRegistrations(hasMockRegistration ? [] : parsedRegs);
       } catch {
         setRegistrations([]);
-        setRegistrations([]);
       }
     } else {
       setRegistrations([]);
     }
-    
+
     // Fetch real registrations from API if logged in
-    const token = localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
-    if (token) {
+    if (hasAuthToken()) {
       fetchMyRegistrations().then(data => {
         if (data && data.length > 0) {
           const mapped = data.map((d: any) => ({
@@ -208,8 +273,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshRegistrations = async () => {
-    const token = localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
-    if (!token) return;
+    if (!hasAuthToken()) return;
     const data = await fetchMyRegistrations();
     if (data && data.length > 0) {
       const mapped = data.map((d: any) => ({
@@ -287,8 +351,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setUser(newAccount);
     localStorage.setItem("tcos_user", JSON.stringify(newAccount));
-    localStorage.setItem("tcos_access_token", access_token);
-    
+    persistAuthToken(access_token);
+
     fetchMyRegistrations().then(data => {
       if (data && data.length > 0) {
         const mapped = data.map((d: any) => ({
@@ -313,7 +377,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const loginWithToken = (newUser: TCOSAccount, token: string) => {
     setUser(newUser);
     localStorage.setItem("tcos_user", JSON.stringify(newUser));
-    localStorage.setItem("tcos_access_token", token);
+    persistAuthToken(token);
 
     fetchMyRegistrations().then(data => {
       if (data && data.length > 0) {
@@ -332,6 +396,43 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
       }
     });
+  };
+
+  /**
+   * Used after a guest completes registration and the backend returns an
+   * access_token for the newly-created user. Decodes the JWT subject as the
+   * user id and merges any user fields the registration response provided.
+   *
+   * The backend's Registration.helper.create returns `access_token` only when
+   * `new_user` was sent. The auth API call from this helper is the moment the
+   * user becomes "logged in" — same persistence rules as loginWithToken.
+   */
+  const setAuthFromRegistration = (params: {
+    token: string;
+    user?: Partial<TCOSAccount> & { id?: string };
+  }) => {
+    let userId = params.user?.id ?? "user-pending";
+    try {
+      // Decode JWT payload (no signature verification on the client).
+      const payload = JSON.parse(atob(params.token.split(".")[1]));
+      if (payload?.sub) userId = String(payload.sub);
+    } catch {
+      /* keep fallback */
+    }
+
+    const account: TCOSAccount = {
+      id: userId,
+      name: params.user?.name ?? "TCOS Member",
+      email: params.user?.email ?? "",
+      phone: params.user?.phone ?? "-",
+      preferences: params.user?.preferences ?? [],
+      avatarUrl: params.user?.avatarUrl,
+      firstName: params.user?.firstName,
+      lastName: params.user?.lastName,
+      nickname: params.user?.nickname,
+    };
+
+    loginWithToken(account, params.token);
   };
 
   const signup = async (profile: SignupProfile) => {
@@ -379,9 +480,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     // Remove to simulate fresh guest view
     localStorage.setItem("tcos_user", "null");
     localStorage.setItem("tcos_registrations", "[]");
-    localStorage.removeItem("tcos_access_token");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("token");
+    persistAuthToken(null);
     closeModals();
   };
 
@@ -518,6 +617,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         closeModals,
         login,
         loginWithToken,
+        setAuthFromRegistration,
         signup,
         updateProfile,
         logout,

@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useAppState, type TCOSAccount } from "../lib/context";
+import { getAuthToken, hasAuthToken } from "../lib/auth";
+import { setAuthErrorHandler } from "../lib/user-api";
 
 const FALLBACK_QR_TTL_SECONDS = 5 * 60;
 
@@ -15,28 +17,6 @@ interface QrTokenPayload {
 function apiBase() {
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
   return base && base.length > 0 ? base : null;
-}
-
-/**
- * Single source of truth for reading the bearer token —
- * mirrors getAuthToken() in user-api.ts exactly so all three
- * modals (Account, QR, Register) use the same resolution order:
- *   1. Cookie  "access_token"
- *   2. localStorage "tcos_access_token"
- *   3. localStorage "access_token"
- */
-function getAuthToken(): string | null {
-  if (typeof document !== "undefined") {
-    const match = document.cookie.match(/(?:^|; )access_token=([^;]*)/);
-    if (match?.[1]) return decodeURIComponent(match[1]);
-  }
-  if (typeof localStorage !== "undefined") {
-    return (
-      localStorage.getItem("tcos_access_token") ||
-      localStorage.getItem("access_token")
-    );
-  }
-  return null;
 }
 
 function normalizeQrPayload(payload: unknown): QrTokenPayload | null {
@@ -80,6 +60,13 @@ async function fetchMemberQrToken(): Promise<QrTokenPayload> {
     const payload = await response.json().catch(() => null);
     const data = normalizeQrPayload(payload);
 
+    if (response.status === 401 || response.status === 403) {
+      // Token rejected — let the registered handler trigger recovery.
+      // We still throw so the caller shows the user-visible error state
+      // until recovery completes.
+      throw new Error("Session expired. Please log in again.");
+    }
+
     if (!response.ok || !data) {
       const message =
         payload && typeof payload === "object"
@@ -119,7 +106,7 @@ function getAttendeeDisplay(user: TCOSAccount) {
 }
 
 export default function QRCheckinModal() {
-  const { activeModal, user } = useAppState();
+  const { activeModal, user, logout, openLoginModal } = useAppState();
   const [timeLeft, setTimeLeft] = useState(FALLBACK_QR_TTL_SECONDS);
   const [qrToken, setQrToken] = useState("");
   const [qrExpiresAt, setQrExpiresAt] = useState<number | null>(null);
@@ -127,8 +114,28 @@ export default function QRCheckinModal() {
   const [qrError, setQrError] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
 
+  // Stale-token recovery. fetchMemberQrToken throws on 401; we register a
+  // shared handler in user-api so the same recovery path runs from
+  // AccountProfile, RegistrationModal, and here. Clearing the handler on
+  // unmount keeps the global slot from leaking across modals.
   useEffect(() => {
-    if (activeModal !== "checkin" || !user) return;
+    setAuthErrorHandler(() => {
+      alert("เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง");
+      logout();
+      openLoginModal();
+    });
+    return () => setAuthErrorHandler(null);
+  }, [logout, openLoginModal]);
+
+  useEffect(() => {
+    if (activeModal !== "checkin") return;
+    // Token-gated, not user-gated. On reload the AppProvider rehydrate races
+    // with this effect; checking the token directly means we don't short-
+    // circuit and miss the QR load if `user` hasn't propagated yet.
+    if (!hasAuthToken()) {
+      setQrLoading(false);
+      return;
+    }
 
     let cancelled = false;
 

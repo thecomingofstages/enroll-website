@@ -5,8 +5,11 @@ import {
   fetchUserProfile,
   updateUserProfile,
   fetchUserActivities,
+  setAuthErrorHandler,
 } from "@/lib/user-api";
 import type { UserProfile, ActivityRegistration } from "@/lib/user-api";
+import { hasAuthToken } from "@/lib/auth";
+import { useAppState } from "@/lib/context";
 
 // ---------------------------------------------------------------------------
 // Tiny helpers
@@ -175,6 +178,23 @@ export default function AccountProfile({ isOpen }: { isOpen: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { logout, openLoginModal } = useAppState();
+
+  // Register a stale-token recovery handler for the lifetime of this page.
+  // When fetchUserProfile / fetchUserActivities detect a 401 they call this,
+  // which clears the local session and prompts re-login. Mirrors the same
+  // recovery pattern in RegistrationModal — single point of recovery for
+  // any authed API call, so the symptom of "header says logged in but modals
+  // can't see the token" never persists across reloads.
+  useEffect(() => {
+    setAuthErrorHandler(() => {
+      alert("เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง");
+      logout();
+      openLoginModal();
+    });
+    return () => setAuthErrorHandler(null);
+  }, [logout, openLoginModal]);
+
   // Form state — mirrors UserProfile fields
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -187,10 +207,21 @@ export default function AccountProfile({ isOpen }: { isOpen: boolean }) {
   const [address, setAddress] = useState("");
 
   // -------------------------------------------------------------------------
-  // Data loading — triggered whenever the modal opens
+  // Data loading — triggered whenever the modal opens.
+  // Token-gated: we don't bail just because context's `user` hasn't been
+  // populated yet. On reload, the AppProvider rehydrate effect and this
+  // effect race; reading the token directly (not `user` state) ensures
+  // we never flash "please log in" while a valid token is in storage.
   // -------------------------------------------------------------------------
   useEffect(() => {
     if (!isOpen) return;
+
+    if (!hasAuthToken()) {
+      // Genuinely logged out — skip the loading shimmer and show the
+      // unauthenticated prompt immediately.
+      setIsLoading(false);
+      return;
+    }
 
     const load = async () => {
       setIsLoading(true);

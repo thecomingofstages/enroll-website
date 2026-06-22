@@ -1,17 +1,51 @@
+import { getAuthToken } from "./auth";
+
 function apiBase(): string | null {
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
   return base && base.length > 0 ? base : null;
 }
 
-function getAuthToken(): string | null {
-  if (typeof document !== "undefined") {
-    const match = document.cookie.match(/(?:^|; )access_token=([^;]*)/);
-    if (match && match[1]) return match[1];
+/**
+ * Throw this from any authed API call when the backend returns 401/403 so
+ * callers can distinguish a stale token from a real network/server error.
+ *
+ * Why: when a stale token is in localStorage but the backend rejects it,
+ * `optionalAuth` (or `requireAuth`) on the server returns a 401. Previously
+ * `fetchUserProfile` silently returned `null`, which made the frontend look
+ * "logged out" while the header still showed a user — the original bug. By
+ * surfacing the 401 to the caller (via callback or thrown error), modals can
+ * trigger a single recovery path: clear local session + open the login modal.
+ */
+export class AuthExpiredError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "AuthExpiredError";
+    this.status = status;
   }
-  if (typeof localStorage !== "undefined") {
-    return localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
-  }
-  return null;
+}
+
+/**
+ * Hook for stale-token recovery. Set by components that want to react to
+ * 401s on authed endpoints (e.g. AccountProfile, QRCheckinModal). When set,
+ * the authed fetch helpers call this on 401 instead of throwing.
+ *
+ * Why a module-level setter rather than passing the callback everywhere:
+ * the helpers (`fetchUserProfile`, `fetchUserActivities`, `fetchMemberQrToken`)
+ * are called from many components and we don't want every call site to grow
+ * a new parameter. Setting once per mounted tree keeps the API stable.
+ *
+ * Lifecycle: components register on mount, unregister on unmount.
+ */
+let authErrorHandler: (() => void) | null = null;
+
+export function setAuthErrorHandler(handler: (() => void) | null): void {
+  authErrorHandler = handler;
+}
+
+function notifyAuthError(): void {
+  if (authErrorHandler) authErrorHandler();
 }
 
 export interface UserProfile {
@@ -84,6 +118,13 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
       },
     });
 
+    if (res.status === 401 || res.status === 403) {
+      // Token rejected — let the registered handler (if any) trigger recovery.
+      // We still return null so the caller doesn't have to handle a throw.
+      notifyAuthError();
+      return null;
+    }
+
     if (!res.ok) {
       return null;
     }
@@ -124,6 +165,14 @@ export async function updateUserProfile(
 
     const data = (await res.json()) as ApiResponse<UserProfile>;
 
+    if (res.status === 401 || res.status === 403) {
+      notifyAuthError();
+      return {
+        success: false,
+        message: "Session expired. Please log in again.",
+      };
+    }
+
     if (!res.ok || !data.success) {
       return {
         success: false,
@@ -158,6 +207,11 @@ export async function fetchUserActivities(): Promise<ActivityRegistration[]> {
         "Content-Type": "application/json",
       },
     });
+
+    if (res.status === 401 || res.status === 403) {
+      notifyAuthError();
+      return [];
+    }
 
     const text = await res.text();
     if (!res.ok || !text) return [];
