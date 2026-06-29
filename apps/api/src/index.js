@@ -21,7 +21,8 @@ const UserRoutes = require("./app/routes/User.routes");
 const ActivityRoutes = require("./app/routes/Activity.routes");
 const RegistrationRoutes = require("./app/routes/Registration.routes");
 const AdminRoutes = require("./app/routes/Admin.routes");
-const EventRoutes = require("./app/routes/Event.routes");
+const EventRoutes      = require("./app/routes/Event.routes");
+const StampStoreRoutes = require("./app/routes/StampStore.routes");
 
 const app = express();
 
@@ -57,6 +58,7 @@ v1.use("/activities", ActivityRoutes);
 v1.use("/registrations", RegistrationRoutes);
 v1.use("/admin", AdminRoutes);
 v1.use("/events", EventRoutes);
+v1.use("/stampstore", StampStoreRoutes);
 
 app.use("/v1", v1);
 

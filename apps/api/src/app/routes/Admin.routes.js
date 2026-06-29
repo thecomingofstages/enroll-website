@@ -5,6 +5,7 @@ const ActivityController     = require('../controllers/Activity.controller');
 const RegistrationController = require('../controllers/Registration.controller');
 const PaymentController      = require('../controllers/Payment.controller');
 const EventController        = require('../controllers/Event.controller');
+const StampStoreController   = require('../controllers/StampStore.controller');
 
 router.use(AuthMiddleware.requireAdmin);
 
@@ -20,5 +21,10 @@ router.patch('/registrations/:id/status',  RegistrationController.adminUpdateSta
 
 // ── Payments — finance team verifies/rejects slips + group name ────────────────────────────
 router.patch('/payments/:id/status',       PaymentController.adminUpdatePaymentStatus);
+
+// ── Stamp Store ────────────────────────────────────────────────────────────────────────────
+router.post('/stampstore/create',          StampStoreController.adminCreateStore);
+router.patch('/stampstore/changecode',     StampStoreController.adminChangeCode);
+router.patch('/stampstore/markexchanged',  StampStoreController.adminMarkExchanged);
 
 module.exports = router;
