@@ -4,7 +4,7 @@ const StampSchema = new mongoose.Schema(
   {
     _id:         { type: String, required: true }, // UUIDv7, set by helper
     store_id:    { type: String, ref: 'Store', required: true },
-    achieved_at: { type: Date, required: true },
+    achieved_at: { type: Date, default: Date.now },
   },
   { _id: false }
 );
