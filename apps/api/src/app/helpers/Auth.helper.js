@@ -44,6 +44,9 @@ class AuthHelper {
       password_hash,
       gender,
       interests: interests || [],
+      address: payload.address || null,
+      education_level: payload.education_level || null,
+      institution: payload.institution || null,
     });
 
     const { password_hash: _, ...sanitized } = user.toObject();

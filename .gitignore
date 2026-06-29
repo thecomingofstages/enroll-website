@@ -1,2 +1,4 @@
 node_modules/
 .env
+.open_next/
+.open-next/

@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Activity, formatActivityDate } from "../lib/mockData";
+import type { Activity } from "../lib/mockData";
+// import { formatActivityDate } from "../lib/mockData";
 
 import { useAppState } from "../lib/context";
 
@@ -31,35 +32,33 @@ function ActivityRegistrants({
 
   if (compact) {
     return (
-      <div className="min-w-0 max-w-[11rem] flex-1 sm:max-w-[13.5rem]">
-        <div className="flex items-center justify-between gap-1.5">
-          <span className={`font-kanit text-[11px] font-medium sm:text-xs ${labelClass}`}>
-            ผู้สมัคร
-          </span>
-          <span className="font-kanit text-xs font-semibold text-[#d8b85a] sm:text-sm">
-            {count}/{capacity}
-          </span>
-        </div>
-        <div className={`mt-0.5 h-[3px] w-full sm:h-1 ${trackClass}`}>
-          <div
-            className="h-full bg-[#d8b85a] transition-[width] duration-300"
-            style={{ width: `${fillPercent}%` }}
-            role="progressbar"
-            aria-valuenow={count}
-            aria-valuemin={0}
-            aria-valuemax={capacity}
-            aria-label={`ผู้สมัคร ${count} จาก ${capacity}`}
-          />
-        </div>
-      </div>
+      <div className="min-w-0 max-w-[32rem] flex-1">
+  <div className="flex items-center justify-between gap-3">
+    <p className=" font-semibold uppercase tracking-widest text-zinc-500 text-xs lg:text-xl mt-0">Availability</p>
+    <span className={`text-base font-semibold text-${count/capacity !== 1 ? "gold" : "red-300"} sm:text-lg`}>
+      {count}/{capacity}
+    </span>
+  </div>
+  <div className={`mt-1 h-[5px] w-full sm:h-2 ${trackClass}`}>
+    <div
+      className="h-full bg-[#d8b85a] transition-[width] duration-300"
+      style={{ width: `${fillPercent}%` }}
+      role="progressbar"
+      aria-valuenow={count}
+      aria-valuemin={0}
+      aria-valuemax={capacity}
+      aria-label={`ผู้สมัคร ${count} จาก ${capacity}`}
+    />
+  </div>
+</div>
     );
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full mt-5">
       <div className="flex items-center justify-between gap-2">
-        <span className={`font-kanit text-sm font-medium ${labelClass}`}>ผู้สมัคร</span>
-        <span className="font-kanit text-sm font-semibold text-[#d8b85a]">
+        <p className="text-sm font-semibold uppercase tracking-wider text-zinc-500 mt-0">Availability</p>
+        <span className={`text-sm font-semibold text-${count/capacity !== 1 ? "gold" : "red-300"}`}>
           {count}/{capacity}
         </span>
       </div>
@@ -84,9 +83,31 @@ export default function ActivityCard({
   onRegister,
 }: ActivityCardProps) {
   const { registrations, openCheckinModal } = useAppState();
-  const isRegistered = registrations.some(r => r.activityId === activity.id || r.activityId === (activity as any)._id);
+  const isRegistered = registrations.some(r => r.activityId === activity._id || r.activityId === (activity as any)._id);
   
-  const dateLabel = formatActivityDate(activity.date);
+  const isFull =
+    activity.seat_capacity > 0 &&
+    activity.enrolled_count >= activity.seat_capacity;
+  const isNotStarted = new Date(activity.open_registration_at?? "2026-01-01T00:00:00") > new Date();
+  const isEnded = new Date(activity.close_registration_at?? "2099-12-31T00:00:00") < new Date(); 
+  let isDisabled = isRegistered;
+
+  let buttonText;
+  if (isRegistered) { buttonText = "Registered ✓"; } 
+  else if (activity.registration_open_override === false) { 
+    buttonText = "Registration Closed ⤬";
+    isDisabled = true;
+  }
+  else if (activity.registration_open_override === true) { buttonText = "Register"; }
+  else {
+    if (isFull) { buttonText = "Seats Full ⤬"; }
+    else if (isEnded) { buttonText = "Registration Ended ⤬"; } 
+    else if (isNotStarted) { buttonText = "Registration Opens Soon ..."; }
+    else { buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)"; }
+    isDisabled = isFull || isEnded || isNotStarted;
+  } 
+
+  const dateLabel = activity.date;
   const isRecommended = variant === "recommended";
   const cardColors = [
     "bg-base-black",
@@ -95,42 +116,49 @@ export default function ActivityCard({
     "bg-primary-yellow",
     "bg-light-green",
   ];
-  const colorIndex = activity.id
+  const colorIndex = activity._id
     .split("")
-    .reduce((total, char) => total + char.charCodeAt(0), 0) % cardColors.length;
+    .reduce((total: number, char: string) => total + char.charCodeAt(0), 0) % cardColors.length;
   const isLightCard = cardColors[colorIndex] === "bg-primary-yellow" || cardColors[colorIndex] === "bg-light-green";
 
   if (!isRecommended) {
     return (
-      <article className="flex h-full flex-col overflow-hidden rounded-xl border border-zinc-700/70 bg-zinc-900 shadow-sm transition-shadow hover:shadow-md">
+      <article className="flex h-full flex-col overflow-hidden rounded border border-zinc-800 bg-card shadow-sm transition-shadow hover:shadow-md">
         <div className="relative aspect-[16/9] overflow-hidden bg-zinc-800">
-          <div className="absolute inset-0 bg-gradient-to-br from-zinc-700/40 via-zinc-800 to-zinc-900" />
-          <div className="absolute right-2 top-2 rounded-md border border-black bg-[#131311] px-2 py-0.5 font-kanit text-[10px] font-bold text-[#d8b85a] shadow-sm">
-            {activity.price === 0 ? "ฟรี" : `฿${activity.price}`}
+          {/*<div className="absolute inset-0 bg-gradient-to-br from-zinc-700/40 via-zinc-800 to-zinc-900" />*/}
+          <img src={activity.hero_image_url} className="h-full w-full object-cover" />
+          <div className={`absolute right-2 top-2 rounded-md border border-black bg-[#131311] px-3 py-0.5 text-xl font-semibold text-[#d8b85a] shadow-sm
+            ${activity.price === -1 ? "hidden" : ""}`}>
+            {activity.price === 0 ? "FREE" : `฿${activity.price}`}
           </div>
         </div>
 
         <div className="flex flex-1 flex-col gap-2 p-3 pb-2">
-          <h3 className="line-clamp-2 font-taviraj text-base font-bold leading-tight text-zinc-100">
+          <h3 className="m-1 line-clamp-2 font-prompt text-xl font-semibold leading-tight text-zinc-100">
             {activity.name}
           </h3>
-          <div className="space-y-1 font-kanit text-xs font-medium text-zinc-400">
+          <div className="space-y-1 text-base font-medium text-zinc-500">
             <p>{dateLabel}</p>
             <p>{activity.location}</p>
           </div>
 
           <ActivityRegistrants
-            registeredCount={activity.registeredCount}
-            capacity={activity.capacity}
+            registeredCount={activity.enrolled_count}
+            capacity={activity.seat_capacity}
           />
 
-          <button
+          <a
             type="button"
-            onClick={() => isRegistered ? openCheckinModal() : onRegister(activity)}
-            className="mt-auto w-full rounded-md border border-zinc-600 bg-[#131311] px-3 py-1.5 font-kanit text-xs font-bold text-zinc-200 transition-colors hover:border-[#d8b85a] hover:text-[#d8b85a]"
+            href={`activity/${activity._id}`}
+            className={`${
+              isRegistered ? "bg-green text-background"
+            : isNotStarted ? "bg-zinc-700 text-foreground" 
+            : isDisabled ? "bg-red-300 text-background"
+            : "bg-gold text-background"
+          } transition-opacity hover:cursor-pointer tracking-wider mt-1 mb-1 w-full text-md rounded-xs px-3 py-2 text-md font-semibold text-background transition:opacity hover:opacity-60 text-center`}
           >
-            {isRegistered ? "ดูบัตรของคุณ" : "Register"}
-          </button>
+            {buttonText}
+          </a>
         </div>
       </article>
     );
@@ -140,8 +168,8 @@ export default function ActivityCard({
     <article
       className={`group relative overflow-hidden ${cardColors[colorIndex]} shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-primary-yellow/40 ${
         isRecommended 
-          ? "h-[calc(100dvh-156px)] md:h-[calc(100dvh-88px)] w-full rounded-none border-b border-muted-charcoal/40" 
-          : "aspect-[16/9] rounded-lg border border-muted-charcoal/40"
+          ? "h-[calc(100dvh-156px)] md:h-[calc(100dvh-88px)] w-full rounded-none" 
+          : "aspect-[16/9] rounded-lg"
       }`}
     >
       <div className={`absolute inset-0 ${
@@ -149,11 +177,17 @@ export default function ActivityCard({
           ? "bg-gradient-to-t from-base-black/20 via-base-black/5 to-white/10"
           : "bg-gradient-to-t from-base-black/70 via-base-black/20 to-white/5"
       }`} />
-      <div className={`absolute inset-x-0 bottom-0 space-y-1.5 p-4 ${isLightCard ? "text-base-black" : "text-white"}`}>
-        <h3 className="line-clamp-2 font-taviraj text-xl font-extrabold leading-tight sm:text-2xl md:text-3xl">
+      <div className="relative h-full w-full">
+        <img src={activity.hero_image_url} className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-black/85" />
+      </div>
+      <div className={`mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-10 absolute inset-x-0 bottom-0 space-y-1.5 p-4 ${isLightCard ? "text-base-black" : "text-white"}`}>
+        <p className="text-md lg:text-xl font-bold uppercase tracking-widest text-zinc-500 mb-1">Featured Activity</p>
+        <h1 className="text-4xl lg:text-6xl font-prompt font-extrabold leading-tight">
           {activity.name}
-        </h3>
+        </h1>
 
+        {/* 
         <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 font-kanit text-[11px] font-semibold sm:text-xs ${isLightCard ? "text-base-black/80" : "text-zinc-300"}`}>
           <span>{dateLabel}</span>
           <span>|</span>
@@ -161,18 +195,22 @@ export default function ActivityCard({
           <span>|</span>
           <span>{activity.price === 0 ? "Free" : `฿${activity.price}`}</span>
         </div>
-
-        <div className="mt-2 flex items-center gap-2.5">
-          <button
+        */}
+        <div className="mt-10 mb-20 flex items-center gap-2.5">
+          <a
             type="button"
-            onClick={() => isRegistered ? openCheckinModal() : onRegister(activity)}
-            className="shrink-0 rounded-md border border-zinc-600 bg-[#131311] px-3.5 py-1.5 font-kanit text-xs font-bold text-zinc-200 transition-colors hover:border-[#d8b85a] hover:text-[#d8b85a]"
+            href={`activity/${activity._id}`}
+            className={`${
+              isRegistered ? "bg-green":
+              isFull ? "bg-red" :
+              "bg-gold" 
+            } tracking-wider mr-5 lg:mr-10 rounded-xs px-5 lg:px-10 py-2 text-md lg:text-2xl font-semibold text-background transition-colors hover:opacity-60 transitions-opacity text-center`}
           >
-            {isRegistered ? "ดูบัตรของคุณ" : "Register"}
-          </button>
+            More Info
+          </a>
           <ActivityRegistrants
-            registeredCount={activity.registeredCount}
-            capacity={activity.capacity}
+            registeredCount={activity.enrolled_count}
+            capacity={activity.seat_capacity}
             tone={isLightCard ? "light" : "dark"}
             compact
           />

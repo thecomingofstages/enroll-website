@@ -16,22 +16,11 @@ export class ActivityApiLoadError extends Error {
   }
 }
 
+import { getAuthToken } from "./auth";
+
 function apiBase(): string | null {
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
   return base && base.length > 0 ? base : null;
-}
-
-function getAuthToken(): string | null {
-  if (typeof document !== "undefined") {
-    // Check cookie
-    const match = document.cookie.match(/(?:^|; )access_token=([^;]*)/);
-    if (match && match[1]) return match[1];
-  }
-  if (typeof localStorage !== "undefined") {
-    // Fallback to localStorage
-    return localStorage.getItem("tcos_access_token") || localStorage.getItem("access_token");
-  }
-  return null;
 }
 
 export async function fetchActivityDetail(id: string): Promise<ActivityDetail | null> {

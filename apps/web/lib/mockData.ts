@@ -1,17 +1,20 @@
 export interface Activity {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   longDescription: string;
   date: string;
+  open_registration_at: string;
+  close_registration_at: string;
+  registration_open_override: boolean;
   location: string;
-  capacity: number;
-  registeredCount: number;
+  seat_capacity: number;
+  enrolled_count: number;
   status: 'open' | 'closed';
   tags: string[];
   isFeatured: boolean;
   price: number; // 0 means Free
-  coverImage: string;
+  hero_image_url: string;
   colorTheme: string; // Tailwind color class for card visual header: e.g. 'bg-[#800f14]', 'bg-[#18392b]', etc.
   additionalQuestions: {
     id: string;
@@ -51,21 +54,22 @@ export interface Sponsor {
   logoText: string;
 }
 
-export const INITIAL_ACTIVITIES: Activity[] = [
+export const INITIAL_ACTIVITIES: Activity[] = []
+/*
   {
-    id: "act-001",
+    _id: "act-001",
     name: "ละครเวที ทางผ่าน",
     description: "มิติใหม่แห่งการเล่าเรื่องราวชีวิต ละครเวทีฟอร์มยักษ์ที่จะพาคุณก้าวข้ามผ่านช่วงเวลาสำคัญ",
     longDescription: "ละครเวทีชิ้นพิเศษโดย TCOS นำเสนอแสงเสียงและการแสดงอันสมจริงในทุกองก์การแสดง",
     date: "2025-03-20T18:00:00+07:00",
     location: "โรงละครแห่งชาติ",
-    capacity: 250,
-    registeredCount: 182,
+    seat_capacity: 250,
+    enrolled_count: 182,
     status: "open",
     tags: ["การแสดง", "ละคร"],
     isFeatured: true,
     price: 350,
-    coverImage: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&auto=format&fit=crop&q=80",
+    hero_image_url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200&auto=format&fit=crop&q=80",
     colorTheme: "bg-[#800f14]", // Crimson Red
     additionalQuestions: [
       {
@@ -78,87 +82,87 @@ export const INITIAL_ACTIVITIES: Activity[] = [
     ]
   },
   {
-    id: "act-002",
+    _id: "act-002",
     name: "Costume & Wardrobe",
     description: "การจัดอบรมและปฏิบัติจริงด้านการออกแบบเครื่องแต่งกายละครเวทีและสวมบทบาท",
     longDescription: "เวิร์กช็อปเจาะลึกวิธีการจัดหา พรีเซนต์ และประยุกต์เครื่องแต่งกายในละครเวที",
     date: "2025-03-12T13:00:00+07:00",
     location: "ลาดพร้าว",
-    capacity: 50,
-    registeredCount: 30,
+    seat_capacity: 50,
+    enrolled_count: 30,
     status: "open",
     tags: ["เครื่องแต่งกาย"],
     isFeatured: false,
     price: 200,
-    coverImage: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=600&auto=format&fit=crop&q=80",
+    hero_image_url: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=600&auto=format&fit=crop&q=80",
     colorTheme: "bg-[#18392b]", // Dark Green
     additionalQuestions: []
   },
   {
-    id: "act-003",
+    _id: "act-003",
     name: "Spoken Word Open Night",
     description: "ค่ำคืนแห่งการร่ายกลอนและสุนทรพจน์ในบรรยากาศแสงสลัวริมแม่น้ำ",
     longDescription: "ปลดปล่อยพลังงานของตัวอักษรและวรรณศิลป์ของคุณร่วมกับกวีสายเขียนมากมาย",
     date: "2025-05-10T19:30:00+07:00",
     location: "River City",
-    capacity: 100,
-    registeredCount: 88,
+    seat_capacity: 100,
+    enrolled_count: 88,
     status: "open",
     tags: ["สายเขียน"],
     isFeatured: false,
     price: 150,
-    coverImage: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=600&auto=format&fit=crop&q=80",
+    hero_image_url: "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=600&auto=format&fit=crop&q=80",
     colorTheme: "bg-[#391e4a]", // Dark Purple
     additionalQuestions: []
   },
   {
-    id: "act-004",
+    _id: "act-004",
     name: "Directing Masterclass",
     description: "เรียนรู้มุมมอง ทักษะ และการนำทางเวทีโดยผู้กำกับระดับแนวหน้าของประเทศ",
     longDescription: "เวิร์กช็อปที่จะเปลี่ยนความคิดการเล่าเรื่องและการบล็อกการแสดงบนเวทีอย่างมีทิศทาง",
     date: "2025-05-02T10:00:00+07:00",
     location: "BACC",
-    capacity: 40,
-    registeredCount: 40, // Full
+    seat_capacity: 40,
+    enrolled_count: 40, // Full
     status: "closed",
     tags: ["การแสดง"],
     isFeatured: false,
     price: 500,
-    coverImage: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600&auto=format&fit=crop&q=80",
+    hero_image_url: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=600&auto=format&fit=crop&q=80",
     colorTheme: "bg-[#59421a]", // Brown
     additionalQuestions: []
   },
   {
-    id: "act-005",
+    _id: "act-005",
     name: "Workshop เขียนบทละคร: โครงสร้างการเล่าเรื่อง",
     description: "เข้าใจหลักการเขียนบทละคร การสร้างคาแรกเตอร์ตัวละคร และปมขัดแย้งของเรื่อง",
     longDescription: "คอร์สสัมมนาและเขียนบทจริงสำหรับเยาวชนและสายเขียนที่สนใจทำบทละครเวที",
     date: "2025-06-05T10:00:00+07:00",
     location: "โรงละครแห่งชาติ",
-    capacity: 60,
-    registeredCount: 42,
+    seat_capacity: 60,
+    enrolled_count: 42,
     status: "open",
     tags: ["สายเขียน", "เข้าฟรี"],
     isFeatured: false,
     price: 0, // FREE
-    coverImage: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=600&auto=format&fit=crop&q=80",
+    hero_image_url: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=600&auto=format&fit=crop&q=80",
     colorTheme: "bg-[#162942]", // Navy Blue
     additionalQuestions: []
   },
   {
-    id: "act-006",
+    _id: "act-006",
     name: "บทกวีบนเวที: Spoken Word Masterclass",
     description: "เทคนิคการประพันธ์บทกวีร่วมสมัยและการแสดงบนเวทีอย่างสะกดสายตาผู้ชม",
     longDescription: "พัฒนาทักษะการเปล่งเสียง การจัดระเบียบร่างกาย และการถ่ายทอดอารมณ์ความรู้สึกสะกดอารมณ์คนดู",
     date: "2025-06-25T14:00:00+07:00",
     location: "TCOS Space",
-    capacity: 80,
-    registeredCount: 24,
+    seat_capacity: 80,
+    enrolled_count: 24,
     status: "open",
     tags: ["สายเขียน", "การแสดง"],
     isFeatured: false,
     price: 150,
-    coverImage: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
+    hero_image_url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
     colorTheme: "bg-[#2d2d2d]", // Charcoal
     additionalQuestions: []
   }
@@ -208,7 +212,7 @@ export const INITIAL_ANNOUNCEMENTS: Announcement[] = [
 ];
 
 export function getActivityAvailability(activity: Activity) {
-  const spotsLeft = activity.capacity - activity.registeredCount;
+  const spotsLeft = activity.seat_capacity - activity.enrolled_count;
   const isFull = spotsLeft <= 0;
   const isClosed = activity.status === "closed" || isFull;
   return { spotsLeft, isFull, isClosed };
@@ -220,4 +224,6 @@ export function formatActivityDate(dateIso: string) {
     month: "short",
     year: "numeric",
   });
+  
 }
+*/

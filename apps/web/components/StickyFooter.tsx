@@ -47,13 +47,13 @@ const baseItemClass =
   "relative flex min-w-0 flex-col items-center gap-1.5 rounded-lg px-3 py-2 transition-colors";
 
 const inactiveItemClass =
-  "text-zinc-200 hover:bg-white/10 hover:text-[#d8b85a] active:bg-white/10 active:text-[#d8b85a]";
+  "text-zinc-200 hover:cursor-pointer hover:bg-white/10 hover:cursor-pointer hover:text-[#d8b85a] active:bg-white/10 active:text-[#d8b85a]";
 
 const activeItemClass = "text-[#d8b85a]";
 const activeUnderlineClass =
   "after:absolute after:bottom-0 after:left-2 after:right-2 after:h-[2px] after:rounded-full after:bg-[#d8b85a]";
 
-const labelClass = "text-[11px] font-semibold tracking-wide md:text-xs";
+const labelClass = "text-[14px] font-sans tracking-wide md:text-xs";
 
 export default function StickyFooter() {
   const {
@@ -79,14 +79,37 @@ export default function StickyFooter() {
     }
   };
 
+  const handleQrClick = () => {
+    if (!user) { openLoginModal(); return; }
+    if (pathname !== "/") {
+      router.push("/");
+      setTimeout(openCheckinModal, 100);
+    } else {
+      openCheckinModal();
+    }
+  };
+
+  const handleAccountClick = () => {
+    if (!user) { openLoginModal(); return; }
+    if (pathname !== "/") {
+      router.push("/");
+      setTimeout(openAccountModal, 100);
+    } else {
+      openAccountModal();
+    }
+  };
+
+  // Only highlight Home when on "/" and no modal is open that belongs to another tab.
+  // On /activity/... nothing is highlighted.
   const isHomeActive =
-    (pathname === "/" || pathname.startsWith("/activity")) &&
-    (!activeModal || (activeModal !== "checkin" && activeModal !== "account"));
+    pathname === "/" &&
+    activeModal !== "checkin" &&
+    activeModal !== "account";
   const isQrActive = activeModal === "checkin";
   const isAccountActive = activeModal === "account";
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#2a2a27] bg-[#1b1b19]/98 px-4 py-3 shadow-2xl backdrop-blur-md md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[#2a2a27] bg-[#1b1b19]/98 px-4 py-3 shadow-2xl backdrop-blur-md md:hidden">
       <div className="mx-auto w-full max-w-3xl">
         <nav className="grid grid-cols-3 items-center gap-2">
           <button
@@ -102,7 +125,7 @@ export default function StickyFooter() {
 
           <button
             type="button"
-            onClick={user ? openCheckinModal : openLoginModal}
+            onClick={handleQrClick}
             className={`relative ${baseItemClass} ${
               isQrActive ? activeItemClass : inactiveItemClass
             } ${isQrActive ? activeUnderlineClass : ""}`}
@@ -118,7 +141,7 @@ export default function StickyFooter() {
 
           <button
             type="button"
-            onClick={user ? openAccountModal : openLoginModal}
+            onClick={handleAccountClick}
             className={`${baseItemClass} ${
               isAccountActive ? activeItemClass : inactiveItemClass
             } ${isAccountActive ? activeUnderlineClass : ""}`}

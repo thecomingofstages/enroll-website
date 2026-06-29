@@ -5,7 +5,6 @@ import { siteMetadataBase } from "@/lib/site-url";
 import { AppProvider } from "@/lib/context";
 import AccountModal from "@/components/AccountModal";
 import AuthModal from "@/components/AuthModal";
-import QRCheckinModal from "@/components/QRCheckinModal";
 import RegistrationModal from "@/components/RegistrationModal";
 
 const geistSans = Geist({
@@ -23,42 +22,10 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-serif",
-  subsets: ["latin"],
-});
-
 const prompt = Prompt({
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-prompt",
   subsets: ["latin", "thai"],
-});
-
-const sarabun = Sarabun({
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-sarabun",
-  subsets: ["latin", "thai"],
-});
-
-const trirong = Trirong({
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-trirong",
-  subsets: ["latin", "thai"],
-  display: "swap",
-});
-
-const taviraj = Taviraj({
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-taviraj",
-  subsets: ["latin", "thai"],
-  display: "swap",
-});
-
-const kanit = Kanit({
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-kanit",
-  subsets: ["latin", "thai"],
-  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -79,14 +46,13 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${prompt.variable} ${playfair.variable} ${sarabun.variable} ${trirong.variable} ${taviraj.variable} ${kanit.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${prompt.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-zinc-50">
         <AppProvider>
           {children}
           <AccountModal />
           <AuthModal />
-          <QRCheckinModal />
           <RegistrationModal />
         </AppProvider>
       </body>

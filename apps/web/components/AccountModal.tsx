@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Activity, formatActivityDate } from "../lib/mockData";
+import type { Activity } from "@enroll-website/types";
+//import { formatActivityDate } from "../lib/mockData";
 import { useAppState } from "../lib/context";
 
 // type ActivityTab = "all" | "upcoming" | "past";
@@ -39,7 +40,7 @@ function ProfileAvatar({
 
   return (
     <div className="relative mx-auto h-24 w-24 md:h-28 md:w-28">
-      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-primary-yellow bg-muted-charcoal font-playfair text-3xl font-black text-primary-yellow shadow-xl">
+      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-full border-2 border-primary-yellow bg-muted-charcoal font-sans text-3xl font-black text-primary-yellow shadow-xl">
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -88,11 +89,6 @@ function ActivityTicket({
     <article className="relative overflow-hidden rounded-lg border border-muted-charcoal bg-dark-grey">
       <div
         className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `url(${activity.coverImage})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-base-black via-base-black/80 to-base-black/10" />
       <div className="relative flex min-h-44 flex-col justify-end gap-3 p-4">
@@ -101,12 +97,7 @@ function ActivityTicket({
             <h4 className="line-clamp-2 font-inter text-xl font-black text-white">
               {activity.name}
             </h4>
-            <p className="mt-1 font-sans text-[11px] font-semibold text-zinc-300">
-              {formatActivityDate(activity.date)}
-            </p>
-            <p className="font-sans text-[11px] font-semibold text-zinc-400">
-              {activity.location}
-            </p>
+            
           </div>
           <span className="shrink-0 rounded bg-light-green px-2 py-1 text-[9px] font-black uppercase text-light-green-text">
             Joined
@@ -161,14 +152,16 @@ export default function AccountModal() {
     registrations.forEach((reg) => {
       if (!uniqueIds.has(reg.activityId)) {
         uniqueIds.add(reg.activityId);
-        const activity = activities.find((a) => a.id === reg.activityId);
+        const activity = activities.find((a) => a._id === reg.activityId);
         if (activity) {
-          options.push({ id: activity.id, name: activity.name });
+          options.push({ id: activity._id, name: activity.name });
         }
       }
     });
     return options;
   }, [registrations, activities]);
+
+  {/* 
 
   const registeredActivities = useMemo(() => {
     return registrations
@@ -183,7 +176,10 @@ export default function AccountModal() {
         return true;
       }) as { registration: (typeof registrations)[number]; activity: Activity }[];
   }, [selectedActivityId, activities, registrations]);
+*/}
+  // Temporary Fix
 
+  const registeredActivities = ""
   if (activeModal !== "account" || !user) return null;
 
   const saveProfile = () => {
@@ -212,7 +208,7 @@ export default function AccountModal() {
 
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 sm:p-6 backdrop-blur-sm hidden">
       <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 text-white shadow-2xl">
         <button 
           onClick={closeModals} 
@@ -223,7 +219,7 @@ export default function AccountModal() {
           </svg>
         </button>
         <div className="flex items-center justify-between border-b border-muted-charcoal px-5 py-4 pr-14">
-          <h3 className="font-playfair text-xl font-black text-primary-yellow">Account</h3>
+          <h3 className="font-sans text-xl font-black text-primary-yellow">Account</h3>
         </div>
 
         <div className="grid gap-5 p-5 md:grid-cols-[320px_1fr] md:p-6">
@@ -252,7 +248,7 @@ export default function AccountModal() {
               </div>
             ) : (
               <div className="mt-5 text-center">
-                <h4 className="font-playfair text-2xl font-black text-primary-yellow">
+                <h4 className="font-sans text-2xl font-black text-primary-yellow">
                   {user.name}
                 </h4>
                 <p className="text-xs text-zinc-400">@{user.id}</p>
@@ -315,7 +311,7 @@ export default function AccountModal() {
 
           <section className="space-y-4">
             <div className="mb-4 flex flex-col gap-3 border-b border-muted-charcoal pb-3 md:flex-row md:items-center md:justify-between">
-              <h3 className="font-playfair text-2xl font-black text-white md:text-3xl">
+              <h3 className="font-sans text-2xl font-black text-white md:text-3xl">
                 My Activities
               </h3>
               {registeredActivityOptions.length > 0 && (
@@ -333,7 +329,7 @@ export default function AccountModal() {
                 </select>
               )}
             </div>
-
+            {/* 
             {registeredActivities.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
                 {registeredActivities.map(({ registration, activity }) => (
@@ -352,6 +348,7 @@ export default function AccountModal() {
                 </p>
               </div>
             )}
+              */}
           </section>
         </div>
       </div>

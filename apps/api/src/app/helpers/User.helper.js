@@ -20,7 +20,7 @@ class UserHelper {
 
   /** PATCH /users/me */
   static async updateMe(userId, payload) {
-    const ALLOWED = ['nickname', 'interests', 'profile_image_url', 'address', 'education_level', 'institution'];
+    const ALLOWED = ['first_name', 'last_name', 'nickname', 'interests', 'profile_image_url', 'address', 'education_level', 'institution'];
 
     const update = {};
     for (const key of ALLOWED) {
