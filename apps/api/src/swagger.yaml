@@ -31,6 +31,10 @@ tags:
     description: Admin registration management
   - name: Admin — Payments
     description: Finance payment verification
+  - name: Stamp Store
+    description: Art Market stamp collection — user-facing stamp and store listing
+  - name: Admin — Stamp Store
+    description: Admin management of stamp stores and prize redemption
 
 components:
   securitySchemes:
@@ -188,6 +192,37 @@ components:
         group_name:     { type: string, nullable: true }
         registered_at:  { type: string, format: date-time }
         custom_answers: { type: array, items: { $ref: '#/components/schemas/CustomAnswer' } }
+
+    # ── Stamp Store ───────────────────────────────────────────────────────────
+    Store:
+      type: object
+      properties:
+        _id:        { type: string, format: uuid, description: "UUIDv7" }
+        name:       { type: string, description: "Display name shown on stamp page" }
+        created_at: { type: string, format: date-time }
+
+    Stamp:
+      type: object
+      description: "Embedded inside StampUser.stamp_collected"
+      properties:
+        _id:         { type: string, format: uuid, description: "UUIDv7" }
+        store_id:    { type: string, format: uuid, description: "Ref: Store" }
+        store_name:  { type: string, description: "Denormalized for scan response convenience" }
+        achieved_at: { type: string, format: date-time }
+
+    StampUser:
+      type: object
+      properties:
+        _id:             { type: string, format: uuid, description: "= User._id" }
+        stamp_collected: { type: array, items: { $ref: '#/components/schemas/Stamp' } }
+        is_exchanged:    { type: boolean }
+
+    StoreStampStatus:
+      type: object
+      description: "Per-store stamp status returned from GET /stampstore"
+      properties:
+        name:  { type: string }
+        count: { type: integer, enum: [0, 1], description: "0 = not stamped, 1 = stamped" }
 
     # ── Payment ───────────────────────────────────────────────────────────────
     Payment:
@@ -743,6 +778,13 @@ paths:
                           nickname:  { type: string }
                           phone:     { type: string }
                       activity_name: { type: string }
+                      stamps:
+                        type: array
+                        description: "Art Market stamps collected by this user"
+                        items: { $ref: '#/components/schemas/Stamp' }
+                      is_exchanged:
+                        type: boolean
+                        description: "Whether this user has already redeemed their prize"
         '400': { description: "VALIDATION_ERROR — missing qr_token or event_id" }
         '403': { description: "FORBIDDEN — requester is not admin" }
         '404': { description: "NOT_ENROLLED — user has no registration for this event" }
@@ -990,3 +1032,158 @@ paths:
         '403': { description: "FORBIDDEN" }
         '404': { description: "NOT_FOUND" }
         '422': { description: "INVALID_STATUS_TRANSITION — already in that status" }
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # STAMP STORE — USER
+  # ═══════════════════════════════════════════════════════════════════════════
+  /stampstore:
+    get:
+      tags: [Stamp Store]
+      summary: List all stores with user's stamp status
+      description: |
+        Returns every store and whether the authenticated user has already collected
+        a stamp from it (`count: 1`) or not (`count: 0`).
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Store list with stamp status
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/StoreStampStatus' }
+        '401': { description: "TOKEN_MISSING or TOKEN_EXPIRED" }
+
+  /stampstore/createstamp:
+    post:
+      tags: [Stamp Store]
+      summary: Collect a stamp from a store
+      description: |
+        Attendee submits the store's secret code. The API hashes it, looks up the
+        matching store, and records a new stamp. Idempotent — if the user already
+        has a stamp from this store the request succeeds silently (no duplicate created).
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  description: "Plain-text code entered by the attendee (hashed server-side)"
+      responses:
+        '200':
+          description: Stamp recorded (or already existed — idempotent)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Stamp' }
+        '400': { description: "VALIDATION_ERROR — code is required" }
+        '401': { description: "TOKEN_MISSING or TOKEN_EXPIRED" }
+        '404': { description: "STORE_NOT_FOUND — no store matches this code" }
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ADMIN — STAMP STORE
+  # ═══════════════════════════════════════════════════════════════════════════
+  /admin/stampstore/create:
+    post:
+      tags: [Admin — Stamp Store]
+      summary: Create a new store
+      description: "Creates a store record. The plain-text `code` is hashed before storage."
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, code]
+              properties:
+                name: { type: string, description: "Display name shown on the stamp page" }
+                code: { type: string, description: "Plain-text secret code (stored as bcrypt hash)" }
+      responses:
+        '201':
+          description: Store created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Store' }
+        '400': { description: "VALIDATION_ERROR — name or code missing" }
+        '403': { description: "FORBIDDEN — admin only" }
+
+  /admin/stampstore/changecode:
+    patch:
+      tags: [Admin — Stamp Store]
+      summary: Rotate a store's secret code
+      description: "Use when a code leaks. Saves the new code as a bcrypt hash."
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [_id, new_code]
+              properties:
+                _id:      { type: string, description: "Store UUIDv7" }
+                new_code: { type: string, description: "Replacement plain-text code" }
+      responses:
+        '200':
+          description: Code updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Store' }
+        '400': { description: "VALIDATION_ERROR" }
+        '403': { description: "FORBIDDEN — admin only" }
+        '404': { description: "NOT_FOUND — store not found" }
+
+  /admin/stampstore/markexchanged:
+    patch:
+      tags: [Admin — Stamp Store]
+      summary: Mark a user's stamps as redeemed
+      description: "Called by TCOS staff when a participant exchanges stamps for a prize. Sets `is_exchanged = true`."
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id: { type: string, description: "User UUIDv7 (= StampUser._id)" }
+      responses:
+        '200':
+          description: Marked as exchanged
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessEnvelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/StampUser' }
+        '400': { description: "VALIDATION_ERROR — user_id missing" }
+        '403': { description: "FORBIDDEN — admin only" }
+        '404': { description: "NOT_FOUND — no StampUser record for this user" }
