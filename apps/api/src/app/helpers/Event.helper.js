@@ -4,7 +4,10 @@ const ActivityModel     = require('../models/Activity.model');
 const AttendanceModel   = require('../models/Attendance.model');
 const UserModel         = require('../models/User.model');
 const PaymentModel      = require('../models/Payment.model');
+const StampUserModel    = require('../models/StampUser.model');
+const StoreModel        = require('../models/Store.model');
 const QRUtil            = require('../utils/QR.util');
+const mongoose          = require('mongoose');
 
 // ── Bangkok date key ──────────────────────────────────────────────────────────
 function bangkokDateKey() {
@@ -95,8 +98,8 @@ class EventHelper {
    */
   static async scan(qrToken, eventId) {
     // ── 1. Verify QR ───────────────────────────────────────────────────────
-    if (!qrToken || !eventId) {
-      const err = new Error('qr_token and event_id are required.');
+    if (!qrToken) {
+      const err = new Error('qr_token is required.');
       err.statusCode = 400;
       err.code = 'VALIDATION_ERROR';
       throw err;
@@ -106,7 +109,38 @@ class EventHelper {
     const decoded = QRUtil.verify(qrToken);
     const { user_id } = decoded;
 
-    // ── 2. Find registration ───────────────────────────────────────────────
+    // ── 2. Fetch stamp data (always) ───────────────────────────────────────
+    const stampUser = await StampUserModel.findOne({ _id: user_id }).lean();
+    const collected = stampUser?.stamp_collected || [];
+    let storeNameMap = {};
+    if (collected.length > 0) {
+      const uniqueStoreIds = [...new Set(collected.map(s => String(s.store_id)))];
+      const objectIds = uniqueStoreIds.map(id => new mongoose.Types.ObjectId(id));
+      const stores = await StoreModel.collection.find({ _id: { $in: objectIds } }).toArray();
+      storeNameMap = Object.fromEntries(stores.map(s => [String(s._id), s.name]));
+    }
+
+    const stamps = collected.map(s => ({
+      _id:         s._id,
+      store_name:  storeNameMap[String(s.store_id)] || null,
+      achieved_at: s.achieved_at,
+    }));
+
+    // ── 3. Stamp-only mode — no event_id provided ──────────────────────────
+    if (!eventId) {
+      const user = await UserModel.findById(user_id).lean();
+      return {
+        user: {
+          full_name: user ? `${user.first_name} ${user.last_name}` : '—',
+          nickname:  user?.nickname || '—',
+          phone:     user?.phone    || '—',
+        },
+        stamps,
+        is_exchanged: stampUser?.is_exchanged ?? false,
+      };
+    }
+
+    // ── 4. Full check-in flow ──────────────────────────────────────────────
     const registration = await RegistrationModel.findOne({
       user_id,
       activity_id: eventId,
@@ -120,7 +154,6 @@ class EventHelper {
       throw err;
     }
 
-    // ── 3. Status guards ───────────────────────────────────────────────────
     if (registration.status === 'JOINED') {
       const err = new Error('This ticket has already been scanned.');
       err.statusCode = 422;
@@ -135,10 +168,8 @@ class EventHelper {
       throw err;
     }
 
-    // ── 4. Fetch user for display ──────────────────────────────────────────
-    const user = await UserModel.findById(user_id).lean();
-
-    // ── 5. Fetch activity name ─────────────────────────────────────────────
+    // ── 5. Fetch user + activity ───────────────────────────────────────────
+    const user     = await UserModel.findById(user_id).lean();
     const activity = await ActivityModel.findById(eventId).select('name').lean();
 
     // ── 6. Set registration → JOINED ──────────────────────────────────────
@@ -149,7 +180,7 @@ class EventHelper {
     await AttendanceModel.findOneAndUpdate(
       { activity_id: eventId },
       { $push: { [`attendance.${dateKey}`]: user_id } },
-      { upsert: true }  // safety: if Attendance doc was somehow missing
+      { upsert: true }
     );
 
     // ── 8. Return scanner display data ────────────────────────────────────
@@ -164,6 +195,8 @@ class EventHelper {
       },
       activity_name: activity?.name || '—',
       date_key:      dateKey,
+      stamps,
+      is_exchanged:  stampUser?.is_exchanged ?? false,
     };
   }
 

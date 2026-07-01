@@ -10,13 +10,14 @@ require('dotenv').config();
 const express      = require('express');
 const cookieParser = require('cookie-parser');
 
-const ErrorHandler      = require('../../src/app/middleware/ErrorHandler.middleware');
-const AuthRoutes        = require('../../src/app/routes/Auth.routes');
-const UserRoutes        = require('../../src/app/routes/User.routes');
-const ActivityRoutes    = require('../../src/app/routes/Activity.routes');
+const ErrorHandler       = require('../../src/app/middleware/ErrorHandler.middleware');
+const AuthRoutes         = require('../../src/app/routes/Auth.routes');
+const UserRoutes         = require('../../src/app/routes/User.routes');
+const ActivityRoutes     = require('../../src/app/routes/Activity.routes');
 const RegistrationRoutes = require('../../src/app/routes/Registration.routes');
-const AdminRoutes       = require('../../src/app/routes/Admin.routes');
-const EventRoutes       = require('../../src/app/routes/Event.routes');
+const AdminRoutes        = require('../../src/app/routes/Admin.routes');
+const EventRoutes        = require('../../src/app/routes/Event.routes');
+const StampStoreRoutes   = require('../../src/app/routes/StampStore.routes');
 
 function buildApp() {
   const app = express();
@@ -31,6 +32,7 @@ function buildApp() {
   v1.use('/registrations', RegistrationRoutes);
   v1.use('/admin',         AdminRoutes);
   v1.use('/events',        EventRoutes);
+  v1.use('/stampstore',    StampStoreRoutes);
 
   app.use('/v1', v1);
   app.use(ErrorHandler);
