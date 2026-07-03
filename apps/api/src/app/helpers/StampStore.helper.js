@@ -11,12 +11,22 @@ function hashCode(code) {
 
 class StampStoreHelper {
 
-  // ── GET /stampstore ──────────────────────────────────────────────
+  // ┌── GET /stampstore ──────────────────────────────────────────────────────────
   static async listStores(userId) {
-    throw new Error('Not implemented');
+    const stores = await StoreModel.find().lean();
+    const stampUser = await StampUserModel.findOne({ _id: userId }).lean();
+
+    const collectedStoreIds = new Set(
+      (stampUser?.stamp_collected || []).map(s => String(s.store_id))
+    );
+
+    return stores.map(store => ({
+      name: store.name,
+      count: collectedStoreIds.has(String(store._id)) ? 1 : 0
+    }));
   }
 
-  // ── POST /stampstore/createstamp ─────────────────────────────────
+  // ┌── POST /stampstore/createstamp ───────────────────────────────────────────
   /**
    * Attendee submits a plain-text store code.
    * Hashes it with SHA-256, looks up the matching store, then records a stamp.
@@ -57,19 +67,53 @@ class StampStoreHelper {
     return newStamp;
   }
 
-  // ── POST /admin/stampstore/create ────────────────────────────────
+  // ┌── POST /admin/stampstore/create ──────────────────────────────────────────
   // Note for Mark: hash code with hashCode(code) before saving to code_hash field.
   static async adminCreateStore(name, code) {
-    throw new Error('Not implemented');
+    if (!name || !code) {
+      const err = new Error('name and code are required.');
+      err.statusCode = 400; err.code = 'VALIDATION_ERROR'; throw err;
+    }
+
+    const store = await StoreModel.create({
+      name,
+      code_hash: hashCode(code)
+    });
+
+    return {
+      _id: store._id,
+      name: store.name,
+      created_at: store.created_at
+    };
   }
 
-  // ── PATCH /admin/stampstore/changecode ───────────────────────────
+  // ┌── PATCH /admin/stampstore/changecode ─────────────────────────────────────
   // Note for Mark: hash new_code with hashCode(new_code) before saving.
   static async adminChangeCode(storeId, newCode) {
-    throw new Error('Not implemented');
+    if (!storeId || !newCode) {
+      const err = new Error('_id and new_code are required.');
+      err.statusCode = 400; err.code = 'VALIDATION_ERROR'; throw err;
+    }
+
+    const updated = await StoreModel.findOneAndUpdate(
+      { _id: storeId },
+      { $set: { code_hash: hashCode(newCode) } },
+      { new: true }
+    ).lean();
+
+    if (!updated) {
+      const err = new Error('Store not found.');
+      err.statusCode = 404; err.code = 'NOT_FOUND'; throw err;
+    }
+
+    return {
+      _id: updated._id,
+      name: updated.name,
+      created_at: updated.created_at
+    };
   }
 
-  // ── PATCH /admin/stampstore/markexchanged ────────────────────────
+  // ┌── PATCH /admin/stampstore/markexchanged ──────────────────────────────────
   /**
    * Staff marks a user's stamp card as exchanged for a prize.
    * 404 if no StampUser doc exists (user has never collected any stamps).
