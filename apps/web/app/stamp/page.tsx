@@ -1,34 +1,48 @@
 "use client";
 
-import { useState } from "react";
-import { mockStores } from "@/lib/mock-stamps";
+import { useState, useEffect, useCallback } from "react";
+import { fetchStampStores, redeemStampCode } from "@/lib/stamp-api";
 
 export default function StampPage() {
   const [inputCode, setInputCode] = useState("");
-  const [collectedStoreIds, setCollectedStoreIds] = useState<string[]>([]);
+  const [stores, setStores] = useState<{ name: string, count: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [redeeming, setRedeeming] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
 
-  const handleRedeem = (e: React.FormEvent) => {
+  const loadStores = useCallback(async () => {
+    setLoading(true);
+    const data = await fetchStampStores();
+    setStores(data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadStores();
+  }, [loadStores]);
+
+  const handleRedeem = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = inputCode.trim().toUpperCase();
     if (!code) return;
 
-    const store = mockStores.find((s) => s.code.toUpperCase() === code);
+    setRedeeming(true);
+    setMessage({ text: "", type: "" });
+
+    const result = await redeemStampCode(code);
     
-    if (!store) {
-      setMessage({ text: "รหัสไม่ถูกต้อง (Invalid Code)", type: "error" });
-      return;
+    if (result.success) {
+      setMessage({ text: result.message, type: "success" });
+      setInputCode("");
+      await loadStores();
+    } else {
+      setMessage({ text: result.message, type: "error" });
     }
-
-    if (collectedStoreIds.includes(store.id)) {
-      setMessage({ text: `คุณได้รับสแตมป์จากร้าน ${store.name} ไปแล้ว`, type: "error" });
-      return;
-    }
-
-    setCollectedStoreIds((prev) => [...prev, store.id]);
-    setMessage({ text: `รับสแตมป์จากร้าน ${store.name} สำเร็จ!`, type: "success" });
-    setInputCode("");
+    
+    setRedeeming(false);
   };
+
+  const collectedCount = stores.filter(s => s.count === 1).length;
 
   return (
     <div className="min-h-screen bg-[#111111] py-12 px-4 sm:px-6 lg:px-8 text-white">
@@ -42,11 +56,16 @@ export default function StampPage() {
               type="text" 
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value)}
-              className="flex-1 bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold uppercase"
+              disabled={redeeming}
+              className="flex-1 bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold uppercase disabled:opacity-50"
               placeholder="เช่น TEA123"
             />
-            <button type="submit" className="bg-gold text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-500 transition-colors">
-              Redeem
+            <button 
+              type="submit" 
+              disabled={redeeming || !inputCode.trim()}
+              className="bg-gold text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {redeeming ? "Redeeming..." : "Redeem"}
             </button>
           </div>
           {message.text && (
@@ -57,26 +76,41 @@ export default function StampPage() {
         </form>
 
         <div className="space-y-4">
-          <h2 className="text-2xl font-semibold text-stone-200">ร้านค้าทั้งหมด ({collectedStoreIds.length}/{mockStores.length})</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {mockStores.map((store) => {
-              const isCollected = collectedStoreIds.includes(store.id);
-              return (
-                <div key={store.id} className={`flex items-center p-4 rounded-xl border transition-all ${isCollected ? 'bg-gold/10 border-gold/50' : 'bg-white/5 border-white/10'}`}>
-                  <div className="flex-1">
-                    <h3 className={`text-lg font-bold font-prompt ${isCollected ? 'text-gold' : 'text-stone-300'}`}>{store.name}</h3>
+          <h2 className="text-2xl font-semibold text-stone-200">
+            ร้านค้าทั้งหมด {loading ? "" : `(${collectedCount}/${stores.length})`}
+          </h2>
+          
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold"></div>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {stores.map((store, index) => {
+                const isCollected = store.count === 1;
+                return (
+                  <div key={index} className={`flex items-center p-4 rounded-xl border transition-all ${isCollected ? 'bg-gold/10 border-gold/50' : 'bg-white/5 border-white/10'}`}>
+                    <div className="flex-1">
+                      <h3 className={`text-lg font-bold font-prompt ${isCollected ? 'text-gold' : 'text-stone-300'}`}>{store.name}</h3>
+                    </div>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 ${isCollected ? 'bg-gold border-gold text-black' : 'border-stone-500'}`}>
+                      {isCollected && (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      )}
+                    </div>
                   </div>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 ${isCollected ? 'bg-gold border-gold text-black' : 'border-stone-500'}`}>
-                    {isCollected && (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    )}
-                  </div>
+                );
+              })}
+              {stores.length === 0 && (
+                <div className="col-span-full text-center py-8 text-stone-400">
+                  ไม่พบข้อมูลร้านค้า (No stores found)
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
