@@ -43,6 +43,18 @@ function AccountIcon() {
   );
 }
 
+function StampIcon() {
+  return (
+    <svg className="h-5 w-5 md:h-6 md:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" points="14 2 14 8 20 8" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 13H8" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 17H8" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 9H8" />
+    </svg>
+  );
+}
+
 const baseItemClass =
   "relative flex min-w-0 flex-col items-center gap-1.5 rounded-lg px-3 py-2 transition-colors";
 
@@ -65,6 +77,8 @@ export default function StickyFooter() {
     closeModals,
     activeModal,
   } = useAppState();
+
+  const showStampMenu = process.env.NEXT_PUBLIC_SHOW_STAMP_MENU === 'true';
 
   const pathname = usePathname();
   const router = useRouter();
@@ -107,11 +121,12 @@ export default function StickyFooter() {
     activeModal !== "account";
   const isQrActive = activeModal === "checkin";
   const isAccountActive = activeModal === "account";
+  const isStampActive = pathname === "/stamp";
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[#2a2a27] bg-[#1b1b19]/98 px-4 py-3 shadow-2xl backdrop-blur-md md:hidden">
       <div className="mx-auto w-full max-w-3xl">
-        <nav className="grid grid-cols-3 items-center gap-2">
+        <nav className={`grid ${showStampMenu ? 'grid-cols-4' : 'grid-cols-3'} items-center gap-2`}>
           <button
             type="button"
             onClick={handleHomeClick}
@@ -138,6 +153,22 @@ export default function StickyFooter() {
             )}
             <span className={labelClass}>QR Code</span>
           </button>
+
+          {showStampMenu && (
+            <button
+              type="button"
+              onClick={() => {
+                if (activeModal) closeModals();
+                router.push("/stamp");
+              }}
+              className={`${baseItemClass} ${
+                isStampActive ? activeItemClass : inactiveItemClass
+              } ${isStampActive ? activeUnderlineClass : ""}`}
+            >
+              <StampIcon />
+              <span className={labelClass}>Stamp</span>
+            </button>
+          )}
 
           <button
             type="button"
