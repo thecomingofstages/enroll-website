@@ -12,6 +12,7 @@ const activeUnderlineClass = "after:absolute after:bottom-1 after:left-4 after:r
 
 export function Header() {
   const { user, openLoginModal, openCheckinModal, openSignupModal, logout, openAccountModal, closeModals, activeModal } = useAppState();
+  const showStampMenu = process.env.NEXT_PUBLIC_SHOW_STAMP_MENU === 'true';
   const firstName = user?.name.split(" ")[0] ?? "";
   
   const pathname = usePathname();
@@ -55,6 +56,7 @@ export function Header() {
     activeModal !== "account";
   const isQrActive = activeModal === "checkin";
   const isAccountActive = activeModal === "account";
+  const isStampActive = pathname === "/stamp";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#111111] backdrop-blur supports-[backdrop-filter]:bg-[#111111]/80">
@@ -148,6 +150,25 @@ export function Header() {
               </svg>
               <span className="hidden sm:inline">Account</span>
           </button>
+          
+          {showStampMenu && (
+            <button
+              onClick={() => {
+                if (activeModal) closeModals();
+                router.push("/stamp");
+              }}
+              className={`${baseNavLinkClass} ${isStampActive ? activeNavClass : inactiveNavClass} ${isStampActive ? activeUnderlineClass : ""}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-80 group-hover:cursor-pointer hover:opacity-100">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <path d="M16 13H8"></path>
+                <path d="M16 17H8"></path>
+                <path d="M10 9H8"></path>
+              </svg>
+              <span className="hidden sm:inline">Stamp</span>
+            </button>
+          )}
           
         </nav>
         <div className="flex flex-1 justify-end shrink-0 flex-nowrap items-center gap-2 sm:gap-3">
