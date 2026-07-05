@@ -17,6 +17,8 @@ jest.mock('../src/app/models/Activity.model');
 jest.mock('../src/app/models/Registration.model');
 jest.mock('../src/app/models/Attendance.model');
 jest.mock('../src/app/models/Payment.model');
+jest.mock('../src/app/models/StampUser.model');
+jest.mock('../src/app/models/Store.model');
 jest.mock('../src/app/utils/QR.util');
 
 const UserModel         = require('../src/app/models/User.model');
@@ -24,6 +26,8 @@ const ActivityModel     = require('../src/app/models/Activity.model');
 const RegistrationModel = require('../src/app/models/Registration.model');
 const AttendanceModel   = require('../src/app/models/Attendance.model');
 const PaymentModel      = require('../src/app/models/Payment.model');
+const StampUserModel    = require('../src/app/models/StampUser.model');
+const StoreModel        = require('../src/app/models/Store.model');
 const QRUtil            = require('../src/app/utils/QR.util');
 
 const buildApp = require('./helpers/app');
@@ -74,6 +78,12 @@ function mockAdmin() {
   UserModel.findById = jest.fn().mockReturnValue({ lean: () => Promise.resolve(ADMIN_USER) });
 }
 
+// Default: no stamp data — individual tests can override
+function mockNoStamps() {
+  StampUserModel.findOne  = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
+  StoreModel.collection   = { find: jest.fn().mockReturnValue({ toArray: () => Promise.resolve([]) }) };
+}
+
 afterEach(() => jest.clearAllMocks());
 
 // =============================================================================
@@ -83,8 +93,9 @@ describe('POST /v1/events/scan', () => {
 
   const VALID_QR_PAYLOAD = { user_id: PLAIN_USER._id, iat: Math.floor(Date.now()/1000), exp: Math.floor(Date.now()/1000) + 300 };
 
-  test('200 — valid QR + PAID registration → JOINED, pushed to Attendance', async () => {
+  test('200 — valid QR + PAID registration → JOINED, pushed to Attendance, returns stamps', async () => {
     mockAdmin();
+    mockNoStamps();
     QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
 
     RegistrationModel.findOne         = jest.fn().mockReturnValue({ lean: () => Promise.resolve(PAID_REG) });
@@ -95,7 +106,6 @@ describe('POST /v1/events/scan', () => {
     RegistrationModel.findByIdAndUpdate = jest.fn().mockResolvedValue({});
     AttendanceModel.findOneAndUpdate  = jest.fn().mockResolvedValue({});
 
-
     const res = await request(app)
       .post('/v1/events/scan')
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
@@ -105,14 +115,14 @@ describe('POST /v1/events/scan', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.status).toBe('JOINED');
     expect(res.body.data.user.nickname).toBe(PLAIN_USER.nickname);
+    expect(res.body.data.stamps).toEqual([]);
+    expect(res.body.data.is_exchanged).toBe(false);
 
-    // Registration must be updated to JOINED with group_name
     expect(RegistrationModel.findByIdAndUpdate).toHaveBeenCalledWith(
       PAID_REG._id,
       { $set: { status: 'JOINED' } }
     );
 
-    // Attendance must be updated with $push on today's date key
     const [attFilter, attUpdate] = AttendanceModel.findOneAndUpdate.mock.calls[0];
     expect(attFilter.activity_id).toBe(ACTIVITY._id);
     const pushKey = Object.keys(attUpdate.$push)[0];
@@ -120,8 +130,47 @@ describe('POST /v1/events/scan', () => {
     expect(attUpdate.$push[pushKey]).toBe(PLAIN_USER._id);
   });
 
+  test('200 — returns collected stamps and is_exchanged for a user who has stamps', async () => {
+    mockAdmin();
+    QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
+
+    const STORE_OID = '6a4479cf22ec370fa7210501'; // valid 24-char hex (ObjectId format)
+    const STAMP_FIXTURE = {
+      _id: 'stamp-uuid-001', store_id: STORE_OID,
+      achieved_at: new Date('2026-07-11T10:00:00Z'),
+    };
+    StampUserModel.findOne = jest.fn().mockReturnValue({
+      lean: () => Promise.resolve({
+        _id: PLAIN_USER._id,
+        stamp_collected: [STAMP_FIXTURE],
+        is_exchanged: true,
+      }),
+    });
+    StoreModel.collection = { find: jest.fn().mockReturnValue({ toArray: () => Promise.resolve([{ _id: STORE_OID, name: 'Coffee Corner' }]) }) };
+
+    RegistrationModel.findOne           = jest.fn().mockReturnValue({ lean: () => Promise.resolve(PAID_REG) });
+    UserModel.findById
+      .mockReturnValueOnce({ lean: () => Promise.resolve(ADMIN_USER) })
+      .mockReturnValueOnce({ lean: () => Promise.resolve(PLAIN_USER) });
+    ActivityModel.findById              = jest.fn().mockReturnValue({ lean: () => Promise.resolve(ACTIVITY), select: () => ({ lean: () => Promise.resolve({ name: ACTIVITY.name }) }) });
+    RegistrationModel.findByIdAndUpdate = jest.fn().mockResolvedValue({});
+    AttendanceModel.findOneAndUpdate    = jest.fn().mockResolvedValue({});
+
+    const res = await request(app)
+      .post('/v1/events/scan')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send({ qr_token: 'valid.token', event_id: ACTIVITY._id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.stamps).toHaveLength(1);
+    expect(res.body.data.stamps[0].store_name).toBe('Coffee Corner');
+    expect(res.body.data.stamps[0]._id).toBe('stamp-uuid-001');
+    expect(res.body.data.is_exchanged).toBe(true);
+  });
+
   test('200 — only qr_token + event_id required', async () => {
     mockAdmin();
+    mockNoStamps();
     QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
     RegistrationModel.findOne           = jest.fn().mockReturnValue({ lean: () => Promise.resolve(PAID_REG) });
     UserModel.findById
@@ -171,6 +220,7 @@ describe('POST /v1/events/scan', () => {
 
   test('404 NOT_ENROLLED — user has no registration for this event', async () => {
     mockAdmin();
+    mockNoStamps();
     QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
     RegistrationModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
 
@@ -186,6 +236,7 @@ describe('POST /v1/events/scan', () => {
 
   test('422 ALREADY_JOINED — registration is already JOINED', async () => {
     mockAdmin();
+    mockNoStamps();
     QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
     RegistrationModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(JOINED_REG) });
 
@@ -202,6 +253,7 @@ describe('POST /v1/events/scan', () => {
 
   test('422 PAYMENT_REQUIRED — registration is PENDING (not paid)', async () => {
     mockAdmin();
+    mockNoStamps();
     QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
     const pendingReg = { ...PAID_REG, status: 'PENDING' };
     RegistrationModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(pendingReg) });
@@ -215,7 +267,7 @@ describe('POST /v1/events/scan', () => {
     expect(res.body.error.code).toBe('PAYMENT_REQUIRED');
   });
 
-  test('400 VALIDATION_ERROR — missing qr_token or event_id', async () => {
+  test('400 VALIDATION_ERROR — missing qr_token', async () => {
     mockAdmin();
     QRUtil.verify = jest.fn();
 
@@ -229,8 +281,55 @@ describe('POST /v1/events/scan', () => {
     expect(QRUtil.verify).not.toHaveBeenCalled();
   });
 
+  test('200 — no event_id → stamp-only response, no registration check', async () => {
+    mockAdmin();
+    QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
+
+    const STORE_OID = '6a4479cf22ec370fa7210501';
+    const STAMP_FIXTURE = {
+      _id: 'stamp-uuid-001', store_id: STORE_OID,
+      achieved_at: new Date('2026-07-11T10:00:00Z'),
+    };
+    StampUserModel.findOne = jest.fn().mockReturnValue({
+      lean: () => Promise.resolve({
+        _id: PLAIN_USER._id,
+        stamp_collected: [STAMP_FIXTURE],
+        is_exchanged: false,
+      }),
+    });
+    StoreModel.collection = { find: jest.fn().mockReturnValue({ toArray: () => Promise.resolve([{ _id: STORE_OID, name: 'Coffee Corner' }]) }) };
+    UserModel.findById
+      .mockReturnValueOnce({ lean: () => Promise.resolve(ADMIN_USER) })  // requireAdmin
+      .mockReturnValueOnce({ lean: () => Promise.resolve(PLAIN_USER) }); // fetch user for display
+    RegistrationModel.findOne           = jest.fn();
+    RegistrationModel.findByIdAndUpdate = jest.fn();
+    AttendanceModel.findOneAndUpdate    = jest.fn();
+
+    const res = await request(app)
+      .post('/v1/events/scan')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send({ qr_token: 'valid.token' }); // no event_id
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.stamps).toHaveLength(1);
+    expect(res.body.data.stamps[0].store_name).toBe('Coffee Corner');
+    expect(res.body.data.is_exchanged).toBe(false);
+    expect(res.body.data.user.nickname).toBe(PLAIN_USER.nickname);
+
+    // Must NOT touch registration or attendance
+    expect(RegistrationModel.findOne).not.toHaveBeenCalled();
+    expect(RegistrationModel.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(AttendanceModel.findOneAndUpdate).not.toHaveBeenCalled();
+
+    // Stamp-only response has no registration_id / status / date_key
+    expect(res.body.data.registration_id).toBeUndefined();
+    expect(res.body.data.status).toBeUndefined();
+  });
+
   test('findOne filters out CANCELLED registrations', async () => {
     mockAdmin();
+    mockNoStamps();
     QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
     RegistrationModel.findOne           = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
     RegistrationModel.findByIdAndUpdate = jest.fn();
