@@ -74,7 +74,7 @@ export function Header() {
             </div>
           </Link>
         </div>
-        <nav className="absolute left-1/2 top-1/2 hidden md:flex -translate-x-1/2 -translate-y-1/2 items-center gap-6 sm:gap-10">
+        <nav className="hidden md:flex flex-1 justify-center items-center gap-4 lg:gap-8">
           <button
             onClick={handleHomeClick}
             className={`${baseNavLinkClass} ${isHomeActive ? activeNavClass : inactiveNavClass} ${isHomeActive ? activeUnderlineClass : ""}`}

@@ -26,6 +26,8 @@ export function buildDirectionsFallbackHref(query: string): string {
 export function directionsHref(venue: ActivityVenue): string {
   const explicit = venue.directions_url?.trim();
   if (explicit) return explicit;
-  const query = [venue.name, ...(venue.address_lines || [])].filter(Boolean).join(", ");
+  const query = [venue.name, ...(venue.address_lines || [])]
+    .filter(Boolean)
+    .join(", ");
   return buildDirectionsFallbackHref(query);
 }
