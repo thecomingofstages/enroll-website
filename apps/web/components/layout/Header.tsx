@@ -159,13 +159,13 @@ export function Header() {
               }}
               className={`${baseNavLinkClass} ${isStampActive ? activeNavClass : inactiveNavClass} ${isStampActive ? activeUnderlineClass : ""}`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="opacity-80 group-hover:cursor-pointer hover:opacity-100">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <path d="M16 13H8"></path>
-                <path d="M16 17H8"></path>
-                <path d="M10 9H8"></path>
-              </svg>
+              <svg className="h-5 w-5 md:h-6 md:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3h6a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 8v2a2 2 0 0 1-2 2H8a2 2 0 0 0-2 2v2" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 8v2a2 2 0 0 0 2 2h0a2 2 0 0 1 2 2v2" />
+      <rect x="4" y="16" width="16" height="3" rx="1" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 21c1-1 2-1 3 0s2 1 3 0 2-1 3 0 2 1 3 0 2-1 3 0 2 1 3 0" />
+    </svg>
               <span className="hidden sm:inline">Stamp</span>
             </button>
           )}

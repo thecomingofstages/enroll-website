@@ -55,23 +55,22 @@ export default function StampPage() {
       <Header />
       <div className="min-h-[calc(100vh-90px)] bg-[#111111] py-12 px-4 sm:px-6 lg:px-8 text-white">
         <div className="max-w-3xl mx-auto space-y-8">
-          <h1 className="text-4xl font-bold text-center text-gold font-prompt">สะสมสแตมป์ (Stamp Collection)</h1>
+          <h1 className="text-4xl font-bold text-center text-gold font-prompt">Art Market Stamp</h1>
           
           {!user ? (
             <div className="text-center bg-white/5 p-12 rounded-xl border border-white/10 space-y-6">
-              <h2 className="text-2xl font-bold font-prompt text-white">กรุณาเข้าสู่ระบบ (Please Login)</h2>
+              <h2 className="text-2xl font-bold font-prompt text-white">กรุณาเข้าสู่ระบบ</h2>
               <p className="text-stone-400">คุณต้องเข้าสู่ระบบก่อนถึงจะสามารถสะสมสแตมป์ได้</p>
               <button 
                 onClick={openLoginModal}
                 className="bg-gold text-black font-bold px-8 py-3 rounded-lg hover:bg-yellow-500 transition-colors cursor-pointer"
               >
-                เข้าสู่ระบบ (Login)
+                Login
               </button>
             </div>
           ) : (
             <>
               <form onSubmit={handleRedeem} className="bg-white/5 p-6 rounded-xl border border-white/10 space-y-4">
-                <label className="block text-lg font-medium text-stone-200">กรอกรหัสจากร้านค้า (Enter Store Code)</label>
                 <div className="flex gap-4">
                   <input 
                     type="text" 
@@ -79,12 +78,12 @@ export default function StampPage() {
                     onChange={(e) => setInputCode(e.target.value)}
                     disabled={redeeming}
                     className="flex-1 bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold uppercase disabled:opacity-50"
-                    placeholder="เช่น TEA123"
+                    placeholder="กรอกรหัสจากร้านค้าที่นี่"
                   />
                   <button 
                     type="submit" 
                     disabled={redeeming || !inputCode.trim()}
-                    className="bg-gold text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-gold text-black font-bold px-3 py-3 rounded-lg hover:bg-yellow-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {redeeming ? "Redeeming..." : "Redeem"}
                   </button>
@@ -97,9 +96,10 @@ export default function StampPage() {
               </form>
 
               <div className="space-y-4 pb-24 md:pb-12">
-                <h2 className="text-2xl font-semibold text-stone-200">
-                  ร้านค้าทั้งหมด {loading ? "" : `(${collectedCount}/${stores.length})`}
+                <h2 className="text-2xl font-semibold font-prompt text-stone-200">
+                  ร้านค้าทั้งหมด
                 </h2>
+                <h3 className="font-prompt">คุณสะสมสแตมป์ครบ <span className="font-bold text-gold">{loading ? "" : `${collectedCount}`}</span> จาก {loading ? "" : `${stores.length} ร้านค้าแล้ว`}</h3>
                 
                 {loading ? (
                   <div className="flex justify-center py-12">

@@ -232,30 +232,30 @@ export default function QRCheckinModal() {
                       <span> {" • "} Refresh QR Code</span>
                     </button>
 
-                    <div className="rounded-xs bg-card border border-gold/30 p-2">
+                    <div className="rounded-xs bg-white border border-gold/30 p-2">
                       {qrLoading || (!qrToken && !qrError) ? (
-                        <div className="flex h-60 w-60 items-center justify-center rounded-lg bg-card p-4 text-center">
-                          <span className="text-xs font-black text-background">
-                            Loading...
+                        <div className="flex h-60 w-60 items-center justify-center bg-white p-4 text-center">
+                          <span className="text-xs font-gray text-background">
+                            
                           </span>
                         </div>
                       ) : qrError ? (
-                        <div className="flex h-60 w-60 items-center justify-center rounded-lg border bg-card p-4 text-center">
-                          <span className="text-[14px] font-black text-red-300">
+                        <div className="flex h-60 w-60 items-center justify-center bg-white p-4 text-center">
+                          <span className="text-[14px] font-black text-black">
                             {qrError}
                           </span>
                         </div>
                       ) : isExpired ? (
-                        <div className="flex h-60 w-60 items-center justify-center rounded-lg border p-4 text-center">
-                          <span className="text-xs font-black text-zinc-400">
+                        <div className="flex h-60 w-60 items-center justify-center text-center">
+                          <span className="text-xs font-black text-black">
                             Expired — tap to refresh
                           </span>
                         </div>
                       ) : (
-                        <div className="flex h-60 w-60 items-center justify-center overflow-hidden rounded-lg">
+                        <div className="flex h-60 w-60 items-center justify-center overflow-hidden">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrToken)}&color=113-113-113&bgcolor=1a1a1a`}
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrToken)}`}
                             className="h-full w-full object-contain"
                           />
                         </div>
