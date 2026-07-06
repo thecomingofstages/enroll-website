@@ -5,8 +5,14 @@ const StampUserModel = require('../models/StampUser.model');
 
 // Store codes use SHA-256 (deterministic) so we can do a direct DB lookup.
 // bcrypt is not used here — codes are not user credentials and must be matchable.
+// Codes are normalized to trimmed-uppercase on both the create and lookup paths
+// so admin input and user input always agree (the frontend uppercases too).
+function normalizeCode(code) {
+  return String(code).trim().toUpperCase();
+}
+
 function hashCode(code) {
-  return crypto.createHash('sha256').update(code).digest('hex');
+  return crypto.createHash('sha256').update(normalizeCode(code)).digest('hex');
 }
 
 class StampStoreHelper {
