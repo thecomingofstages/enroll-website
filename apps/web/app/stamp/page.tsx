@@ -77,7 +77,7 @@ export default function StampPage() {
                     value={inputCode}
                     onChange={(e) => setInputCode(e.target.value)}
                     disabled={redeeming}
-                    className="flex-1 bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold uppercase disabled:opacity-50"
+                    className="flex-1 bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-gold disabled:opacity-50"
                     placeholder="กรอกรหัสจากร้านค้าที่นี่"
                   />
                   <button 
