@@ -77,6 +77,24 @@ function autoWidth(sheet, minWidth = 10, maxWidth = 40) {
   });
 }
 
+async function findDocumentById(Model, id, options = {}) {
+  const normalizedId = id === undefined || id === null ? id : String(id).trim();
+  if (!normalizedId) return null;
+
+  try {
+    let query = Model.findById(normalizedId);
+    if (options.select) query = query.select(options.select);
+    return await query.lean();
+  } catch (err) {
+    const shouldFallback = err?.name === 'CastError' || /ObjectId|24 character hex string/i.test(err?.message || '');
+    if (!shouldFallback) throw err;
+
+    let query = Model.findOne({ _id: normalizedId });
+    if (options.select) query = query.select(options.select);
+    return await query.lean();
+  }
+}
+
 class EventHelper {
 
   // ── POST /events/scan ───────────────────────────────────────────────────────
@@ -108,15 +126,16 @@ class EventHelper {
     // QRUtil.verify throws INVALID_QR or QR_EXPIRED with correct statusCode + code
     const decoded = QRUtil.verify(qrToken);
     const { user_id } = decoded;
+    const normalizedUserId = String(user_id).trim();
+    const normalizedEventId = String(eventId).trim();
 
     // ── 2. Fetch stamp data (always) ───────────────────────────────────────
-    const stampUser = await StampUserModel.findOne({ _id: user_id }).lean();
+    const stampUser = await StampUserModel.findOne({ _id: normalizedUserId }).lean();
     const collected = stampUser?.stamp_collected || [];
     let storeNameMap = {};
     if (collected.length > 0) {
       const uniqueStoreIds = [...new Set(collected.map(s => String(s.store_id)))];
-      const objectIds = uniqueStoreIds.map(id => new mongoose.Types.ObjectId(id));
-      const stores = await StoreModel.collection.find({ _id: { $in: objectIds } }).toArray();
+      const stores = await StoreModel.find({ _id: { $in: uniqueStoreIds } }).lean();
       storeNameMap = Object.fromEntries(stores.map(s => [String(s._id), s.name]));
     }
 
@@ -142,8 +161,8 @@ class EventHelper {
 
     // ── 4. Full check-in flow ──────────────────────────────────────────────
     const registration = await RegistrationModel.findOne({
-      user_id,
-      activity_id: eventId,
+      user_id: normalizedUserId,
+      activity_id: normalizedEventId,
       status: { $nin: ['CANCELLED'] },
     }).lean();
 
@@ -173,12 +192,15 @@ class EventHelper {
     const activity = await ActivityModel.findById(eventId).select('name').lean();
 
     // ── 6. Set registration → JOINED ──────────────────────────────────────
-    await RegistrationModel.findByIdAndUpdate(registration._id, { $set: { status: 'JOINED' } });
+    await RegistrationModel.findOneAndUpdate(
+      { _id: String(registration._id) },
+      { $set: { status: 'JOINED' } }
+    );
 
     // ── 7. Push to Attendance map for today (Bangkok UTC+7) ───────────────
     const dateKey = bangkokDateKey();
     await AttendanceModel.findOneAndUpdate(
-      { activity_id: eventId },
+      { activity_id: normalizedEventId },
       { $push: { [`attendance.${dateKey}`]: user_id } },
       { upsert: true }
     );

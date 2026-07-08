@@ -103,7 +103,7 @@ describe('POST /v1/events/scan', () => {
       .mockReturnValueOnce({ lean: () => Promise.resolve(ADMIN_USER) })  // requireAdmin
       .mockReturnValueOnce({ lean: () => Promise.resolve(PLAIN_USER) }); // fetch user for display
     ActivityModel.findById            = jest.fn().mockReturnValue({ lean: () => Promise.resolve(ACTIVITY), select: () => ({ lean: () => Promise.resolve({ name: ACTIVITY.name }) }) });
-    RegistrationModel.findByIdAndUpdate = jest.fn().mockResolvedValue({});
+    RegistrationModel.findOneAndUpdate = jest.fn().mockResolvedValue({});
     AttendanceModel.findOneAndUpdate  = jest.fn().mockResolvedValue({});
 
     const res = await request(app)
@@ -118,8 +118,14 @@ describe('POST /v1/events/scan', () => {
     expect(res.body.data.stamps).toEqual([]);
     expect(res.body.data.is_exchanged).toBe(false);
 
+<<<<<<< Updated upstream
     expect(RegistrationModel.findByIdAndUpdate).toHaveBeenCalledWith(
       PAID_REG._id,
+=======
+    // Registration must be updated to JOINED with group_name
+    expect(RegistrationModel.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: PAID_REG._id },
+>>>>>>> Stashed changes
       { $set: { status: 'JOINED' } }
     );
 
@@ -130,6 +136,7 @@ describe('POST /v1/events/scan', () => {
     expect(attUpdate.$push[pushKey]).toBe(PLAIN_USER._id);
   });
 
+<<<<<<< Updated upstream
   test('200 — returns collected stamps and is_exchanged for a user who has stamps', async () => {
     mockAdmin();
     QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
@@ -155,6 +162,22 @@ describe('POST /v1/events/scan', () => {
     ActivityModel.findById              = jest.fn().mockReturnValue({ lean: () => Promise.resolve(ACTIVITY), select: () => ({ lean: () => Promise.resolve({ name: ACTIVITY.name }) }) });
     RegistrationModel.findByIdAndUpdate = jest.fn().mockResolvedValue({});
     AttendanceModel.findOneAndUpdate    = jest.fn().mockResolvedValue({});
+=======
+  test('200 — scan tolerates UUID string IDs when findById hits a cast error', async () => {
+    mockAdmin();
+    QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
+
+    const castErr = new Error('input must be a 24 character hex string, 12 byte Uint8Array, or an integer');
+    castErr.name = 'CastError';
+
+    RegistrationModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(PAID_REG) });
+    UserModel.findById = jest.fn().mockImplementation(() => { throw castErr; });
+    UserModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(PLAIN_USER) });
+    ActivityModel.findById = jest.fn().mockImplementation(() => { throw castErr; });
+    ActivityModel.findOne = jest.fn().mockReturnValue({ select: () => ({ lean: () => Promise.resolve({ name: ACTIVITY.name }) }) });
+    RegistrationModel.findOneAndUpdate = jest.fn().mockResolvedValue({});
+    AttendanceModel.findOneAndUpdate = jest.fn().mockResolvedValue({});
+>>>>>>> Stashed changes
 
     const res = await request(app)
       .post('/v1/events/scan')
@@ -162,10 +185,16 @@ describe('POST /v1/events/scan', () => {
       .send({ qr_token: 'valid.token', event_id: ACTIVITY._id });
 
     expect(res.status).toBe(200);
+<<<<<<< Updated upstream
     expect(res.body.data.stamps).toHaveLength(1);
     expect(res.body.data.stamps[0].store_name).toBe('Coffee Corner');
     expect(res.body.data.stamps[0]._id).toBe('stamp-uuid-001');
     expect(res.body.data.is_exchanged).toBe(true);
+=======
+    expect(res.body.data.status).toBe('JOINED');
+    expect(UserModel.findOne).toHaveBeenCalledWith({ _id: PLAIN_USER._id });
+    expect(ActivityModel.findOne).toHaveBeenCalledWith({ _id: ACTIVITY._id });
+>>>>>>> Stashed changes
   });
 
   test('200 — only qr_token + event_id required', async () => {
@@ -177,7 +206,7 @@ describe('POST /v1/events/scan', () => {
       .mockReturnValueOnce({ lean: () => Promise.resolve(ADMIN_USER) })
       .mockReturnValueOnce({ lean: () => Promise.resolve(PLAIN_USER) });
     ActivityModel.findById              = jest.fn().mockReturnValue({ lean: () => Promise.resolve(ACTIVITY), select: () => ({ lean: () => Promise.resolve({ name: ACTIVITY.name }) }) });
-    RegistrationModel.findByIdAndUpdate = jest.fn().mockResolvedValue({});
+    RegistrationModel.findOneAndUpdate = jest.fn().mockResolvedValue({});
     AttendanceModel.findOneAndUpdate    = jest.fn().mockResolvedValue({});
 
     await request(app)
@@ -185,7 +214,7 @@ describe('POST /v1/events/scan', () => {
       .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
       .send({ qr_token: 'valid.token', event_id: ACTIVITY._id });
 
-    const [, updateArg] = RegistrationModel.findByIdAndUpdate.mock.calls[0];
+    const [, updateArg] = RegistrationModel.findOneAndUpdate.mock.calls[0];
     expect(updateArg.$set).toEqual({ status: 'JOINED' });
   });
 
@@ -247,7 +276,7 @@ describe('POST /v1/events/scan', () => {
 
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('ALREADY_JOINED');
-    expect(RegistrationModel.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(RegistrationModel.findOneAndUpdate).not.toHaveBeenCalled();
     expect(AttendanceModel.findOneAndUpdate).not.toHaveBeenCalled();
   });
 
@@ -332,7 +361,7 @@ describe('POST /v1/events/scan', () => {
     mockNoStamps();
     QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
     RegistrationModel.findOne           = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
-    RegistrationModel.findByIdAndUpdate = jest.fn();
+    RegistrationModel.findOneAndUpdate = jest.fn();
     AttendanceModel.findOneAndUpdate    = jest.fn();
 
     await request(app)
