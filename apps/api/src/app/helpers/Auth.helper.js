@@ -6,6 +6,7 @@ const PasswordResetTokenModel = require('../models/PasswordResetToken.model');
 const JWTUtil   = require('../utils/JWT.util');
 const AppKeys   = require('../config/app.keys');
 const { sendPasswordResetEmail } = require('../utils/Email.util');
+const Logger = require('../utils/Logger.util');
 
 class AuthHelper {
 
@@ -130,7 +131,15 @@ class AuthHelper {
 
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
     const resetUrl = `${clientUrl.replace(/\/$/, '')}/reset-password?token=${rawToken}`;
-    await sendPasswordResetEmail({ to: user.email, resetUrl });
+
+    // Deliberately not awaited: the token is already persisted, so the
+    // request can respond immediately. SMTP delivery (and any fallback
+    // retries inside Email.util) happens in the background and must not
+    // hold the HTTP response hostage. Errors are logged, not thrown, since
+    // there's no request left to report them to.
+    sendPasswordResetEmail({ to: user.email, resetUrl }).catch((error) => {
+      Logger.error(`Password reset email failed for ${user.email}: ${error.message}`);
+    });
 
     return { ok: true, resetUrl };
   }
