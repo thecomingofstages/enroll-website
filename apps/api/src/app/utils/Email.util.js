@@ -50,7 +50,7 @@ async function sendPasswordResetEmail({ to, resetUrl }) {
         from: fromValue,
         replyTo,
         to,
-        subject: 'Reset your password',
+        subject: 'Password Reset for TCOS Enroll Website',
         html: `
           <p>You requested a password reset.</p>
           <p>Use the link below to create a new password:</p>
