@@ -1,4 +1,4 @@
-const Jimp              = require('jimp');
+const { Jimp }          = require('jimp');
 const jsQR              = require('jsqr');
 const PaymentModel      = require('../models/Payment.model');
 const RegistrationModel = require('../models/Registration.model');
@@ -35,7 +35,7 @@ async function decodeQRFromBuffer(imageBuffer) {
   let result = jsQR(image.bitmap.data, image.bitmap.width, image.bitmap.height);
   if (result) return result.data;
 
-  image.grayscale().contrast(1);
+  image.greyscale().contrast(1);
   result = jsQR(image.bitmap.data, image.bitmap.width, image.bitmap.height);
   if (result) return result.data;
 

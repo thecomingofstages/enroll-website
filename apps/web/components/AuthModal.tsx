@@ -110,8 +110,8 @@ function Divider({ label }: { label: string }) {
 }
 
 export default function AuthModal() {
-  const { activeModal, closeModals, login, signup } = useAppState();
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const { activeModal, closeModals, login, signup, forgotPassword } = useAppState();
+  const [authMode, setAuthMode] = useState<"login" | "signup" | "forgot-password">("login");
 
   React.useEffect(() => {
     if (activeModal === "login" || activeModal === "signup") {
@@ -130,6 +130,7 @@ export default function AuthModal() {
   const [gradeLevel, setGradeLevel] = useState("");
   const [errors, setErrors] = useState<SignupErrors>({});
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (activeModal !== "login" && activeModal !== "signup") return null;
@@ -155,6 +156,29 @@ export default function AuthModal() {
       resetState();
     } catch {
       setError("การเข้าสู่ระบบล้มเหลว กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) {
+      setErrors({ email: "กรุณากรอกอีเมล" });
+      setError("กรุณากรอกอีเมลเพื่อรับลิงก์รีเซ็ตรหัสผ่าน");
+      return;
+    }
+
+    setErrors({});
+    setError("");
+    setSuccessMessage("");
+    setIsSubmitting(true);
+    try {
+      await forgotPassword(email.trim());
+      setSuccessMessage("หากอีเมลนี้มีบัญชีอยู่ เราจะส่งลิงก์รีเซ็ตรหัสผ่านให้ทันที");
+      setEmail("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ไม่สามารถส่งคำขอรีเซ็ตรหัสผ่านได้");
     } finally {
       setIsSubmitting(false);
     }
@@ -205,10 +229,10 @@ export default function AuthModal() {
     setFirstName(""); setLastName(""); setNickname("");
     setEmail(""); setPhone(""); setGender(""); setGradeLevel("");
     setPassword(""); setConfirmPassword("");
-    setErrors({}); setError("");
+    setErrors({}); setError(""); setSuccessMessage("");
   };
 
-  const switchMode = (mode: "login" | "signup") => {
+  const switchMode = (mode: "login" | "signup" | "forgot-password") => {
     setAuthMode(mode);
     setErrors({});
     setError("");
@@ -233,7 +257,7 @@ export default function AuthModal() {
               TCOS
             </p>
             <h2 className="mt-0.5 font-sans text-xl font-bold text-zinc-100">
-              {authMode === "login" ? "Sign In" : "Create Account"}
+              {authMode === "forgot-password" ? "Forgot Password" : authMode === "login" ? "Sign In" : "Create Account"}
             </h2>
           </div>
           <button
@@ -258,7 +282,35 @@ export default function AuthModal() {
             </div>
           )}
 
-          {authMode === "login" ? (
+          {successMessage && (
+            <div className="mb-4 rounded border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-400">
+              {successMessage}
+            </div>
+          )}
+
+          {authMode === "forgot-password" ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div>
+                <FieldLabel required>อีเมล</FieldLabel>
+                <input
+                  type="email"
+                  placeholder="name@email.com"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); clearErr("email"); }}
+                  className={inputClass(Boolean(errors.email))}
+                />
+                <FieldError message={errors.email} />
+              </div>
+
+              <button type="submit" disabled={isSubmitting} className={btnPrimary}>
+                {isSubmitting ? "กำลังส่งลิงก์..." : "Send reset link"}
+              </button>
+
+              <button type="button" onClick={() => switchMode("login")} className={btnSecondary}>
+                Back to Sign In
+              </button>
+            </form>
+          ) : authMode === "login" ? (
             /* ──── LOGIN FORM ──── */
             <form onSubmit={handleDirectLogin} className="space-y-4">
               <div>
@@ -286,6 +338,10 @@ export default function AuthModal() {
 
               <button type="submit" disabled={isSubmitting} className={btnPrimary}>
                 {isSubmitting ? "กำลังเข้าสู่ระบบ..." : "Sign In"}
+              </button>
+
+              <button type="button" onClick={() => switchMode("forgot-password")} className="text-left text-sm font-medium text-gold hover:opacity-70">
+                Forgot password
               </button>
 
               <Divider label="ยังไม่มีบัญชี?" />

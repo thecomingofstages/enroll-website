@@ -64,6 +64,7 @@ interface AppContextType {
     user?: Partial<TCOSAccount> & { id?: string };
   }) => void;
   signup: (profile: SignupProfile) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
   updateProfile: (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => void;
   logout: () => void;
   refreshRegistrations: () => Promise<void>;
@@ -465,6 +466,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+    if (!base) throw new Error("API URL is not configured");
+
+    const res = await fetch(`${base}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      throw new Error(data.error?.message || "ไม่สามารถส่งลิงก์รีเซ็ตรหัสผ่านได้");
+    }
+  };
+
   const updateProfile = (profile: Pick<TCOSAccount, "name" | "email" | "phone" | "preferences" | "avatarUrl">) => {
     setUser((current) => {
       if (!current) return current;
@@ -619,6 +636,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         loginWithToken,
         setAuthFromRegistration,
         signup,
+        forgotPassword,
         updateProfile,
         logout,
         refreshRegistrations,

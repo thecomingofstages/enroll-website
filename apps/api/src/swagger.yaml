@@ -225,6 +225,16 @@ components:
         count: { type: integer, enum: [0, 1], description: "0 = not stamped, 1 = stamped" }
 
     # ── Payment ───────────────────────────────────────────────────────────────
+    PasswordResetToken:
+      type: object
+      properties:
+        _id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        token_hash: { type: string }
+        expires_at: { type: string, format: date-time }
+        used_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
+
     Payment:
       type: object
       properties:
@@ -319,6 +329,63 @@ paths:
       responses:
         '204': { description: Logged out }
         '401': { description: TOKEN_MISSING or TOKEN_EXPIRED }
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request a password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: Reset link sent if the account exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      message: { type: string }
+        '429': { description: RATE_LIMITED }
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset a password using a reset token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token: { type: string }
+                newPassword: { type: string, minLength: 8 }
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      message: { type: string }
+        '400': { description: INVALID_RESET_TOKEN or VALIDATION_ERROR }
 
   /auth/otp/send:
     post:
