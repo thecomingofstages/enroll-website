@@ -1,8 +1,11 @@
+const crypto = require('crypto');
 const bcrypt    = require('bcrypt');
 const { v7: uuidv7 } = require('uuid');
 const UserModel = require('../models/User.model');
+const PasswordResetTokenModel = require('../models/PasswordResetToken.model');
 const JWTUtil   = require('../utils/JWT.util');
 const AppKeys   = require('../config/app.keys');
+const { sendPasswordResetEmail } = require('../utils/Email.util');
 
 class AuthHelper {
 
@@ -100,6 +103,75 @@ class AuthHelper {
     // No-op for now. Add Redis JTI denylist here when needed:
     // await redis.set(`bl:${jti}`, '1', 'EX', remainingTtl);
     return;
+  }
+
+  static async requestPasswordReset(email) {
+    if (!email || typeof email !== 'string') {
+      return { ok: true };
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await UserModel.findOne({ email: normalizedEmail }).lean();
+    if (!user) {
+      return { ok: true, skipped: true };
+    }
+
+    await PasswordResetTokenModel.deleteMany({ user_id: user._id });
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+    await PasswordResetTokenModel.create({
+      user_id: user._id,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+    });
+
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetUrl = `${clientUrl.replace(/\/$/, '')}/reset-password?token=${rawToken}`;
+    await sendPasswordResetEmail({ to: user.email, resetUrl });
+
+    return { ok: true, resetUrl };
+  }
+
+  static async resetPassword(token, newPassword) {
+    if (!token || !newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+      const err = new Error('A valid token and a new password of at least 8 characters are required.');
+      err.code = 'VALIDATION_ERROR';
+      err.status = 400;
+      throw err;
+    }
+
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const resetTokenRecord = await PasswordResetTokenModel.findOne({ token_hash: tokenHash }).lean();
+    if (!resetTokenRecord || resetTokenRecord.used_at || new Date(resetTokenRecord.expires_at) < new Date()) {
+      const err = new Error('Reset token is invalid or expired.');
+      err.code = 'INVALID_RESET_TOKEN';
+      err.status = 400;
+      throw err;
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, AppKeys.BCRYPT_ROUNDS);
+    const user = await UserModel.findByIdAndUpdate(
+      resetTokenRecord.user_id,
+      {
+        password_hash: passwordHash,
+        password_changed_at: new Date(),
+      },
+      { new: true }
+    );
+
+    if (!user) {
+      const err = new Error('User not found.');
+      err.code = 'USER_NOT_FOUND';
+      err.status = 404;
+      throw err;
+    }
+
+    await PasswordResetTokenModel.deleteMany({ user_id: resetTokenRecord.user_id });
+
+    return { ok: true, message: 'Password updated successfully. Please log in again.' };
   }
 
   // ── POST /auth/otp/send ────────────────────────────────────────

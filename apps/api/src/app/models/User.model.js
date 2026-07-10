@@ -18,6 +18,7 @@ const UserSchema = new mongoose.Schema(
     address:           { type: String, default: null },
     education_level:   { type: String, default: null },
     institution:       { type: String, default: null },
+    password_changed_at: { type: Date, default: Date.now },
   },
   {
     _id: false,

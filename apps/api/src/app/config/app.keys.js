@@ -7,4 +7,6 @@ module.exports = {
   QR_TTL_SECONDS:     300,
   COOKIE_NAME:        'tcos_refresh',
   BCRYPT_ROUNDS:      12,
+  FORGOT_PASSWORD_RATE_LIMIT_WINDOW_MS: 15 * 60 * 1000,
+  FORGOT_PASSWORD_RATE_LIMIT_MAX: 3,
 };

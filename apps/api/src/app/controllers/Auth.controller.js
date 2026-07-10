@@ -49,6 +49,31 @@ class AuthController {
     }
   }
 
+  /** POST /auth/forgot-password */
+  static async forgotPassword(req, res, next) {
+    try {
+      await AuthHelper.requestPasswordReset(req.body.email);
+      return res.status(200).json({
+        success: true,
+        data: { message: 'If an account exists, a reset link has been sent.' },
+      });
+    } catch (err) {
+      Logger.error(`[AuthController.forgotPassword] ${err.message}`);
+      next(err);
+    }
+  }
+
+  /** POST /auth/reset-password */
+  static async resetPassword(req, res, next) {
+    try {
+      const result = await AuthHelper.resetPassword(req.body.token, req.body.newPassword);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      Logger.error(`[AuthController.resetPassword] ${err.message}`);
+      next(err);
+    }
+  }
+
   /** POST /auth/otp/send */
   static async sendOtp(req, res, next) {
     try {

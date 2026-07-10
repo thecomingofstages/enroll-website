@@ -14,6 +14,12 @@ class AuthMiddleware {
       const user    = await UserModel.findById(decoded.sub).lean();
       if (!user) return res.status(401).json({ success: false, error: { code: 'TOKEN_EXPIRED', message: 'User not found.' } });
 
+      const issuedAt = decoded.iat ? decoded.iat * 1000 : null;
+      const passwordChangedAt = user.password_changed_at ? new Date(user.password_changed_at).getTime() : null;
+      if (issuedAt && passwordChangedAt && issuedAt < passwordChangedAt) {
+        return res.status(401).json({ success: false, error: { code: 'TOKEN_EXPIRED', message: 'Session invalidated. Please log in again.' } });
+      }
+
       req.user = user;
       next();
     } catch {
@@ -38,6 +44,14 @@ class AuthMiddleware {
 
       const decoded = JWTUtil.verifyAccess(token);
       const user    = await UserModel.findById(decoded.sub).lean();
+      if (user) {
+        const issuedAt = decoded.iat ? decoded.iat * 1000 : null;
+        const passwordChangedAt = user.password_changed_at ? new Date(user.password_changed_at).getTime() : null;
+        if (issuedAt && passwordChangedAt && issuedAt < passwordChangedAt) {
+          req.user = null;
+          return next();
+        }
+      }
       req.user = user || null;
       next();
     } catch {
