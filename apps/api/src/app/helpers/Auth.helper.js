@@ -135,11 +135,22 @@ class AuthHelper {
     // Deliberately not awaited: the token is already persisted, so the
     // request can respond immediately. SMTP delivery (and any fallback
     // retries inside Email.util) happens in the background and must not
-    // hold the HTTP response hostage. Errors are logged, not thrown, since
-    // there's no request left to report them to.
-    sendPasswordResetEmail({ to: user.email, resetUrl }).catch((error) => {
-      Logger.error(`Password reset email failed for ${user.email}: ${error.message}`);
-    });
+    // hold the HTTP response hostage. Email.util can fail in two shapes:
+    // a rejected promise (SMTP_SEND_FAILED after all attempts) or a
+    // resolved-but-unsuccessful result (misconfiguration, e.g. missing
+    // SMTP_USER or NODE_ENV not set to 'production'). Both must be logged,
+    // or a config problem in production silently drops every reset email.
+    sendPasswordResetEmail({ to: user.email, resetUrl })
+      .then((result) => {
+        if (!result?.ok || result?.skipped) {
+          Logger.warn(
+            `Password reset email not actually sent for ${user.email}: ${result?.reason || 'skipped (check NODE_ENV / SMTP env vars)'}`
+          );
+        }
+      })
+      .catch((error) => {
+        Logger.error(`Password reset email failed for ${user.email}: ${error.message}`);
+      });
 
     return { ok: true, resetUrl };
   }
