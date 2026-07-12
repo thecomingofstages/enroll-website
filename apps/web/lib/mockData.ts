@@ -12,7 +12,7 @@ export interface Activity {
   enrolled_count: number;
   status: 'open' | 'closed';
   tags: string[];
-  isFeatured: boolean;
+  is_featured: boolean;
   price: number; // 0 means Free
   hero_image_url: string;
   colorTheme: string; // Tailwind color class for card visual header: e.g. 'bg-[#800f14]', 'bg-[#18392b]', etc.
