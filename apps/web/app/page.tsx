@@ -65,14 +65,17 @@ function MainContent() {
   return (
     <>
       <Header />
-      {showHome && activities.length > 0 && (
-        <ActivityCard
-          key={(activities.slice().reverse()[0] as any)._id}
-          activity={(activities.slice().reverse()[0] as any)}
-          variant="recommended"
-          onRegister={handleRegister}
-        />
-      )}
+      {showHome && (() => {
+  const recommended = activities.findLast((activity) => activity.is_featured);
+  return recommended ? (
+    <ActivityCard
+      key={recommended._id}
+      activity={recommended}
+      variant="recommended"
+      onRegister={handleRegister}
+    />
+  ) : null;
+})()}
       {showHome && (
         <section className="bg-[#131311] mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-10">
           <div className="mx-auto w-full max-w-7xl">
@@ -93,13 +96,17 @@ function MainContent() {
               </div>
             ) : (
               <div className="mt-4 mb-15 gap-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {activities.slice().reverse().map((activity) => (
-                  <ActivityCard
-                    key={`all-${activity._id}`}
-                    activity={activity}
-                    variant="grid"
-                    onRegister={handleRegister}
-                  />
+                {activities
+                  .filter((activity) => activity.is_featured)
+                  .slice()
+                  .reverse()
+                  .map((activity) => (
+                    <ActivityCard
+                      key={`all-${activity._id}`}
+                      activity={activity}
+                      variant="grid"
+                      onRegister={handleRegister}
+                    />
                 ))}
               </div>
             )}
