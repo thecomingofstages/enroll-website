@@ -18,7 +18,11 @@ const UserSchema = new mongoose.Schema(
     address:           { type: String, default: null },
     education_level:   { type: String, default: null },
     institution:       { type: String, default: null },
-    password_changed_at: { type: Date, default: Date.now },
+    // Set only when the password is actually changed (see Auth.helper.resetPassword).
+    // No default — leaving it null on new users prevents a clock-skew race where
+    // a freshly-issued JWT (iat ≈ now) loses against password_changed_at (= now)
+    // and gets rejected as "Session invalidated" on the very next request.
+    password_changed_at: { type: Date, default: null },
   },
   {
     _id: false,
