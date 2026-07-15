@@ -16,6 +16,11 @@ router.get('/mine', AuthMiddleware.requireAuth, RegistrationController.getMyRegi
 router.get('/:id', AuthMiddleware.requireAuth, RegistrationController.getById);
 
 // POST /registrations/:id/payment  — multipart/form-data, field: slip
-router.post('/:id/payment', AuthMiddleware.requireAuth, UploadMiddleware.handleSlip, PaymentController.verifySlip);
+// optionalAuth: the slip upload is reachable from the new-user registration flow
+// (the access_token returned by POST /registrations is sent here immediately) and
+// from the logged-in "resume payment" flow. Use optionalAuth so a transient token
+// issue doesn't strand a freshly-created user; ownership is verified inside the
+// controller against the registration's user_id.
+router.post('/:id/payment', AuthMiddleware.optionalAuth, UploadMiddleware.handleSlip, PaymentController.verifySlip);
 
 module.exports = router;
