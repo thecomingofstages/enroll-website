@@ -147,9 +147,12 @@ export default function QRCheckinModal() {
       try {
         if (!user) throw new Error("No user found");
         
+        const ttl = neverExpire ? 315360000 : FALLBACK_QR_TTL_SECONDS;
+        const expiresAtMs = Date.now() + (ttl * 1000);
+        
         const payload = {
-          qr_token: user.id,
-          expires_in: FALLBACK_QR_TTL_SECONDS
+          qr_token: `${user.id}|${expiresAtMs}`,
+          expires_in: ttl
         };
         
         if (cancelled) return;
@@ -175,7 +178,7 @@ export default function QRCheckinModal() {
     return () => {
       cancelled = true;
     };
-  }, [activeModal, refreshNonce, user]);
+  }, [activeModal, refreshNonce, user, neverExpire]);
 
   useEffect(() => {
     if (activeModal !== "checkin" || !qrExpiresAt) return;
