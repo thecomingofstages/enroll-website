@@ -113,6 +113,7 @@ export default function QRCheckinModal() {
   const [qrLoading, setQrLoading] = useState(false);
   const [qrError, setQrError] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
+  const [neverExpire, setNeverExpire] = useState(false);
 
   // Stale-token recovery. fetchMemberQrToken throws on 401; we register a
   // shared handler in user-api so the same recovery path runs from
@@ -144,8 +145,23 @@ export default function QRCheckinModal() {
       setQrError(null);
 
       try {
-        // No longer passes `user` — uses getAuthToken() like user-api.ts does
-        const payload = await fetchMemberQrToken();
+        if (!user) throw new Error("No user found");
+        
+        let payload: QrTokenPayload;
+        
+        if (neverExpire) {
+          // Unlimited: Just use user.id
+          payload = {
+            qr_token: user.id,
+            expires_in: 315360000 // 10 years
+          };
+        } else {
+          // Limited: Call the real Backend endpoint
+          const apiPayload = await fetchMemberQrToken();
+          if (!apiPayload) throw new Error("Invalid API response");
+          payload = apiPayload;
+        }
+        
         if (cancelled) return;
 
         const expiresAt = getExpiryTime(payload);
@@ -169,7 +185,7 @@ export default function QRCheckinModal() {
     return () => {
       cancelled = true;
     };
-  }, [activeModal, refreshNonce, user]);
+  }, [activeModal, refreshNonce, user, neverExpire]);
 
   useEffect(() => {
     if (activeModal !== "checkin" || !qrExpiresAt) return;
@@ -184,7 +200,7 @@ export default function QRCheckinModal() {
   if (activeModal !== "checkin") return null;
 
   const attendee = user ? getAttendeeDisplay(user) : null;
-  const isExpired = timeLeft === 0;
+  const isExpired = !neverExpire && timeLeft === 0;
 
   const minutesLeft = Math.floor(timeLeft / 60);
   const secondsLeft = String(timeLeft % 60).padStart(2, "0");
@@ -221,41 +237,78 @@ export default function QRCheckinModal() {
               <div className="w-full">
                 <div className="flex flex-col items-center justify-center">
                   <div className="rounded-xl bg-background p-3">
-                    <button
-                      onClick={() => setRefreshNonce((n) => n + 1)}
-                      disabled={qrLoading}
-                      className={`w-full mt-1 text-center text-[16px] font-semibold mb-7 hover:cursor-pointer hover:opacity-60 transition-opacity ${
-                        isExpired || qrError ? "text-red-300" : "text-gold"
-                      }`}
-                    >
-                      {isExpired ? "Expired" : `${minutesLeft}:${secondsLeft}`}
-                      <span> {" • "} Refresh QR Code</span>
-                    </button>
+                    {/* Toggle Mode */}
+                    <div className="relative flex w-full mx-auto rounded-lg border border-gold/30 bg-[#1a1a1a] p-1 mb-5 font-prompt">
+                      {/* Animated Slider Pill */}
+                      <div 
+                        className={`absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-md bg-gold shadow-sm transition-transform duration-300 ease-in-out ${neverExpire ? "translate-x-full" : "translate-x-0"}`}
+                      />
+                      
+                      <button
+                        onClick={() => setNeverExpire(false)}
+                        className={`relative z-10 flex-1 rounded-md py-2 text-xs font-semibold transition-colors duration-300 ${
+                          !neverExpire ? "text-black" : "text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        จำกัดเวลา
+                      </button>
+                      <button
+                        onClick={() => setNeverExpire(true)}
+                        className={`relative z-10 flex-1 rounded-md py-2 text-xs font-semibold transition-colors duration-300 ${
+                          neverExpire ? "text-black" : "text-zinc-400 hover:text-white"
+                        }`}
+                      >
+                        ไม่จำกัดเวลา
+                      </button>
+                    </div>
 
-                    <div className="rounded-xs bg-white border border-gold/30 p-2">
+                    {/* Helper Text */}
+                    <div className="text-center text-zinc-400 text-[11px] mb-5 min-h-[16px] px-2 leading-snug">
+                      {!neverExpire 
+                        ? "QR แบบจำกัดเวลา จะมีอายุ 5 นาที โดยจะไม่สามารถบันทึกหน้าจอได้" 
+                        : "จะใช้ได้แค่บางกิจกรรม โปรดตรวจสอบที่จุดลงทะเบียน"}
+                    </div>
+
+                    {/* Refresh Button Area (Fixed height to prevent layout shift) */}
+                    <div className="h-[24px] mb-5 w-full flex items-center justify-center">
+                      {!neverExpire && (
+                        <button
+                          onClick={() => setRefreshNonce((n) => n + 1)}
+                          disabled={qrLoading}
+                          className={`w-full text-center text-[16px] font-semibold hover:cursor-pointer hover:opacity-60 transition-opacity ${
+                            isExpired || qrError ? "text-red-500" : "text-gold"
+                          }`}
+                        >
+                          {isExpired ? "Expired" : `${minutesLeft}:${secondsLeft}`}
+                          <span> {" • "} Refresh QR Code</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="rounded-lg bg-white border border-gold/30 p-3 shadow-lg mx-auto w-fit">
                       {qrLoading || (!qrToken && !qrError) ? (
-                        <div className="flex h-60 w-60 items-center justify-center bg-white p-4 text-center">
-                          <span className="text-xs font-gray text-background">
-                            
+                        <div className="flex h-60 w-60 items-center justify-center rounded-lg bg-white p-4 text-center">
+                          <span className="text-xs font-black text-black">
+                            Loading...
                           </span>
                         </div>
                       ) : qrError ? (
-                        <div className="flex h-60 w-60 items-center justify-center bg-white p-4 text-center">
-                          <span className="text-[14px] font-black text-black">
+                        <div className="flex h-60 w-60 items-center justify-center rounded-lg bg-white p-4 text-center">
+                          <span className="text-[14px] font-black text-red-500">
                             {qrError}
                           </span>
                         </div>
                       ) : isExpired ? (
-                        <div className="flex h-60 w-60 items-center justify-center text-center">
-                          <span className="text-xs font-black text-black">
+                        <div className="flex h-60 w-60 items-center justify-center rounded-lg bg-white p-4 text-center">
+                          <span className="text-xs font-black text-zinc-500">
                             Expired — tap to refresh
                           </span>
                         </div>
                       ) : (
-                        <div className="flex h-60 w-60 items-center justify-center overflow-hidden">
+                        <div className="flex h-60 w-60 items-center justify-center overflow-hidden rounded-md bg-white">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrToken)}`}
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrToken)}&margin=0`}
                             className="h-full w-full object-contain"
                           />
                         </div>
