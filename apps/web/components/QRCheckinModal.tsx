@@ -147,17 +147,24 @@ export default function QRCheckinModal() {
       try {
         if (!user) throw new Error("No user found");
         
-        const ttl = neverExpire ? 315360000 : FALLBACK_QR_TTL_SECONDS;
-        const expiresAtMs = Date.now() + (ttl * 1000);
+        let payload: QrTokenPayload;
         
-        const payload = {
-          qr_token: `${user.id}|${expiresAtMs}`,
-          expires_in: ttl
-        };
+        if (neverExpire) {
+          // Unlimited: Just use user.id
+          payload = {
+            qr_token: user.id,
+            expires_in: 315360000 // 10 years
+          };
+        } else {
+          // Limited: Call the real Backend endpoint
+          const apiPayload = await fetchMemberQrToken();
+          if (!apiPayload) throw new Error("Invalid API response");
+          payload = apiPayload;
+        }
         
         if (cancelled) return;
 
-        const expiresAt = getExpiryTime(payload as QrTokenPayload);
+        const expiresAt = getExpiryTime(payload);
         setQrToken(payload.qr_token);
         setQrExpiresAt(expiresAt);
         setTimeLeft(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)));
@@ -253,6 +260,13 @@ export default function QRCheckinModal() {
                       >
                         ไม่จำกัดเวลา
                       </button>
+                    </div>
+
+                    {/* Helper Text */}
+                    <div className="text-center text-zinc-400 text-[11px] mb-5 min-h-[16px] px-2 leading-snug">
+                      {!neverExpire 
+                        ? "QR แบบจำกัดเวลา จะมีอายุ 5 นาที โดยจะไม่สามารถบันทึกหน้าจอได้" 
+                        : "จะใช้ได้แค่บางกิจกรรม โปรดตรวจสอบที่จุดลงทะเบียน"}
                     </div>
 
                     {/* Refresh Button Area (Fixed height to prevent layout shift) */}
