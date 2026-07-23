@@ -41,7 +41,7 @@ function ActivityRegistrants({
   </div>
   <div className={`mt-1 h-[5px] w-full sm:h-2 bg-background`}>
     <div
-      className={`h-full bg-${capacity === 0 ? "background" : count !== capacity ? "gold" : "red-300"}transition-[width] duration-300`}
+      className={`h-full bg-${capacity === 0 ? "background" : count !== capacity ? "gold" : "red-300"} transition-[width] duration-300`}
       style={{ width: `${fillPercent}%` }}
       role="progressbar"
       aria-valuenow={count}
