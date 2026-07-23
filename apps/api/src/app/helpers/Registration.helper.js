@@ -78,7 +78,7 @@ class RegistrationHelper {
     }
 
     // ── 3. Seat capacity ────────────────────────────────────────────
-    if (activity.enrolled_count >= activity.seat_capacity) {
+    if (activity.seat_capacity !== 0 && activity.enrolled_count >= activity.seat_capacity) {
       const err = new Error('This activity has reached its seat capacity.');
       err.statusCode = 422; err.code = 'ACTIVITY_FULL'; throw err;
     }

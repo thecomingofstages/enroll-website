@@ -34,14 +34,14 @@ function ActivityRegistrants({
     return (
       <div className="min-w-0 max-w-[32rem] flex-1">
   <div className="flex items-center justify-between gap-3">
-    <p className=" font-semibold uppercase tracking-widest text-zinc-500 text-xs lg:text-xl mt-0">Availability</p>
-    <span className={`text-base font-semibold text-${count/capacity !== 1 ? "gold" : "red-300"} sm:text-lg`}>
-      {count}/{capacity}
+    <p className=" font-semibold uppercase tracking-widest text-zinc-500 text-xs lg:text-xl mt-0">ENROLLED</p>
+    <span className={`text-base font-semibold text-${count !== capacity || count === 0 ? "gold" : "red-300"} sm:text-lg`}>
+      {count}{`${capacity === 0 ? "" : `  /  ${capacity}`}`}
     </span>
   </div>
-  <div className={`mt-1 h-[5px] w-full sm:h-2 ${trackClass}`}>
+  <div className={`mt-1 h-[5px] w-full sm:h-2 bg-background`}>
     <div
-      className="h-full bg-[#d8b85a] transition-[width] duration-300"
+      className={`h-full bg-${capacity === 0 ? "background" : count !== capacity ? "gold" : "red-300"}transition-[width] duration-300`}
       style={{ width: `${fillPercent}%` }}
       role="progressbar"
       aria-valuenow={count}
@@ -57,14 +57,14 @@ function ActivityRegistrants({
   return (
     <div className="w-full mt-5">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold uppercase tracking-wider text-zinc-500 mt-0">Availability</p>
-        <span className={`text-sm font-semibold text-${count/capacity !== 1 ? "gold" : "red-300"}`}>
-          {count}/{capacity}
+        <p className="text-sm font-semibold uppercase tracking-wider text-zinc-500 mt-0">ENROLLED</p>
+        <span className={`text-sm font-semibold text-${count !== capacity || count === 0 ? "gold" : "red-300"}`}>
+          {count}{`${capacity === 0 ? "" : `  /  ${capacity}`}`}
         </span>
       </div>
-      <div className={`mt-1.5 h-1 w-full ${trackClass}`}>
+      <div className={`mt-1.5 h-1 w-full bg-background`}>
         <div
-          className="h-full bg-[#d8b85a] transition-[width] duration-300"
+          className={`h-full bg-${capacity === 0 ? "background" : count !== capacity ? "gold" : "red-300"} transition-[width] duration-300`}
           style={{ width: `${fillPercent}%` }}
           role="progressbar"
           aria-valuenow={count}
@@ -92,18 +92,18 @@ export default function ActivityCard({
   const isEnded = new Date(activity.close_registration_at?? "2099-12-31T00:00:00") < new Date(); 
   let isDisabled = isRegistered;
 
-  let buttonText;
-  if (isRegistered) { buttonText = "Registered ✓"; } 
+  let buttonText; let backgroundButtonColor = "bg-gold text-background";
+  if (isRegistered) { buttonText = "Registered ✓"; backgroundButtonColor = "bg-green text-background"} 
   else if (activity.registration_open_override === false) { 
-    buttonText = "Registration Closed ⤬";
+    buttonText = "Registration Closed ⤬"; backgroundButtonColor = "bg-red-300 text-background";
     isDisabled = true;
   }
-  else if (activity.registration_open_override === true) { buttonText = "Register"; }
+  else if (activity.registration_open_override === true) { buttonText = "Register"; backgroundButtonColor = "bg-gold text-background"}
   else {
-    if (isFull) { buttonText = "Seats Full ⤬"; }
-    else if (isEnded) { buttonText = "Registration Ended ⤬"; } 
-    else if (isNotStarted) { buttonText = "Registration Opens Soon ..."; }
-    else { buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)"; }
+    if (isFull) { buttonText = "Seats Full ⤬"; backgroundButtonColor = "bg-red-300 text-background"}
+    else if (isEnded) { buttonText = "Registration Ended ⤬"; backgroundButtonColor = "bg-red-300 text-background"} 
+    else if (isNotStarted) { buttonText = "Registration Opens Soon ..."; backgroundButtonColor = "bg-zinc-700 text-foreground"}
+    else { buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)"; backgroundButtonColor = "bg-gold text-background" }
     isDisabled = isFull || isEnded || isNotStarted;
   } 
 
@@ -150,12 +150,7 @@ export default function ActivityCard({
           <a
             type="button"
             href={`activity/${activity._id}`}
-            className={`${
-              isRegistered ? "bg-green text-background"
-            : isNotStarted ? "bg-zinc-700 text-foreground" 
-            : isDisabled ? "bg-red-300 text-background"
-            : "bg-gold text-background"
-          } transition-opacity hover:cursor-pointer tracking-wider mt-1 mb-1 w-full text-md rounded-xs px-3 py-2 text-md font-semibold text-background transition:opacity hover:opacity-60 text-center`}
+            className={`${ backgroundButtonColor } transition-opacity hover:cursor-pointer tracking-wider mt-1 mb-1 w-full text-md rounded-xs px-3 py-2 text-md font-semibold text-background transition:opacity hover:opacity-60 text-center`}
           >
             {buttonText}
           </a>
@@ -201,8 +196,6 @@ export default function ActivityCard({
             type="button"
             href={`activity/${activity._id}`}
             className={`${
-              isRegistered ? "bg-green":
-              isFull ? "bg-red" :
               "bg-gold" 
             } tracking-wider mr-5 lg:mr-10 rounded-xs px-5 lg:px-10 py-2 text-md lg:text-2xl font-semibold text-background transition-colors hover:opacity-60 transitions-opacity text-center`}
           >
