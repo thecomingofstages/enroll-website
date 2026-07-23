@@ -47,6 +47,31 @@ class PaymentController {
       return res.status(200).json({ success: true, data });
     } catch (err) { Logger.error(`[PaymentController.adminUpdatePaymentStatus] ${err.message}`); next(err); }
   }
+
+  /** POST /registrations/preview — slip QR pre-check, no DB writes.
+   *
+   * Reachable by guests (no auth middleware). The frontend calls this
+   * BEFORE POST /registrations to validate the slip's QR is readable;
+   * if the preview returns 422, no user account is created and the user
+   * can retry with a clearer image. This fixes the bug where a bad slip
+   * still created the user in MongoDB, leaving the email "taken" for any
+   * subsequent retry.
+   */
+  static async previewSlip(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Slip image is required.' },
+        });
+      }
+      const data = await PaymentHelper.previewSlip(req.file.buffer);
+      return res.status(200).json({ success: true, data });
+    } catch (err) {
+      Logger.error(`[PaymentController.previewSlip] ${err.message}`);
+      next(err);
+    }
+  }
 }
 
 module.exports = PaymentController;

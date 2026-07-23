@@ -183,6 +183,25 @@ class PaymentHelper {
 
     return updated;
   }
+
+  // ── POST /registrations/preview ────────────────────────────────
+  /**
+   * QR-decode-only pre-check for the paid-registration flow.
+   *
+   * Used by the frontend BEFORE it commits to creating a new user
+   * account + registration. Returns 422 (QR_UNREADABLE) for any
+   * image that cannot be parsed or that has no readable QR.
+   *
+   * No DB writes — this is purely a validation gate. Mirrors the
+   * QR-decode step of `verifySlip`, minus everything else.
+   *
+   * @param  {Buffer} slipBuffer
+   * @return {Promise<{ qr_readable: true, qr_length: number }>}
+   */
+  static async previewSlip(slipBuffer) {
+    const qrString = await decodeQRFromBuffer(slipBuffer);
+    return { qr_readable: true, qr_length: qrString.length };
+  }
 }
 
 module.exports = PaymentHelper;

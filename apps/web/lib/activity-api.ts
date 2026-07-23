@@ -196,6 +196,41 @@ export async function fetchMyRegistrations(): Promise<any[]> {
   return [];
 }
 
+export async function previewSlip(
+  paymentSlip: File
+): Promise<{ ok: boolean; message: string }> {
+  // QR-only pre-check used by the paid-registration flow BEFORE
+  // committing to user-account + registration creation. No auth
+  // header — this endpoint is reachable by guests and the backend
+  // does not write anything to MongoDB.
+  const base = apiBase();
+  if (!base) return { ok: false, message: "Offline" };
+
+  try {
+    const form = new FormData();
+    form.set("slip", paymentSlip);
+
+    const res = await fetch(`${base}/registrations/preview`, {
+      method: "POST",
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok || !data.success) {
+      let msg = data.error?.message ?? "ตรวจสอบสลิปไม่สำเร็จ";
+      if (res.status === 422) {
+        msg = "ยอดเงินไม่ตรงกับราคา หรือ แสกน QR บนสลิปไม่พบ กรุณาอัปโหลดรูปใหม่";
+      } else if (res.status === 400) {
+        msg = "กรุณาอัปโหลดสลิป";
+      }
+      return { ok: false, message: msg };
+    }
+    return { ok: true, message: "ตรวจสอบสลิปสำเร็จ" };
+  } catch (e) {
+    return { ok: false, message: "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้" };
+  }
+}
+
 export async function postPaymentSlip(
   registrationId: string,
   paymentSlip: File

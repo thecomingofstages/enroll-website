@@ -2,7 +2,7 @@
 
 import { act, useEffect, useId, useState } from "react";
 import type { ActivityDetail } from "@enroll-website/types";
-import { postActivityRegistration, postPaymentSlip } from "@/lib/activity-api";
+import { postActivityRegistration, postPaymentSlip, previewSlip } from "@/lib/activity-api";
 import { useAppState } from "@/lib/context";
 
 type StepId = "info" | "payment" | "questions";
@@ -158,10 +158,16 @@ export function RegisterModal({
         return;
       }
       const res = await postPaymentSlip(existingRegistrationId, slip);
-      setSubmitting(false);
       if (res.ok) {
+        // Backend just transitioned the registration's status (PENDING→PAID/JOINED).
+        // Refresh the global registrations context *before* clearing `submitting`
+        // so the parent `ActivityRegisterSection` re-derives `isRegistered`/`isPendingPayment`
+        // against fresh data — otherwise a stale "Complete Payment" view could linger.
+        await refreshRegistrations();
+        setSubmitting(false);
         setIsSuccess(true);
       } else {
+        setSubmitting(false);
         setFeedback({
           message: res.message ?? "เกิดข้อผิดพลาด",
           variant: "error",
@@ -188,6 +194,19 @@ export function RegisterModal({
       address: address.trim() || undefined,
     };
 
+    // If a slip is being uploaded, QR-pre-check it BEFORE we ask the
+    // backend to create a new user + registration. Without this, a bad
+    // slip still creates the user account in MongoDB on the first
+    // submit, and the retry hit the backend's DUPLICATE_EMAIL guard.
+    if (slip) {
+      const preview = await previewSlip(slip);
+      if (!preview.ok) {
+        setSubmitting(false);
+        setFeedback({ message: preview.message, variant: "error" });
+        return;
+      }
+    }
+
     const res = await postActivityRegistration(
       activity._id,
       {
@@ -197,7 +216,6 @@ export function RegisterModal({
       },
       slip,
     );
-    setSubmitting(false);
     if (res.ok) {
       if (res.access_token && !user) {
         let subId = "temp-id";
@@ -205,19 +223,28 @@ export function RegisterModal({
           const payload = JSON.parse(atob(res.access_token.split('.')[1]));
           subId = payload.sub || subId;
         } catch(e) {}
-        
-        loginWithToken({
+
+        // Await the auth+registrations refresh so the global context reflects
+        // this new registration *before* `submitting` flips off. Without this,
+        // a fast modal close/reopen could see `isRegistered: false` and
+        // re-POST /registrations, tripping the backend's duplicate guard.
+        await loginWithToken({
           id: subId,
           name: `${firstName.trim()} ${lastName.trim()}`,
           email: email.trim(),
           phone: phone.trim(),
           preferences: [],
         }, res.access_token);
+        setSubmitting(false);
       } else if (user) {
-        refreshRegistrations();
+        await refreshRegistrations();
+        setSubmitting(false);
+      } else {
+        setSubmitting(false);
       }
       setIsSuccess(true);
     } else {
+      setSubmitting(false);
       setFeedback({
         message: res.message ?? "เกิดข้อผิดพลาด",
         variant: "error",
@@ -263,7 +290,7 @@ export function RegisterModal({
             </div>
             <h3 className="text-xl font-sans font-bold text-green mb-5">Activity Registered</h3>
             <p className="mt-3 text-md text-foreground font-prompt">
-              ข้อมูลของคุณถูกบันทึกเรียบร้อยแล้ว<br />
+              ข้อมูลของคุณถูกบันทึกเรียบร้อยแล้ว
               คุณสามารถตรวจสอบรายละเอียดการลงทะเบียนได้ที่หน้าโปรไฟล์ของคุณ
             </p>
             <button
@@ -580,8 +607,8 @@ export function RegisterModal({
                         }}
                       />
                       {slip ? (
-                        <span className="font-medium font-prompt text-stone-800">
-                          {slip.name}
+                        <span className="font-medium font-prompt text-foreground">
+                          Uploaded: {slip.name}<br /><br />กรุณากด "Register" เพื่อตรวจสลิปและดำเนินการลงทะเบียนต่อไป
                         </span>
                       ) : (
                         <>
@@ -733,28 +760,45 @@ export function ActivityRegisterSection({
   const [open, setOpen] = useState(false);
   const { registrations } = useAppState();
   
-  const registration = registrations.find(r => r.activityId === activity._id || r.activityId === (activity as any).id);
+  // Only a non-CANCELLED registration counts as "currently registered" — the backend's
+  // duplicate-registration check explicitly exempts CANCELLED (Registration.helper.js:
+  // `status: { $nin: ['CANCELLED'] }`), i.e. a user is expected to be able to re-register
+  // for an activity after a prior registration was cancelled. At most one non-CANCELLED
+  // registration can exist per user/activity, so picking the first non-CANCELLED match
+  // (or falling back to none) is sufficient — no need to reason about ordering among
+  // multiple CANCELLED records.
+  const registration = registrations.find(
+    r =>
+      (r.activityId === activity._id || r.activityId === (activity as any).id) &&
+      (r.status as string) !== 'CANCELLED'
+  );
   const isRegistered = !!registration;
-  const isPendingPayment = isRegistered && registration.paymentStatus === 'pending';
+  // NOTE: UserRegistration['status'] is typed as 'waiting'|'attended'|'absent' in
+  // context.tsx, but the actual mapping (`status: d.status`) stores the raw backend
+  // value (PENDING/PAID/JOINED/CANCELLED) unchanged. That type is stale/incorrect
+  // app-wide (see HomeSidebar.tsx's same-shaped comparisons) — casting here rather
+  // than silently relying on a mismatched type.
+  const isPendingPayment = isRegistered && (registration.status as string) === 'PENDING';
 
   const isFull =
     activity.seat_capacity > 0 &&
     activity.enrolled_count >= activity.seat_capacity;
   const isNotStarted = new Date(activity.open_registration_at?? "2026-01-01T00:00:00") > new Date();
   const isEnded = new Date(activity.close_registration_at?? "2099-12-31T00:00:00") < new Date(); 
-  let isDisabled = isRegistered;
+  let isDisabled = isRegistered && !isPendingPayment;
 
-  let buttonText;
-  if (isRegistered) { buttonText = "Registered ✓"; } 
+  let buttonText; let backgroundButtonColor = "bg-gold text-background";
+  if (isPendingPayment) { buttonText = "Complete Payment"; }
+  else if (isRegistered) { buttonText = "Registered ✓"; backgroundButtonColor = "bg-green text-background" } 
   else if (activity.registration_open_override === false) { 
-    buttonText = "Registration Closed ⤬";
+    buttonText = "Registration Closed ⤬"; backgroundButtonColor = "bg-red-300 text-background";
     isDisabled = true;
   }
   else if (activity.registration_open_override === true) { buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)"; }
   else {
-    if (isFull) { buttonText = "Seats Full ⤬"; }
-    else if (isEnded) { buttonText = "Registration Ended ⤬"; } 
-    else if (isNotStarted) { buttonText = "Registration Opens Soon ..."; }
+    if (isFull) { buttonText = "Seats Full ⤬"; backgroundButtonColor = "bg-red-300 text-background"; }
+    else if (isEnded) { buttonText = "Registration Ended ⤬"; backgroundButtonColor = "bg-red-300 text-background"; } 
+    else if (isNotStarted) { buttonText = "Registration Opens Soon ..."; backgroundButtonColor = "bg-zinc-700 text-foreground"; }
     else { buttonText = activity.price > 0 ? `Register (฿${activity.price})` : "Register (FREE)"; }
     isDisabled = isFull || isEnded || isNotStarted;
   }
@@ -770,19 +814,12 @@ export function ActivityRegisterSection({
           disabled={isDisabled}
           aria-expanded={open}
           aria-haspopup="dialog"
-          className={`w-full rounded-md py-3.5 text-center font-bold shadow-sm transition sm:text-lg ${
-            //isPendingPayment
-              //</div>? "bg-primary-yellow text-base-black hover:bg-yellow-500"
-              isRegistered ? "bg-green text-background cursor-default"
-            : isNotStarted ? "bg-zinc-700 text-foreground cursor-not-allowed" 
-            : isDisabled ? "bg-red-300 text-background cursor-not-allowed"
-            : "bg-gold text-background hover:cursor-pointer hover:opacity-60 transition-opacity"
-          }`}
+          className={`w-full rounded-md py-3.5 text-center font-bold shadow-sm transition sm:text-lg ${backgroundButtonColor }`}
         >
           {buttonText}
         </button>
       </div>
-      {open && (!isDisabled || isPendingPayment) ? (
+      {open ? (
         <RegisterModal
           key={activity._id}
           activity={activity}

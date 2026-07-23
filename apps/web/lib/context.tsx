@@ -58,7 +58,7 @@ interface AppContextType {
   openAccountModal: () => void;
   closeModals: () => void;
   login: (email: string, password: string) => Promise<void>;
-  loginWithToken: (user: TCOSAccount, token: string) => void;
+  loginWithToken: (user: TCOSAccount, token: string) => Promise<void>;
   setAuthFromRegistration: (params: {
     token: string;
     user?: Partial<TCOSAccount> & { id?: string };
@@ -375,28 +375,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     closeModals();
   };
 
-  const loginWithToken = (newUser: TCOSAccount, token: string) => {
+  const loginWithToken = async (newUser: TCOSAccount, token: string) => {
     setUser(newUser);
     localStorage.setItem("tcos_user", JSON.stringify(newUser));
     persistAuthToken(token);
 
-    fetchMyRegistrations().then(data => {
-      if (data && data.length > 0) {
-        const mapped = data.map((d: any) => ({
-          id: d.id || d._id,
-          activityId: d.activity_id?._id || d.activity_id?.id || d.activity_id,
-          enrolledAt: d.created_at || new Date().toISOString(),
-          status: d.status,
-          paymentStatus: d.payment?.status || "pending",
-          checkedIn: false,
-          ticketCode: d.ticket_code || "",
-          amountPaid: d.payment?.amount || 0,
-          additionalAnswers: d.custom_answers || {}
-        }));
-        setRegistrations(mapped);
-        localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
-      }
-    });
+    // Awaited (not fire-and-forget) so callers can rely on the registrations
+    // context being up-to-date before they continue. Previously this was
+    // a detached .then(), which let the UI close/reopen the modal before
+    // the new registration landed — and a stale `isRegistered: false` view
+    // could re-POST /registrations, hitting the backend's duplicate guard.
+    const data = await fetchMyRegistrations();
+    if (data && data.length > 0) {
+      const mapped = data.map((d: any) => ({
+        id: d.id || d._id,
+        activityId: d.activity_id?._id || d.activity_id?.id || d.activity_id,
+        enrolledAt: d.created_at || new Date().toISOString(),
+        status: d.status,
+        paymentStatus: d.payment?.status || "pending",
+        checkedIn: false,
+        ticketCode: d.ticket_code || "",
+        amountPaid: d.payment?.amount || 0,
+        additionalAnswers: d.custom_answers || {}
+      }));
+      setRegistrations(mapped);
+      localStorage.setItem("tcos_registrations", JSON.stringify(mapped));
+    }
   };
 
   /**
