@@ -23,9 +23,12 @@ function ActivityRegistrants({
   tone?: "dark" | "light";
   compact?: boolean;
 }) {
-  const safeCapacity = Math.max(capacity, 1);
-  const count = Math.min(Math.max(registeredCount, 0), safeCapacity);
-  const fillPercent = (count / safeCapacity) * 100;
+  // seat_capacity === 0 means "unlimited / no cap" — don't clamp the display
+  // count to 1 in that case (the old `Math.max(capacity, 1)` guard did).
+  const isUnlimited = capacity === 0;
+  const rawCount = Math.max(registeredCount, 0);
+  const count = isUnlimited ? rawCount : Math.min(rawCount, capacity);
+  const fillPercent = isUnlimited ? 0 : (count / capacity) * 100;
 
   const labelClass = tone === "light" ? "text-base-black/70" : "text-zinc-300";
   const trackClass = tone === "light" ? "bg-base-black/25" : "bg-zinc-700";
