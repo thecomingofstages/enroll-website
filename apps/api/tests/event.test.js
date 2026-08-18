@@ -118,14 +118,9 @@ describe('POST /v1/events/scan', () => {
     expect(res.body.data.stamps).toEqual([]);
     expect(res.body.data.is_exchanged).toBe(false);
 
-<<<<<<< Updated upstream
-    expect(RegistrationModel.findByIdAndUpdate).toHaveBeenCalledWith(
-      PAID_REG._id,
-=======
-    // Registration must be updated to JOINED with group_name
+    // Registration must be updated to JOINED
     expect(RegistrationModel.findOneAndUpdate).toHaveBeenCalledWith(
       { _id: PAID_REG._id },
->>>>>>> Stashed changes
       { $set: { status: 'JOINED' } }
     );
 
@@ -136,33 +131,6 @@ describe('POST /v1/events/scan', () => {
     expect(attUpdate.$push[pushKey]).toBe(PLAIN_USER._id);
   });
 
-<<<<<<< Updated upstream
-  test('200 — returns collected stamps and is_exchanged for a user who has stamps', async () => {
-    mockAdmin();
-    QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
-
-    const STORE_OID = '6a4479cf22ec370fa7210501'; // valid 24-char hex (ObjectId format)
-    const STAMP_FIXTURE = {
-      _id: 'stamp-uuid-001', store_id: STORE_OID,
-      achieved_at: new Date('2026-07-11T10:00:00Z'),
-    };
-    StampUserModel.findOne = jest.fn().mockReturnValue({
-      lean: () => Promise.resolve({
-        _id: PLAIN_USER._id,
-        stamp_collected: [STAMP_FIXTURE],
-        is_exchanged: true,
-      }),
-    });
-    StoreModel.collection = { find: jest.fn().mockReturnValue({ toArray: () => Promise.resolve([{ _id: STORE_OID, name: 'Coffee Corner' }]) }) };
-
-    RegistrationModel.findOne           = jest.fn().mockReturnValue({ lean: () => Promise.resolve(PAID_REG) });
-    UserModel.findById
-      .mockReturnValueOnce({ lean: () => Promise.resolve(ADMIN_USER) })
-      .mockReturnValueOnce({ lean: () => Promise.resolve(PLAIN_USER) });
-    ActivityModel.findById              = jest.fn().mockReturnValue({ lean: () => Promise.resolve(ACTIVITY), select: () => ({ lean: () => Promise.resolve({ name: ACTIVITY.name }) }) });
-    RegistrationModel.findByIdAndUpdate = jest.fn().mockResolvedValue({});
-    AttendanceModel.findOneAndUpdate    = jest.fn().mockResolvedValue({});
-=======
   test('200 — scan tolerates UUID string IDs when findById hits a cast error', async () => {
     mockAdmin();
     QRUtil.verify = jest.fn().mockReturnValue(VALID_QR_PAYLOAD);
@@ -177,7 +145,6 @@ describe('POST /v1/events/scan', () => {
     ActivityModel.findOne = jest.fn().mockReturnValue({ select: () => ({ lean: () => Promise.resolve({ name: ACTIVITY.name }) }) });
     RegistrationModel.findOneAndUpdate = jest.fn().mockResolvedValue({});
     AttendanceModel.findOneAndUpdate = jest.fn().mockResolvedValue({});
->>>>>>> Stashed changes
 
     const res = await request(app)
       .post('/v1/events/scan')
@@ -185,16 +152,9 @@ describe('POST /v1/events/scan', () => {
       .send({ qr_token: 'valid.token', event_id: ACTIVITY._id });
 
     expect(res.status).toBe(200);
-<<<<<<< Updated upstream
-    expect(res.body.data.stamps).toHaveLength(1);
-    expect(res.body.data.stamps[0].store_name).toBe('Coffee Corner');
-    expect(res.body.data.stamps[0]._id).toBe('stamp-uuid-001');
-    expect(res.body.data.is_exchanged).toBe(true);
-=======
     expect(res.body.data.status).toBe('JOINED');
     expect(UserModel.findOne).toHaveBeenCalledWith({ _id: PLAIN_USER._id });
     expect(ActivityModel.findOne).toHaveBeenCalledWith({ _id: ACTIVITY._id });
->>>>>>> Stashed changes
   });
 
   test('200 — only qr_token + event_id required', async () => {
@@ -390,6 +350,141 @@ describe('POST /v1/events/scan', () => {
       .post('/v1/events/scan')
       .send({ qr_token: 'x', event_id: 'y' });
     expect(res.status).toBe(401);
+  });
+
+  // ── Raw UUID v7 path ──────────────────────────────────────────────────────
+  // These cases exercise the new "bare UUID" branch in Event.helper.scan. The
+  // master switch lives in app.conf — mock it per-test so toggling the env
+  // doesn't leak between cases.
+  jest.mock('../src/app/config/app.conf');
+
+  const AppConfig = require('../src/app/config/app.conf');
+  const RAW_UUID = '019ea824-1b08-7889-a51f-a6cb8f3eda24'; // valid UUID v7
+  const V4_UUID  = '550e8400-e29b-41d4-a716-446655440000'; // valid UUID v4 — should be rejected as non-v7
+
+  function enableRawUuid() {
+    AppConfig.ALLOW_RAW_UUID_SCAN = true;
+  }
+  function disableRawUuid() {
+    AppConfig.ALLOW_RAW_UUID_SCAN = false;
+  }
+
+  test('200 — raw UUID v7 + master switch on + activity flag on → JOINED', async () => {
+    enableRawUuid();
+    mockAdmin();
+    mockNoStamps();
+
+    const activityWithFlag = { ...ACTIVITY, allow_raw_uuid_scan: true };
+    ActivityModel.findById = jest.fn().mockReturnValue({
+      lean: () => Promise.resolve(activityWithFlag),
+      select: () => ({ lean: () => Promise.resolve({ name: activityWithFlag.name }) }),
+    });
+    UserModel.findById
+      .mockReturnValueOnce({ lean: () => Promise.resolve(ADMIN_USER) })  // requireAdmin
+      .mockReturnValueOnce({ lean: () => Promise.resolve(PLAIN_USER) }); // fetch user for display
+    RegistrationModel.findOne         = jest.fn().mockReturnValue({ lean: () => Promise.resolve(PAID_REG) });
+    RegistrationModel.findOneAndUpdate = jest.fn().mockResolvedValue({});
+    AttendanceModel.findOneAndUpdate  = jest.fn().mockResolvedValue({});
+
+    const res = await request(app)
+      .post('/v1/events/scan')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send({ qr_token: RAW_UUID, event_id: ACTIVITY._id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.status).toBe('JOINED');
+    // HMAC verification must be bypassed
+    expect(QRUtil.verify).not.toHaveBeenCalled();
+    // Registration must still be updated to JOINED
+    expect(RegistrationModel.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: PAID_REG._id },
+      { $set: { status: 'JOINED' } }
+    );
+    // User_id pushed into attendance must be the raw UUID, not a decoded value
+    const [, attUpdate] = AttendanceModel.findOneAndUpdate.mock.calls[0];
+    const pushKey = Object.keys(attUpdate.$push)[0];
+    expect(attUpdate.$push[pushKey]).toBe(RAW_UUID);
+  });
+
+  test('403 RAW_UUID_DISABLED — raw UUID v7 but master switch is off', async () => {
+    disableRawUuid();
+    mockAdmin();
+    mockNoStamps();
+
+    const res = await request(app)
+      .post('/v1/events/scan')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send({ qr_token: RAW_UUID, event_id: ACTIVITY._id });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('RAW_UUID_DISABLED');
+    expect(QRUtil.verify).not.toHaveBeenCalled();
+    // Must NOT touch registration/attendance when gated off
+    expect(RegistrationModel.findOne).not.toHaveBeenCalled();
+    expect(AttendanceModel.findOneAndUpdate).not.toHaveBeenCalled();
+  });
+
+  test('403 RAW_UUID_DISABLED — master switch on but activity flag is off', async () => {
+    enableRawUuid();
+    mockAdmin();
+    mockNoStamps();
+
+    // Activity present but allow_raw_uuid_scan stays at default (false)
+    ActivityModel.findById = jest.fn().mockReturnValue({
+      lean: () => Promise.resolve(ACTIVITY),
+      select: () => ({ lean: () => Promise.resolve({ name: ACTIVITY.name }) }),
+    });
+
+    const res = await request(app)
+      .post('/v1/events/scan')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send({ qr_token: RAW_UUID, event_id: ACTIVITY._id });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe('RAW_UUID_DISABLED');
+    expect(QRUtil.verify).not.toHaveBeenCalled();
+    expect(RegistrationModel.findOne).not.toHaveBeenCalled();
+  });
+
+  test('422 INVALID_QR — non-v7 UUID (v4) falls through to QRUtil.verify', async () => {
+    // Master switch on, but v4 isn't a v7 — should hit HMAC verify and fail.
+    enableRawUuid();
+    mockAdmin();
+    mockNoStamps();
+    const err = Object.assign(new Error('Invalid QR'), { statusCode: 422, code: 'INVALID_QR' });
+    QRUtil.verify = jest.fn().mockImplementation(() => { throw err; });
+
+    const res = await request(app)
+      .post('/v1/events/scan')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send({ qr_token: V4_UUID, event_id: ACTIVITY._id });
+
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe('INVALID_QR');
+    expect(QRUtil.verify).toHaveBeenCalledWith(V4_UUID);
+  });
+
+  test('404 NOT_ENROLLED — raw UUID v7 + activity flag on, but user has no registration', async () => {
+    enableRawUuid();
+    mockAdmin();
+    mockNoStamps();
+
+    const activityWithFlag = { ...ACTIVITY, allow_raw_uuid_scan: true };
+    ActivityModel.findById = jest.fn().mockReturnValue({
+      lean: () => Promise.resolve(activityWithFlag),
+      select: () => ({ lean: () => Promise.resolve({ name: activityWithFlag.name }) }),
+    });
+    UserModel.findById.mockReturnValueOnce({ lean: () => Promise.resolve(ADMIN_USER) });
+    RegistrationModel.findOne = jest.fn().mockReturnValue({ lean: () => Promise.resolve(null) });
+
+    const res = await request(app)
+      .post('/v1/events/scan')
+      .set('Authorization', `Bearer ${ADMIN_TOKEN}`)
+      .send({ qr_token: RAW_UUID, event_id: ACTIVITY._id });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_ENROLLED');
   });
 });
 

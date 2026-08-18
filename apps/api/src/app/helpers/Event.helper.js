@@ -7,7 +7,17 @@ const PaymentModel      = require('../models/Payment.model');
 const StampUserModel    = require('../models/StampUser.model');
 const StoreModel        = require('../models/Store.model');
 const QRUtil            = require('../utils/QR.util');
+const AppConfig         = require('../config/app.conf');
 const mongoose          = require('mongoose');
+
+// ── UUID v7 detection ────────────────────────────────────────────────────────
+// Strict: version nibble must be 7, variant nibble must be RFC 4122 (8/9/a/b).
+// User._id and Registration._id are minted via `uuid.v7()` (see User.model.js /
+// Registration.model.js) so a v7 check matches everything the system actually
+// produces while rejecting v1/v4 look-alikes that would otherwise hit
+// `findById` and throw CastError.
+const UUID_V7_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isUuidV7   = (s) => typeof s === 'string' && UUID_V7_RE.test(s.trim());
 
 // ── Bangkok date key ──────────────────────────────────────────────────────────
 function bangkokDateKey() {
@@ -101,21 +111,30 @@ class EventHelper {
   /**
    * Verify a participant QR token against a specific event and check them in.
    *
+   * Accepts either:
+   *   • an HMAC-signed QR token (`QRUtil.sign(userId)` shape), or
+   *   • a raw UUID v7 string (User._id), gated by the API-side master switch
+   *     ALLOW_RAW_UUID_SCAN and, when an eventId is provided, by the
+   *     activity's allow_raw_uuid_scan field.
+   *
    * Flow:
-   * 1. Verify QR token (HMAC + expiry) — throws INVALID_QR or QR_EXPIRED
-   * 2. Extract user_id from payload
-   * 3. Find REGISTRATION for (user_id, activity_id = eventId), not CANCELLED
+   * 1. Resolve user_id from either a raw UUID v7 or the QR token (HMAC + expiry)
+   *    — throws INVALID_QR or QR_EXPIRED for non-v7, non-token input
+   *    — throws RAW_UUID_DISABLED when the raw-UUID feature is gated off
+   * 2. Fetch stamp data (always)
+   * 3. Stamp-only mode (no event_id) → return display + stamps
+   * 4. Find REGISTRATION for (user_id, activity_id = eventId), not CANCELLED
    *    — throws NOT_ENROLLED (404) if missing
-   * 4. Confirm status === PAID
+   * 5. Confirm status === PAID
    *    — throws ALREADY_JOINED (422) if already scanned
    *    — throws PAYMENT_REQUIRED (422) if PENDING
-   * 5. Fetch user for display name
-   * 6. Atomic $set status → JOINED, group_name if provided
-   * 7. $push user_id into Attendance map for today's Bangkok date key
-   * 8. Return display data for scanner device
+   * 6. Fetch user + activity for display
+   * 7. Atomic $set status → JOINED
+   * 8. $push user_id into Attendance map for today's Bangkok date key
+   * 9. Return display data for scanner device
    */
   static async scan(qrToken, eventId) {
-    // ── 1. Verify QR ───────────────────────────────────────────────────────
+    // ── 1. Validate input ──────────────────────────────────────────────────
     if (!qrToken) {
       const err = new Error('qr_token is required.');
       err.statusCode = 400;
@@ -123,11 +142,44 @@ class EventHelper {
       throw err;
     }
 
-    // QRUtil.verify throws INVALID_QR or QR_EXPIRED with correct statusCode + code
-    const decoded = QRUtil.verify(qrToken);
-    const { user_id } = decoded;
-    const normalizedUserId = String(user_id).trim();
-    const normalizedEventId = String(eventId).trim();
+    const normalizedEventId = eventId ? String(eventId).trim() : '';
+    const rawIsUuid         = isUuidV7(qrToken);
+
+    let normalizedUserId;
+    if (rawIsUuid) {
+      // ── 1a. Raw UUID v7 path — bypass HMAC, use the string as user_id ───
+      if (!AppConfig.ALLOW_RAW_UUID_SCAN) {
+        const err = new Error('Raw UUID scanning is disabled.');
+        err.statusCode = 403;
+        err.code = 'RAW_UUID_DISABLED';
+        throw err;
+      }
+
+      // Per-activity gate — load the activity once now so a denied event
+      // surfaces before we hit the Registration/StampUser/User lookups.
+      if (normalizedEventId) {
+        const activity = await findDocumentById(ActivityModel, normalizedEventId);
+        if (!activity) {
+          const err = new Error('This event does not exist.');
+          err.statusCode = 404;
+          err.code = 'NOT_FOUND';
+          throw err;
+        }
+        if (activity.allow_raw_uuid_scan !== true) {
+          const err = new Error('Raw UUID scanning is disabled for this event.');
+          err.statusCode = 403;
+          err.code = 'RAW_UUID_DISABLED';
+          throw err;
+        }
+      }
+
+      normalizedUserId = String(qrToken).trim();
+    } else {
+      // ── 1b. HMAC token path — unchanged behaviour ───────────────────────
+      // QRUtil.verify throws INVALID_QR or QR_EXPIRED with correct statusCode + code
+      const decoded = QRUtil.verify(qrToken);
+      normalizedUserId = String(decoded.user_id).trim();
+    }
 
     // ── 2. Fetch stamp data (always) ───────────────────────────────────────
     const stampUser = await StampUserModel.findOne({ _id: normalizedUserId }).lean();
@@ -146,8 +198,8 @@ class EventHelper {
     }));
 
     // ── 3. Stamp-only mode — no event_id provided ──────────────────────────
-    if (!eventId) {
-      const user = await UserModel.findById(user_id).lean();
+    if (!normalizedEventId) {
+      const user = await findDocumentById(UserModel, normalizedUserId);
       return {
         user: {
           full_name: user ? `${user.first_name} ${user.last_name}` : '—',
@@ -188,8 +240,11 @@ class EventHelper {
     }
 
     // ── 5. Fetch user + activity ───────────────────────────────────────────
-    const user     = await UserModel.findById(user_id).lean();
-    const activity = await ActivityModel.findById(eventId).select('name').lean();
+    // findDocumentById falls back from findById → findOne({ _id }) on CastError,
+    // so UUID v7 strings resolve cleanly even though Mongoose normally expects
+    // ObjectId.
+    const user     = await findDocumentById(UserModel, normalizedUserId);
+    const activity = await findDocumentById(ActivityModel, normalizedEventId, { select: 'name' });
 
     // ── 6. Set registration → JOINED ──────────────────────────────────────
     await RegistrationModel.findOneAndUpdate(
@@ -201,7 +256,7 @@ class EventHelper {
     const dateKey = bangkokDateKey();
     await AttendanceModel.findOneAndUpdate(
       { activity_id: normalizedEventId },
-      { $push: { [`attendance.${dateKey}`]: user_id } },
+      { $push: { [`attendance.${dateKey}`]: normalizedUserId } },
       { upsert: true }
     );
 

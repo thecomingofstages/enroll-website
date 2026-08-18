@@ -61,6 +61,10 @@ const ActivitySchema = new mongoose.Schema(
     close_registration_at: { type: Date, default: null },
     // Hard override: false = always closed, true = always open, null = use date window
     registration_open_override: { type: Boolean, default: null },
+    // Per-activity override for the API-side ALLOW_RAW_UUID_SCAN master switch.
+    // When false (default), /events/scan rejects bare UUID v7 even if the env
+    // flag is on. Set true only on activities where manual UUID entry is OK.
+    allow_raw_uuid_scan: { type: Boolean, default: false },
     speakers:    { type: [SpeakerSchema], default: [] },
 
     is_featured:     { type: Boolean, default: false },
